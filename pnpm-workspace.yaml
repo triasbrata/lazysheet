@@ -1,0 +1,8 @@
+onlyBuiltDependencies:
+  - esbuild
+  - msw
+minimumReleaseAgeExclude:
+  - '@types/node@25.9.0'
+allowBuilds:
+  esbuild: true
+  msw: true

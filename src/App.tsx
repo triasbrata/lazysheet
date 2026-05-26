@@ -1,0 +1,672 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { TitleBar } from "@/components/TitleBar";
+import { Welcome } from "@/components/Welcome";
+import { SheetTabs } from "@/components/SheetTabs";
+import { StatusBar } from "@/components/StatusBar";
+import { Grid, type GridMatch, type Selection } from "@/components/Grid/Grid";
+import {
+  CommandPalette,
+  type PaletteMode,
+} from "@/components/CommandPalette";
+import { FindBar } from "@/components/FindBar";
+import {
+  buildMergeInfo,
+  expandBoundsForMerges,
+  parseA1,
+  selectionBounds,
+} from "@/components/Grid/grid-utils";
+import { useWorkbook } from "@/hooks/useWorkbook";
+import { useFileEvents } from "@/hooks/useFileEvents";
+import { useFileState } from "@/hooks/useFileState";
+import { pickFile } from "@/lib/tauri-api";
+import { cellText } from "@/lib/types";
+import {
+  buildSelectionMarkdown,
+  type MarkdownFormat,
+} from "@/lib/markdown-export";
+import { SummaryPanel } from "@/components/SummaryPanel";
+
+function findNextAfterAnchor(
+  matches: GridMatch[],
+  anchor: { row: number; col: number },
+): number {
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    if (m.row > anchor.row || (m.row === anchor.row && m.col > anchor.col)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function findPrevBeforeAnchor(
+  matches: GridMatch[],
+  anchor: { row: number; col: number },
+): number {
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const m = matches[i];
+    if (m.row < anchor.row || (m.row === anchor.row && m.col < anchor.col)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function App() {
+  const wb = useWorkbook();
+  const [recents, setRecents] = useState(wb.recents());
+  const [dragOver, setDragOver] = useState(false);
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteMode, setPaletteMode] = useState<PaletteMode>("root");
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState("");
+  const [findFocusNonce, setFindFocusNonce] = useState(0);
+  const [summaryPanelOpen, setSummaryPanelOpen] = useState(false);
+  const fileState = useFileState(wb.workbook?.path ?? null);
+  const headerRows = fileState.headerRows;
+
+  const open = useCallback(
+    async (path: string) => {
+      try {
+        await wb.open(path);
+        setRecents(wb.recents());
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error("Failed to open file", { description: msg });
+      }
+    },
+    [wb],
+  );
+
+  const handlePick = useCallback(async () => {
+    const p = await pickFile();
+    if (p) open(p);
+  }, [open]);
+
+  const handleClose = useCallback(() => {
+    wb.close();
+    setRecents(wb.recents());
+    setSelection(null);
+    setFindOpen(false);
+    setFindQuery("");
+    setSummaryPanelOpen(false);
+  }, [wb]);
+
+  const handleSelectionChange = useCallback(
+    (next: Selection, _scroll: "none" | "ifNeeded" | "center") => {
+      setSelection(next);
+      const sheetName = wb.activeSheet?.name;
+      if (
+        sheetName &&
+        next.mode === "cell" &&
+        next.anchor.row === next.focus.row &&
+        next.anchor.col === next.focus.col
+      ) {
+        fileState.setAnchor(sheetName, {
+          row: next.anchor.row,
+          col: next.anchor.col,
+        });
+      }
+    },
+    [wb.activeSheet?.name, fileState],
+  );
+
+  const handleSwitchSheet = useCallback(
+    async (name: string) => {
+      setSelection(null);
+      await wb.switchSheet(name);
+      fileState.setActiveSheet(name);
+    },
+    [wb, fileState],
+  );
+
+  // Reset selection when workbook/sheet changes via any path (open, file drop, etc).
+  useEffect(() => {
+    setSelection(null);
+    setSummaryPanelOpen(false);
+  }, [wb.activeSheet?.name, wb.workbook?.path]);
+
+  // Restore persisted state on file open. Runs AFTER the clear effect above.
+  // Two refs:
+  //   - sheetSwitchAttemptedRef: tracks paths where we've already tried to
+  //     switch to the persisted last-active sheet. Prevents fighting the user
+  //     when they switch sheets manually.
+  //   - anchorRestoredRef: tracks (path, sheet) pairs where anchor restore has
+  //     already fired. Prevents re-restore on every selection-change re-render.
+  const sheetSwitchAttemptedRef = useRef<string | null>(null);
+  const anchorRestoredRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sheet = wb.activeSheet;
+    const path = wb.workbook?.path;
+    if (!sheet || !path) {
+      sheetSwitchAttemptedRef.current = null;
+      anchorRestoredRef.current = null;
+      return;
+    }
+
+    // Switch to persisted last-active sheet once per file open, only if it
+    // differs from the backend's default and still exists in the workbook.
+    if (sheetSwitchAttemptedRef.current !== path) {
+      sheetSwitchAttemptedRef.current = path;
+      const lastSheet = fileState.getLastActiveSheet();
+      if (
+        lastSheet &&
+        lastSheet !== sheet.name &&
+        wb.workbook?.sheets.some((s) => s.name === lastSheet)
+      ) {
+        void wb.switchSheet(lastSheet);
+        return; // Effect will re-fire after switch with restored sheet.
+      }
+    }
+
+    const key = `${path}::${sheet.name}`;
+    if (anchorRestoredRef.current === key) return;
+    anchorRestoredRef.current = key;
+
+    const anchor = fileState.getAnchor(sheet.name);
+    if (!anchor) return;
+    if (anchor.row >= sheet.rows.length) return;
+    if (anchor.col >= sheet.max_col) return;
+
+    setSelection({
+      anchor: { row: anchor.row, col: anchor.col },
+      focus: { row: anchor.row, col: anchor.col },
+      mode: "cell",
+      scroll: "center",
+      nonce: Date.now(),
+    });
+  }, [wb.activeSheet, wb.workbook, wb.switchSheet, fileState]);
+
+  useFileEvents(open);
+
+  useEffect(() => {
+    const unlistenPromise = getCurrentWebview().onDragDropEvent((event) => {
+      if (event.payload.type === "enter" || event.payload.type === "over") {
+        setDragOver(true);
+      } else {
+        setDragOver(false);
+      }
+    });
+    return () => {
+      unlistenPromise.then((fn) => fn()).catch(() => undefined);
+    };
+  }, []);
+
+  const openPalette = useCallback((mode: PaletteMode) => {
+    setPaletteMode(mode);
+    setPaletteOpen(true);
+  }, []);
+
+  const openFind = useCallback(() => {
+    setFindOpen(true);
+    setFindFocusNonce((n) => n + 1);
+  }, []);
+
+  const summaryEligible = useMemo(() => {
+    if (!wb.activeSheet || !selection) return false;
+    const totalRows = wb.activeSheet.rows.length;
+    const totalCols = wb.activeSheet.max_col;
+    const base = selectionBounds(selection, totalRows, totalCols);
+    const merges = buildMergeInfo(wb.activeSheet.merges);
+    const b = expandBoundsForMerges(base, merges);
+    return b.r2 - b.r1 >= 1 && b.c2 - b.c1 >= 1;
+  }, [wb.activeSheet, selection]);
+
+  const handleOpenSummary = useCallback(() => {
+    if (!summaryEligible) {
+      toast.message("Select a range (≥2 cols × ≥2 rows) first");
+      return;
+    }
+    setSummaryPanelOpen(true);
+  }, [summaryEligible]);
+
+  const handleCloseSummary = useCallback(() => {
+    setSummaryPanelOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === "k" || k === "p") {
+        e.preventDefault();
+        openPalette("root");
+      } else if (k === "f") {
+        e.preventDefault();
+        openFind();
+      } else if (k === "g") {
+        e.preventDefault();
+        openPalette("goto");
+      } else if (k === "y" && e.shiftKey) {
+        e.preventDefault();
+        if (summaryPanelOpen) {
+          setSummaryPanelOpen(false);
+        } else if (summaryEligible) {
+          setSummaryPanelOpen(true);
+        } else {
+          toast.message("Select a range (≥2 cols × ≥2 rows) first");
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen]);
+
+  const handleGoto = useCallback(
+    (ref: string): string | null => {
+      if (!wb.activeSheet) return "No sheet open";
+      const parsed = parseA1(ref);
+      if (!parsed) return "Invalid cell reference";
+      const totalRows = wb.activeSheet.rows.length;
+      const totalCols = wb.activeSheet.max_col;
+      if (parsed.row >= totalRows) return `Row out of range (max ${totalRows})`;
+      if (parsed.col >= totalCols)
+        return `Column out of range (max ${totalCols})`;
+      setSelection({
+        anchor: { row: parsed.row, col: parsed.col },
+        focus: { row: parsed.row, col: parsed.col },
+        mode: "cell",
+        scroll: "center",
+        nonce: Date.now(),
+      });
+      return null;
+    },
+    [wb.activeSheet],
+  );
+
+  const matches: GridMatch[] = useMemo(() => {
+    if (!wb.activeSheet || !findQuery.trim()) return [];
+    const q = findQuery.trim().toLowerCase();
+    const out: GridMatch[] = [];
+    const rows = wb.activeSheet.rows;
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        if (!cell) continue;
+        if (cellText(cell).toLowerCase().includes(q)) {
+          out.push({ row: r, col: c });
+          if (out.length > 5000) return out;
+        }
+      }
+    }
+    return out;
+  }, [wb.activeSheet, findQuery]);
+
+  const matchIndexMap = useMemo(() => {
+    const m = new Map<string, number>();
+    matches.forEach((mt, i) => m.set(`${mt.row}:${mt.col}`, i));
+    return m;
+  }, [matches]);
+
+  // Anchor cell drives find index — but only when selection is a single cell
+  // (anchor === focus). A range selection has no meaningful "active match".
+  const singleAnchor = useMemo(() => {
+    if (!selection) return null;
+    if (
+      selection.anchor.row !== selection.focus.row ||
+      selection.anchor.col !== selection.focus.col ||
+      selection.mode !== "cell"
+    ) {
+      return null;
+    }
+    return selection.anchor;
+  }, [selection]);
+
+  const activeMatchIdx = useMemo(() => {
+    if (!singleAnchor) return -1;
+    return matchIndexMap.get(`${singleAnchor.row}:${singleAnchor.col}`) ?? -1;
+  }, [singleAnchor, matchIndexMap]);
+
+  const setSingleCellSelection = useCallback(
+    (row: number, col: number) => {
+      setSelection({
+        anchor: { row, col },
+        focus: { row, col },
+        mode: "cell",
+        scroll: "center",
+        nonce: Date.now(),
+      });
+    },
+    [],
+  );
+
+  const handleFindNext = useCallback(() => {
+    if (matches.length === 0) return;
+    let nextIdx: number;
+    if (activeMatchIdx >= 0) {
+      nextIdx = (activeMatchIdx + 1) % matches.length;
+    } else {
+      const anchor = singleAnchor ??
+        (selection?.anchor ?? { row: 0, col: 0 });
+      nextIdx = findNextAfterAnchor(matches, anchor);
+      if (nextIdx === -1) nextIdx = 0;
+    }
+    const m = matches[nextIdx];
+    setSingleCellSelection(m.row, m.col);
+  }, [matches, activeMatchIdx, singleAnchor, selection, setSingleCellSelection]);
+
+  const handleFindPrev = useCallback(() => {
+    if (matches.length === 0) return;
+    let prevIdx: number;
+    if (activeMatchIdx >= 0) {
+      prevIdx = activeMatchIdx <= 0 ? matches.length - 1 : activeMatchIdx - 1;
+    } else {
+      const anchor = singleAnchor ??
+        (selection?.anchor ?? { row: 0, col: 0 });
+      prevIdx = findPrevBeforeAnchor(matches, anchor);
+      if (prevIdx === -1) prevIdx = matches.length - 1;
+    }
+    const m = matches[prevIdx];
+    setSingleCellSelection(m.row, m.col);
+  }, [matches, activeMatchIdx, singleAnchor, selection, setSingleCellSelection]);
+
+  const handleFindClose = useCallback(() => {
+    setFindOpen(false);
+  }, []);
+
+  const activeSheetName = wb.activeSheet?.name ?? null;
+  const headerRow =
+    activeSheetName !== null ? headerRows[activeSheetName] ?? null : null;
+
+  const handleMarkAsHeader = useCallback(
+    (row: number | null) => {
+      if (!activeSheetName) return;
+      fileState.setHeader(activeSheetName, row);
+      toast.success(
+        row === null
+          ? "Header row unmarked"
+          : `Row ${row + 1} marked as header`,
+      );
+    },
+    [activeSheetName, fileState],
+  );
+
+  // ── Resize: overrides + stale-prompt state ────────────────────────────────
+  const activeSheet = wb.activeSheet ?? null;
+
+  const colOverrides = useMemo(
+    () =>
+      activeSheet && activeSheetName
+        ? fileState.getColOverrides(activeSheetName, activeSheet)
+        : undefined,
+    [activeSheet, activeSheetName, fileState],
+  );
+  const rowOverrides = useMemo(
+    () =>
+      activeSheet && activeSheetName
+        ? fileState.getRowOverrides(activeSheetName, activeSheet)
+        : undefined,
+    [activeSheet, activeSheetName, fileState],
+  );
+
+  const [staleLockedSheets, setStaleLockedSheets] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const resizeDisabled =
+    !!activeSheetName && staleLockedSheets.has(activeSheetName);
+  const promptedSheetsRef = useRef<Set<string>>(new Set());
+
+  // Reset per-session prompt de-dup AND lock state when workbook reference
+  // changes (each open() returns a fresh object → triggers even on
+  // reopen-same-path).
+  useEffect(() => {
+    promptedSheetsRef.current = new Set();
+    setStaleLockedSheets(new Set());
+  }, [wb.workbook]);
+
+  // Stale-prompt effect — surfaces a persistent toast when stored overrides
+  // were written against a different sheet structure than what's currently
+  // loaded. Until user picks, overrides are withheld (getColOverrides
+  // returns undefined for stale fps).
+  useEffect(() => {
+    if (!activeSheet || !activeSheetName) return;
+    if (promptedSheetsRef.current.has(activeSheetName)) return;
+
+    const { hasStaleCols, hasStaleRows } = fileState.detectStaleOverrides(
+      activeSheetName,
+      activeSheet,
+    );
+    if (!hasStaleCols && !hasStaleRows) return;
+
+    promptedSheetsRef.current.add(activeSheetName);
+    setStaleLockedSheets((prev) => {
+      const next = new Set(prev);
+      next.add(activeSheetName);
+      return next;
+    });
+
+    const unlock = () =>
+      setStaleLockedSheets((prev) => {
+        const next = new Set(prev);
+        next.delete(activeSheetName);
+        return next;
+      });
+
+    toast.warning(
+      "File structure changed since last open. Keep your resized column/row sizes?",
+      {
+        duration: Infinity,
+        action: {
+          label: "Keep my sizes",
+          onClick: () => {
+            fileState.reapplyStaleOverrides(activeSheetName, activeSheet);
+            unlock();
+          },
+        },
+        cancel: {
+          label: "Reset",
+          onClick: () => {
+            fileState.discardStaleOverrides(activeSheetName, activeSheet);
+            unlock();
+          },
+        },
+        onDismiss: () => {
+          fileState.discardStaleOverrides(activeSheetName, activeSheet);
+          unlock();
+        },
+        onAutoClose: () => {
+          fileState.discardStaleOverrides(activeSheetName, activeSheet);
+          unlock();
+        },
+      },
+    );
+  }, [activeSheet, activeSheetName, fileState]);
+
+  const handleColResize = useCallback(
+    (col: number, width: number) => {
+      if (!activeSheetName || !activeSheet) return;
+      fileState.setColWidth(activeSheetName, activeSheet, col, width);
+    },
+    [activeSheetName, activeSheet, fileState],
+  );
+
+  const handleRowResize = useCallback(
+    (row: number, height: number) => {
+      if (!activeSheetName || !activeSheet) return;
+      fileState.setRowHeight(activeSheetName, activeSheet, row, height);
+    },
+    [activeSheetName, activeSheet, fileState],
+  );
+
+  const handleColReset = useCallback(
+    (col: number) => {
+      if (!activeSheetName) return;
+      fileState.resetColWidth(activeSheetName, col);
+    },
+    [activeSheetName, fileState],
+  );
+
+  const handleRowReset = useCallback(
+    (row: number) => {
+      if (!activeSheetName) return;
+      fileState.resetRowHeight(activeSheetName, row);
+    },
+    [activeSheetName, fileState],
+  );
+
+  const handleResetAllDimensions = useCallback(() => {
+    if (!activeSheetName) return;
+    fileState.resetAllDimensions(activeSheetName);
+  }, [activeSheetName, fileState]);
+
+  const copyMarkdown = useCallback(
+    async (format: MarkdownFormat) => {
+      const sheet = wb.activeSheet;
+      if (!sheet || !selection) return;
+      const totalRows = sheet.rows.length;
+      const totalCols = sheet.max_col;
+      const base = selectionBounds(selection, totalRows, totalCols);
+      const merges = buildMergeInfo(sheet.merges);
+      const bounds = expandBoundsForMerges(base, merges);
+      const headerIdx = activeSheetName
+        ? headerRows[activeSheetName] ?? null
+        : null;
+      const { text, rowsEmitted, truncated } = buildSelectionMarkdown(
+        sheet,
+        bounds,
+        headerIdx,
+        format,
+      );
+      if (!text) {
+        toast.message("Nothing to copy");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        const suffix = truncated ? " (truncated)" : "";
+        const label =
+          format === "title"
+            ? "markdown title"
+            : format === "table"
+              ? "markdown table"
+              : format === "ascii"
+                ? "ASCII table"
+                : "markdown";
+        toast.success(
+          `Copied ${rowsEmitted} row${rowsEmitted === 1 ? "" : "s"} as ${label}${suffix}`,
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error("Copy failed", { description: msg });
+      }
+    },
+    [wb.activeSheet, selection, headerRows, activeSheetName],
+  );
+
+  const handleCopyAsMarkdown = useCallback(
+    () => copyMarkdown("inline"),
+    [copyMarkdown],
+  );
+  const handleCopyAsMarkdownTitle = useCallback(
+    () => copyMarkdown("title"),
+    [copyMarkdown],
+  );
+  const handleCopyAsMarkdownTable = useCallback(
+    () => copyMarkdown("table"),
+    [copyMarkdown],
+  );
+  const handleCopyAsAscii = useCallback(
+    () => copyMarkdown("ascii"),
+    [copyMarkdown],
+  );
+
+  const findActive = findOpen && !!wb.activeSheet;
+
+  return (
+    <div className="flex h-screen flex-col bg-background text-foreground antialiased overflow-hidden">
+      <TitleBar
+        fileName={wb.workbook?.file_name ?? null}
+        recents={recents}
+        onOpen={open}
+        onPick={handlePick}
+        onClose={wb.workbook ? handleClose : undefined}
+      />
+
+      {wb.loading && (
+        <div className="absolute inset-x-0 top-10 z-50 h-0.5 overflow-hidden bg-muted">
+          <div className="h-full w-1/3 animate-pulse bg-primary" />
+        </div>
+      )}
+
+      {!wb.workbook ? (
+        <Welcome onOpen={open} recents={recents} dragOver={dragOver} />
+      ) : (
+        <>
+          {wb.activeSheet && (
+            <Grid
+              sheet={wb.activeSheet}
+              selection={selection}
+              matches={findActive ? matches : undefined}
+              onSelectionChange={handleSelectionChange}
+              headerRow={headerRow}
+              onMarkHeader={handleMarkAsHeader}
+              onCopyMarkdown={handleCopyAsMarkdown}
+              onCopyMarkdownTitle={handleCopyAsMarkdownTitle}
+              onCopyMarkdownTable={handleCopyAsMarkdownTable}
+              onCopyAscii={handleCopyAsAscii}
+              onSummarize={handleOpenSummary}
+              canSummarize={summaryEligible}
+              colOverrides={colOverrides}
+              rowOverrides={rowOverrides}
+              resizeDisabled={resizeDisabled}
+              onColResize={handleColResize}
+              onRowResize={handleRowResize}
+              onColReset={handleColReset}
+              onRowReset={handleRowReset}
+              onResetAllDimensions={handleResetAllDimensions}
+            />
+          )}
+          <StatusBar
+            sheet={wb.activeSheet}
+            selection={selection}
+            canSummarize={summaryEligible}
+            onOpenSummary={handleOpenSummary}
+          />
+          {summaryPanelOpen && wb.activeSheet && selection && (
+            <SummaryPanel
+              sheet={wb.activeSheet}
+              selection={selection}
+              headerRow={headerRow}
+              onClose={handleCloseSummary}
+            />
+          )}
+          <SheetTabs
+            sheets={wb.workbook.sheets}
+            activeName={wb.activeSheet?.name ?? ""}
+            onSwitch={handleSwitchSheet}
+          />
+        </>
+      )}
+
+      <FindBar
+        open={findActive}
+        query={findQuery}
+        matchCount={matches.length}
+        activeIndex={activeMatchIdx}
+        focusNonce={findFocusNonce}
+        onQueryChange={setFindQuery}
+        onNext={handleFindNext}
+        onPrev={handleFindPrev}
+        onClose={handleFindClose}
+      />
+
+      <CommandPalette
+        open={paletteOpen}
+        mode={paletteMode}
+        onOpenChange={setPaletteOpen}
+        onModeChange={setPaletteMode}
+        onGoto={handleGoto}
+        onOpenSummary={handleOpenSummary}
+      />
+    </div>
+  );
+}
+
+export default App;
