@@ -32,11 +32,17 @@ export function StatusBar({
 }: StatusBarProps) {
   if (!sheet || !selection) {
     return (
-      <div className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-muted/30 px-3 text-[11px] text-muted-foreground">
-        <span className="min-w-[3rem] font-mono font-medium tabular-nums text-foreground/80">
+      <div
+        data-tauri-drag-region
+        className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-muted/30 px-3 text-[11px] text-muted-foreground"
+      >
+        <span
+          data-tauri-drag-region
+          className="min-w-[3rem] font-mono font-medium tabular-nums text-foreground/80"
+        >
           —
         </span>
-        <span className="flex-1 truncate"></span>
+        <span data-tauri-drag-region className="flex-1 truncate"></span>
       </div>
     );
   }
@@ -82,23 +88,35 @@ export function StatusBar({
     : `${columnLetter(selection.anchor.col)}${selection.anchor.row + 1}`;
 
   return (
-    <div className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-muted/30 px-3 text-[11px] text-muted-foreground">
-      <span className="min-w-[3rem] font-mono font-medium tabular-nums text-foreground/80">
+    <div
+      data-tauri-drag-region
+      className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-muted/30 px-3 text-[11px] text-muted-foreground"
+    >
+      <span
+        data-tauri-drag-region
+        className="min-w-[3rem] font-mono font-medium tabular-nums text-foreground/80"
+      >
         {ref}
       </span>
       {anchorLabel && (
         <span
+          data-tauri-drag-region
           className="font-mono tabular-nums text-foreground/60"
           title="Active cell"
         >
           ⇢ {anchorLabel}
         </span>
       )}
-      <span className="flex-1 truncate" title={preview || summary}>
+      <span
+        data-tauri-drag-region
+        className="flex-1 truncate"
+        title={preview || summary}
+      >
         {isSingle ? preview : summary}
       </span>
       {statsLabel && (
         <span
+          data-tauri-drag-region
           className="font-mono tabular-nums text-foreground/70"
           title={statsLabel}
         >

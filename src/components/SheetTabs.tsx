@@ -9,7 +9,10 @@ interface SheetTabsProps {
 export function SheetTabs({ sheets, activeName, onSwitch }: SheetTabsProps) {
   if (sheets.length <= 1) return null;
   return (
-    <div className="flex h-9 shrink-0 items-center gap-0 overflow-x-auto border-t border-border bg-card/50 px-1.5">
+    <div
+      data-tauri-drag-region
+      className="flex h-9 shrink-0 items-center gap-0 overflow-x-auto border-t border-border bg-card/50 px-1.5"
+    >
       {sheets.map((s) => {
         const active = s.name === activeName;
         return (

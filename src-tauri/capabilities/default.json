@@ -7,6 +7,7 @@
     "core:default",
     "core:window:allow-set-title",
     "core:window:allow-set-effects",
+    "core:window:allow-start-dragging",
     "core:webview:allow-internal-toggle-devtools",
     "dialog:default",
     "dialog:allow-open",
