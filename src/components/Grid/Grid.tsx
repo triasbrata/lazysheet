@@ -1081,7 +1081,7 @@ export function Grid({
       >
         {/* Sticky header — column letters */}
         <div
-          className="sticky top-0 z-30 flex bg-muted/80 backdrop-blur-sm border-b border-border"
+          className="sticky top-0 z-30 flex bg-muted/85 backdrop-blur-md border-b border-border"
           style={{
             height: headerHeight,
             width: bodyWidth,
@@ -1170,12 +1170,12 @@ export function Grid({
                   data-row-header={rowIdx}
                   onPointerDown={(e) => handleRowHeaderPointerDown(e, rowIdx)}
                   title={rowIdx === headerRow ? "Header row" : undefined}
-                  className={`sticky left-0 z-10 flex shrink-0 items-center justify-center border-r border-b border-border text-[10px] font-medium cursor-cell select-none relative ${
+                  className={`sticky left-0 z-10 flex shrink-0 items-center justify-center border-r border-b border-border text-[10px] font-medium cursor-cell select-none relative backdrop-blur-md ${
                     rowInSel
-                      ? "bg-primary/15 text-foreground"
+                      ? "bg-primary/20 text-foreground"
                       : rowIdx === headerRow
-                        ? "bg-amber-500/20 text-foreground font-bold"
-                        : "bg-muted/60 text-muted-foreground"
+                        ? "bg-amber-500/30 text-foreground font-bold"
+                        : "bg-muted/85 text-muted-foreground"
                   }`}
                   style={{
                     width: ROW_NUM_COL_WIDTH,
