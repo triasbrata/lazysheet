@@ -68,6 +68,10 @@ export function rowHeight(sheet: SheetModel, rowIdx: number): number {
 export const MIN_RESIZE_PX = 16;
 export const MAX_RESIZE_PX = 2000;
 
+// Autofit perf cap — measuring every row in a 50k-sheet column would freeze the
+// UI. Above this threshold we sample evenly across the range.
+export const MAX_AUTOFIT_SAMPLE = 1000;
+
 export function clampResize(px: number): number {
   if (px < MIN_RESIZE_PX) return MIN_RESIZE_PX;
   if (px > MAX_RESIZE_PX) return MAX_RESIZE_PX;
@@ -291,6 +295,50 @@ export function formatSelectionRef(s: Selection, bounds: Bounds): string {
     return `${columnLetter(bounds.c1)}${bounds.r1 + 1}`;
   }
   return `${columnLetter(bounds.c1)}${bounds.r1 + 1}:${columnLetter(bounds.c2)}${bounds.r2 + 1}`;
+}
+
+// Returns up to `cap` row indices spanning [0, total). Always includes 0 and
+// total-1 (when total >= 2). When total <= cap, returns every index.
+export function sampleRowIndices(total: number, cap: number = MAX_AUTOFIT_SAMPLE): number[] {
+  if (total <= 0) return [];
+  if (total <= cap) {
+    const out = new Array<number>(total);
+    for (let i = 0; i < total; i++) out[i] = i;
+    return out;
+  }
+  const out: number[] = [];
+  const step = (total - 1) / (cap - 1);
+  for (let i = 0; i < cap; i++) {
+    const idx = Math.round(i * step);
+    if (out.length === 0 || out[out.length - 1] !== idx) out.push(idx);
+  }
+  return out;
+}
+
+// Derive a normalized [lo, hi] column range from a Selection when its mode
+// covers full columns ("col" or "all"). Returns null otherwise.
+export function selectionColRange(s: Selection | null, totalCols: number): [number, number] | null {
+  if (!s) return null;
+  if (s.mode === "col") {
+    const c1 = Math.min(s.anchor.col, s.focus.col);
+    const c2 = Math.max(s.anchor.col, s.focus.col);
+    return [c1, c2];
+  }
+  if (s.mode === "all") return [0, totalCols - 1];
+  return null;
+}
+
+// Derive a normalized [lo, hi] row range from a Selection when its mode
+// covers full rows ("row" or "all"). Returns null otherwise.
+export function selectionRowRange(s: Selection | null, totalRows: number): [number, number] | null {
+  if (!s) return null;
+  if (s.mode === "row") {
+    const r1 = Math.min(s.anchor.row, s.focus.row);
+    const r2 = Math.max(s.anchor.row, s.focus.row);
+    return [r1, r2];
+  }
+  if (s.mode === "all") return [0, totalRows - 1];
+  return null;
 }
 
 export function parseA1(ref: string): { row: number; col: number } | null {

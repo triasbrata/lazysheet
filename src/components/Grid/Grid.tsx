@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { SheetModel } from "@/lib/types";
+import { toast } from "sonner";
+import { cellText, type CellModel, type SheetModel } from "@/lib/types";
 import { Cell } from "./Cell";
 import {
   ContextMenu,
@@ -13,7 +14,9 @@ import {
 import {
   boundsInclude,
   buildMergeInfo,
+  clampResize,
   columnLetter,
+  DEFAULT_COL_WIDTH,
   DEFAULT_ROW_HEIGHT,
   effectiveColWidth,
   effectiveRowHeight,
@@ -28,12 +31,22 @@ import {
   nextVisibleRow,
   resolveActiveCoords,
   ROW_NUM_COL_WIDTH,
+  sampleRowIndices,
   selectionBounds,
+  selectionColRange,
+  selectionRowRange,
   type Bounds,
   type MergeInfo,
   type Selection,
 } from "./grid-utils";
 import { ResizeHandle, type ResizeOrientation } from "./ResizeHandle";
+import {
+  awaitFontsReady,
+  measureAutofitColumn,
+  measureAutofitRow,
+  sampleCellFont,
+  type MeasureOptions,
+} from "@/lib/measure";
 
 export type { Selection } from "./grid-utils";
 
@@ -68,6 +81,9 @@ interface GridProps {
   onColReset?: (col: number) => void;
   onRowReset?: (row: number) => void;
   onResetAllDimensions?: () => void;
+  // Manual-input dialog open callbacks (App owns dialog state).
+  onOpenColWidthDialog?: (col: number) => void;
+  onOpenRowHeightDialog?: (row: number) => void;
 }
 
 type DragMode = "cell" | "rowHeader" | "colHeader";
@@ -102,6 +118,8 @@ export function Grid({
   onColReset,
   onRowReset,
   onResetAllDimensions,
+  onOpenColWidthDialog,
+  onOpenRowHeightDialog,
 }: GridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalRows = sheet.rows.length;
@@ -157,6 +175,176 @@ export function Grid({
       }
     },
     [onColResize, onRowResize],
+  );
+
+  // ── Autofit orchestrator ────────────────────────────────────────────────
+  // Extract per-cell measurement options from a CellModel's style overrides.
+  // Returns undefined when the cell carries no style worth merging.
+  const cellMeasureOpts = useCallback(
+    (cell: CellModel | undefined): Partial<MeasureOptions> | undefined => {
+      const s = cell?.s;
+      if (!s) return undefined;
+      const out: Partial<MeasureOptions> = {};
+      if (s.font_size !== undefined) out.fontSize = s.font_size;
+      if (s.font_name) out.fontFamily = s.font_name;
+      if (s.bold) out.fontWeight = 700;
+      if (s.wrap) out.wrap = true;
+      return Object.keys(out).length > 0 ? out : undefined;
+    },
+    [],
+  );
+
+  // Compute fit-to-content width for one column. Returns 0 when the column is
+  // empty so the caller can fall back to the default width.
+  //
+  // `baseFont` comes from a live cell's computed style so measurement matches
+  // what the user sees. Without this, the measurement element inherits from
+  // <body> — which may still be on a fallback font before Geist resolves,
+  // producing widths ~16–20% narrower than the actual render.
+  const computeAutofitColWidth = useCallback(
+    (colIdx: number, baseFont: MeasureOptions): number => {
+      if (colIdx < 0 || colIdx >= totalCols) return 0;
+      const sampleRows = sampleRowIndices(totalRows);
+      const texts: string[] = [];
+      const perCell: Array<Partial<MeasureOptions> | undefined> = [];
+      const colHasWrap = sheet.rows.some((r) => r?.[colIdx]?.s?.wrap);
+      for (const r of sampleRows) {
+        const c = sheet.rows[r]?.[colIdx];
+        if (!c) {
+          texts.push("");
+          perCell.push(undefined);
+          continue;
+        }
+        texts.push(cellText(c));
+        perCell.push(cellMeasureOpts(c));
+      }
+      const base: MeasureOptions = { ...baseFont, wrap: colHasWrap };
+      return measureAutofitColumn(texts, base, perCell);
+    },
+    [sheet, totalRows, totalCols, cellMeasureOpts],
+  );
+
+  // Compute fit-to-content height for one row. Uses current effective column
+  // widths so wrap-on cells produce their actual rendered height. Returns 0
+  // when the row has no content.
+  const computeAutofitRowHeight = useCallback(
+    (rowIdx: number, baseFont: MeasureOptions): number => {
+      if (rowIdx < 0 || rowIdx >= totalRows) return 0;
+      const row = sheet.rows[rowIdx];
+      if (!row) return 0;
+      const texts: string[] = [];
+      const perCell: Array<Partial<MeasureOptions> | undefined> = [];
+      const widthsForMeasure: number[] = [];
+      for (let c = 0; c < totalCols; c++) {
+        const cell = row[c];
+        texts.push(cell ? cellText(cell) : "");
+        perCell.push(cellMeasureOpts(cell));
+        widthsForMeasure.push(widths[c] ?? DEFAULT_COL_WIDTH);
+      }
+      const base: MeasureOptions = {
+        ...baseFont,
+        wrap: row.some((cc) => cc?.s?.wrap),
+      };
+      return measureAutofitRow(texts, widthsForMeasure, base, perCell);
+    },
+    [sheet, totalRows, totalCols, widths, cellMeasureOpts],
+  );
+
+  const handleAutofitCols = useCallback(
+    (cols: number[]) => {
+      if (cols.length === 0) return;
+      const unique = Array.from(new Set(cols)).filter(
+        (c) => c >= 0 && c < totalCols,
+      );
+      if (unique.length === 0) return;
+      // Wait for fonts to resolve so measurement uses the real Geist glyphs,
+      // not the fallback. Then sample the actual computed font from a live
+      // cell — body font may still report the fallback during the first
+      // microtasks after fonts.ready resolves.
+      void awaitFontsReady().then(() => {
+        const baseFont: MeasureOptions = sampleCellFont();
+        let applied = 0;
+        let reset = 0;
+        for (const col of unique) {
+          const measured = computeAutofitColWidth(col, baseFont);
+          if (measured <= 0) {
+            if (onColReset) {
+              onColReset(col);
+              reset++;
+            }
+            continue;
+          }
+          const w = clampResize(Math.ceil(measured));
+          onColResize?.(col, w);
+          applied++;
+        }
+        const total = applied + reset;
+        if (total === 0) return;
+        const label = total === 1 ? "1 column" : `${total} columns`;
+        toast.success(`Autofit ${label}`);
+      });
+    },
+    [totalCols, computeAutofitColWidth, onColResize, onColReset],
+  );
+
+  const handleAutofitRows = useCallback(
+    (rows: number[]) => {
+      if (rows.length === 0) return;
+      const unique = Array.from(new Set(rows)).filter(
+        (r) => r >= 0 && r < totalRows,
+      );
+      if (unique.length === 0) return;
+      void awaitFontsReady().then(() => {
+        const baseFont: MeasureOptions = sampleCellFont();
+        let applied = 0;
+        let reset = 0;
+        for (const row of unique) {
+          const measured = computeAutofitRowHeight(row, baseFont);
+          if (measured <= 0) {
+            if (onRowReset) {
+              onRowReset(row);
+              reset++;
+            }
+            continue;
+          }
+          const h = clampResize(Math.ceil(measured));
+          onRowResize?.(row, h);
+          applied++;
+        }
+        const total = applied + reset;
+        if (total === 0) return;
+        const label = total === 1 ? "1 row" : `${total} rows`;
+        toast.success(`Autofit ${label}`);
+      });
+    },
+    [totalRows, computeAutofitRowHeight, onRowResize, onRowReset],
+  );
+
+  // ResizeHandle dblclick entry point. Expands to selection range when the
+  // user has selected multiple cols/rows and the target lies within.
+  const handleResizeAutofit = useCallback(
+    (orientation: ResizeOrientation, idx: number) => {
+      if (orientation === "col") {
+        const range = selectionColRange(selectionRef.current, totalCols);
+        if (range && idx >= range[0] && idx <= range[1]) {
+          const cols: number[] = [];
+          for (let c = range[0]; c <= range[1]; c++) cols.push(c);
+          handleAutofitCols(cols);
+        } else {
+          handleAutofitCols([idx]);
+        }
+        return;
+      }
+      const range = selectionRowRange(selectionRef.current, totalRows);
+      if (range && idx >= range[0] && idx <= range[1]) {
+        const rows: number[] = [];
+        for (let r = range[0]; r <= range[1]; r++) rows.push(r);
+        handleAutofitRows(rows);
+      } else {
+        handleAutofitRows([idx]);
+      }
+    },
+    [totalCols, totalRows, handleAutofitCols, handleAutofitRows],
   );
 
   const cumColX = useMemo(() => {
@@ -795,7 +983,21 @@ export function Grid({
   // Invalidate virtualizer measurements on commit (rowOverrides change),
   // NOT on rowPreview — keeps drag at 60fps; tiny visual mismatch during
   // drag is acceptable, snaps correct on release.
+  //
+  // `rowVirtualizer.measure()` alone re-layouts using existing
+  // measurementsCache and itemSizeCache (TanStack caches per-row
+  // getBoundingClientRect results). After autofit, cached rects are stale
+  // until the row is scrolled out and back in. Force-clear both caches so
+  // estimateSize (which now reflects new overrides) takes effect immediately
+  // and measureElement re-runs on the next render.
   useEffect(() => {
+    type VWithCache = {
+      measurementsCache: unknown[];
+      itemSizeCache?: { clear?: () => void };
+    };
+    const v = rowVirtualizer as unknown as VWithCache;
+    v.itemSizeCache?.clear?.();
+    v.measurementsCache = [];
     rowVirtualizer.measure();
   }, [rowOverrides, rowVirtualizer]);
 
@@ -917,6 +1119,7 @@ export function Grid({
                     disabled={resizeDisabled}
                     onPreview={handleResizePreview}
                     onCommit={handleResizeCommit}
+                    onAutofit={handleResizeAutofit}
                   />
                 )}
               </div>
@@ -1119,6 +1322,58 @@ export function Grid({
                 : undefined
             }
             onResetAllDimensions={onResetAllDimensions}
+            multiColCount={(() => {
+              if (menuCtx?.type !== "col") return undefined;
+              const range = selectionColRange(selection ?? null, totalCols);
+              if (!range || menuCtx.col < range[0] || menuCtx.col > range[1]) {
+                return undefined;
+              }
+              return range[1] - range[0] + 1;
+            })()}
+            multiRowCount={(() => {
+              if (menuCtx?.type !== "row") return undefined;
+              const range = selectionRowRange(selection ?? null, totalRows);
+              if (!range || menuCtx.row < range[0] || menuCtx.row > range[1]) {
+                return undefined;
+              }
+              return range[1] - range[0] + 1;
+            })()}
+            onAutofitCol={(() => {
+              if (menuCtx?.type === "col") {
+                return () => handleResizeAutofit("col", menuCtx.col);
+              }
+              if (menuCtx?.type === "cell") {
+                return () => handleAutofitCols([menuCtx.col]);
+              }
+              return undefined;
+            })()}
+            onAutofitRow={(() => {
+              if (menuCtx?.type === "row") {
+                return () => handleResizeAutofit("row", menuCtx.row);
+              }
+              if (menuCtx?.type === "cell") {
+                return () => handleAutofitRows([menuCtx.row]);
+              }
+              return undefined;
+            })()}
+            onOpenColWidthDialog={
+              (menuCtx?.type === "col" || menuCtx?.type === "cell") &&
+              onOpenColWidthDialog
+                ? () =>
+                    onOpenColWidthDialog(
+                      menuCtx.type === "col" ? menuCtx.col : menuCtx.col,
+                    )
+                : undefined
+            }
+            onOpenRowHeightDialog={
+              (menuCtx?.type === "row" || menuCtx?.type === "cell") &&
+              onOpenRowHeightDialog
+                ? () =>
+                    onOpenRowHeightDialog(
+                      menuCtx.type === "row" ? menuCtx.row : menuCtx.row,
+                    )
+                : undefined
+            }
           />
         </ContextMenu>
       </div>

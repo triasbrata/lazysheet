@@ -13,10 +13,16 @@ import {
 import { FindBar } from "@/components/FindBar";
 import {
   buildMergeInfo,
+  effectiveColWidth,
+  effectiveRowHeight,
   expandBoundsForMerges,
   parseA1,
   selectionBounds,
 } from "@/components/Grid/grid-utils";
+import {
+  ResizeDialog,
+  type SizeDialogState,
+} from "@/components/ResizeDialog";
 import { useWorkbook } from "@/hooks/useWorkbook";
 import { useFileEvents } from "@/hooks/useFileEvents";
 import { useFileState } from "@/hooks/useFileState";
@@ -516,6 +522,50 @@ function App() {
     fileState.resetAllDimensions(activeSheetName);
   }, [activeSheetName, fileState]);
 
+  // ── Manual-size input dialog ────────────────────────────────────────────
+  const [sizeDialog, setSizeDialog] = useState<SizeDialogState>(null);
+
+  const handleOpenColWidthDialog = useCallback(
+    (col: number) => {
+      if (!activeSheet) return;
+      const current = effectiveColWidth(activeSheet, col, colOverrides);
+      setSizeDialog({ kind: "col", index: col, current });
+    },
+    [activeSheet, colOverrides],
+  );
+
+  const handleOpenRowHeightDialog = useCallback(
+    (row: number) => {
+      if (!activeSheet) return;
+      const current = effectiveRowHeight(activeSheet, row, rowOverrides);
+      setSizeDialog({ kind: "row", index: row, current });
+    },
+    [activeSheet, rowOverrides],
+  );
+
+  const handleSizeDialogConfirm = useCallback(
+    (value: number) => {
+      if (!sizeDialog) return;
+      if (sizeDialog.kind === "col") {
+        handleColResize(sizeDialog.index, value);
+      } else {
+        handleRowResize(sizeDialog.index, value);
+      }
+      setSizeDialog(null);
+    },
+    [sizeDialog, handleColResize, handleRowResize],
+  );
+
+  const handleSizeDialogReset = useCallback(() => {
+    if (!sizeDialog) return;
+    if (sizeDialog.kind === "col") {
+      handleColReset(sizeDialog.index);
+    } else {
+      handleRowReset(sizeDialog.index);
+    }
+    setSizeDialog(null);
+  }, [sizeDialog, handleColReset, handleRowReset]);
+
   const copyMarkdown = useCallback(
     async (format: MarkdownFormat) => {
       const sheet = wb.activeSheet;
@@ -621,6 +671,8 @@ function App() {
               onColReset={handleColReset}
               onRowReset={handleRowReset}
               onResetAllDimensions={handleResetAllDimensions}
+              onOpenColWidthDialog={handleOpenColWidthDialog}
+              onOpenRowHeightDialog={handleOpenRowHeightDialog}
             />
           )}
           <StatusBar
@@ -664,6 +716,13 @@ function App() {
         onModeChange={setPaletteMode}
         onGoto={handleGoto}
         onOpenSummary={handleOpenSummary}
+      />
+
+      <ResizeDialog
+        state={sizeDialog}
+        onConfirm={handleSizeDialogConfirm}
+        onReset={handleSizeDialogReset}
+        onCancel={() => setSizeDialog(null)}
       />
     </div>
   );

@@ -25,6 +25,9 @@ interface ResizeHandleProps {
     index: number,
     size: number,
   ) => void;
+  // Excel-style autofit: double-click on the handle fits the col/row to its
+  // content. Optional — when absent the dblclick is a no-op.
+  onAutofit?: (orientation: ResizeOrientation, index: number) => void;
 }
 
 export function ResizeHandle({
@@ -34,6 +37,7 @@ export function ResizeHandle({
   disabled,
   onPreview,
   onCommit,
+  onAutofit,
 }: ResizeHandleProps) {
   const dragRef = useRef<DragState | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -113,6 +117,19 @@ export function ResizeHandle({
     [finishDrag],
   );
 
+  // React synthetic dblclick fires after both pointerups complete — safe to
+  // attach without conflicting with the drag handlers above.
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (disabled) return;
+      if (!onAutofit) return;
+      e.preventDefault();
+      e.stopPropagation();
+      onAutofit(orientation, index);
+    },
+    [disabled, onAutofit, orientation, index],
+  );
+
   useEffect(() => {
     return () => {
       if (dragRef.current) {
@@ -163,6 +180,8 @@ export function ResizeHandle({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onDoubleClick={handleDoubleClick}
+      title={onAutofit ? "Drag to resize · Double-click to autofit" : undefined}
     >
       <div className={lineClass} />
     </div>

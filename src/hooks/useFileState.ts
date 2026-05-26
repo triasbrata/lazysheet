@@ -134,10 +134,18 @@ export function useFileState(path: string | null): UseFileStateApi {
   const debounceRef = useRef<number | null>(null);
   const pendingAnchorRef = useRef<{ sheet: string; anchor: PersistedAnchor } | null>(null);
 
-  const commit = useCallback((next: Store) => {
-    const evicted = evictLRU(next);
-    saveStore(evicted);
-    setStore(evicted);
+  // Functional commit — receives prev store, returns next. Required so
+  // multiple synchronous calls within a single tick (e.g. multi-row autofit)
+  // each see the updated store from the previous call, instead of all
+  // capturing the same stale closure value and overwriting each other.
+  const commit = useCallback((updater: (prev: Store) => Store) => {
+    setStore((prev) => {
+      const next = updater(prev);
+      if (next === prev) return prev;
+      const evicted = evictLRU(next);
+      saveStore(evicted);
+      return evicted;
+    });
   }, []);
 
   const state = useMemo<PersistedFileState | null>(() => {
@@ -172,24 +180,26 @@ export function useFileState(path: string | null): UseFileStateApi {
   const setHeader = useCallback(
     (sheetName: string, row: number | null) => {
       if (!path) return;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const sheet = { ...(entry.sheets[sheetName] ?? {}) };
-      if (row === null) {
-        delete sheet.headerRow;
-      } else {
-        sheet.headerRow = row;
-      }
-      if (sheetIsEmpty(sheet)) {
-        delete entry.sheets[sheetName];
-      } else {
-        entry.sheets[sheetName] = sheet;
-      }
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const sheet = { ...(entry.sheets[sheetName] ?? {}) };
+        if (row === null) {
+          delete sheet.headerRow;
+        } else {
+          sheet.headerRow = row;
+        }
+        if (sheetIsEmpty(sheet)) {
+          delete entry.sheets[sheetName];
+        } else {
+          entry.sheets[sheetName] = sheet;
+        }
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const flushAnchor = useCallback(() => {
@@ -197,15 +207,17 @@ export function useFileState(path: string | null): UseFileStateApi {
     const pending = pendingAnchorRef.current;
     pendingAnchorRef.current = null;
     if (!pending || !path) return;
-    const next: Store = { ...store };
-    const entry = ensureEntry(next, path);
-    const sheet = { ...(entry.sheets[pending.sheet] ?? {}) };
-    sheet.anchor = pending.anchor;
-    entry.sheets[pending.sheet] = sheet;
-    entry.updatedAt = Date.now();
-    next[path] = entry;
-    commit(next);
-  }, [store, path, commit]);
+    commit((prev) => {
+      const next: Store = { ...prev };
+      const entry = ensureEntry(next, path);
+      const sheet = { ...(entry.sheets[pending.sheet] ?? {}) };
+      sheet.anchor = pending.anchor;
+      entry.sheets[pending.sheet] = sheet;
+      entry.updatedAt = Date.now();
+      next[path] = entry;
+      return next;
+    });
+  }, [path, commit]);
 
   const setAnchor = useCallback(
     (sheetName: string, anchor: PersistedAnchor) => {
@@ -222,15 +234,17 @@ export function useFileState(path: string | null): UseFileStateApi {
   const setActiveSheet = useCallback(
     (sheetName: string) => {
       if (!path) return;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      if (entry.lastActiveSheet === sheetName) return;
-      entry.lastActiveSheet = sheetName;
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        if (entry.lastActiveSheet === sheetName) return prev;
+        entry.lastActiveSheet = sheetName;
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const getColOverrides = useCallback(
@@ -259,119 +273,126 @@ export function useFileState(path: string | null): UseFileStateApi {
     (sheetName: string, sheet: SheetModel, col: number, width: number) => {
       if (!path) return;
       const fp = sheetFingerprint(sheet);
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      const prev = ss.col_widths;
-      const baseValues =
-        prev && prev.fp === fp ? { ...prev.values } : {};
-      baseValues[col] = width;
-      ss.col_widths = { fp, values: baseValues };
-      entry.sheets[sheetName] = ss;
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        const prevBlock = ss.col_widths;
+        const baseValues =
+          prevBlock && prevBlock.fp === fp ? { ...prevBlock.values } : {};
+        baseValues[col] = width;
+        ss.col_widths = { fp, values: baseValues };
+        entry.sheets[sheetName] = ss;
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const setRowHeight = useCallback(
     (sheetName: string, sheet: SheetModel, row: number, height: number) => {
       if (!path) return;
       const fp = sheetFingerprint(sheet);
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      const prev = ss.row_heights;
-      const baseValues =
-        prev && prev.fp === fp ? { ...prev.values } : {};
-      baseValues[row] = height;
-      ss.row_heights = { fp, values: baseValues };
-      entry.sheets[sheetName] = ss;
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        const prevBlock = ss.row_heights;
+        const baseValues =
+          prevBlock && prevBlock.fp === fp ? { ...prevBlock.values } : {};
+        baseValues[row] = height;
+        ss.row_heights = { fp, values: baseValues };
+        entry.sheets[sheetName] = ss;
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const resetColWidth = useCallback(
     (sheetName: string, col: number) => {
       if (!path) return;
-      const entry0 = store[path];
-      const block = entry0?.sheets?.[sheetName]?.col_widths;
-      if (!block || block.values[col] === undefined) return;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      const nextValues = { ...block.values };
-      delete nextValues[col];
-      if (Object.keys(nextValues).length === 0) {
-        delete ss.col_widths;
-      } else {
-        ss.col_widths = { fp: block.fp, values: nextValues };
-      }
-      if (sheetIsEmpty(ss)) {
-        delete entry.sheets[sheetName];
-      } else {
-        entry.sheets[sheetName] = ss;
-      }
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const block = prev[path]?.sheets?.[sheetName]?.col_widths;
+        if (!block || block.values[col] === undefined) return prev;
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        const nextValues = { ...block.values };
+        delete nextValues[col];
+        if (Object.keys(nextValues).length === 0) {
+          delete ss.col_widths;
+        } else {
+          ss.col_widths = { fp: block.fp, values: nextValues };
+        }
+        if (sheetIsEmpty(ss)) {
+          delete entry.sheets[sheetName];
+        } else {
+          entry.sheets[sheetName] = ss;
+        }
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const resetRowHeight = useCallback(
     (sheetName: string, row: number) => {
       if (!path) return;
-      const entry0 = store[path];
-      const block = entry0?.sheets?.[sheetName]?.row_heights;
-      if (!block || block.values[row] === undefined) return;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      const nextValues = { ...block.values };
-      delete nextValues[row];
-      if (Object.keys(nextValues).length === 0) {
-        delete ss.row_heights;
-      } else {
-        ss.row_heights = { fp: block.fp, values: nextValues };
-      }
-      if (sheetIsEmpty(ss)) {
-        delete entry.sheets[sheetName];
-      } else {
-        entry.sheets[sheetName] = ss;
-      }
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const block = prev[path]?.sheets?.[sheetName]?.row_heights;
+        if (!block || block.values[row] === undefined) return prev;
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        const nextValues = { ...block.values };
+        delete nextValues[row];
+        if (Object.keys(nextValues).length === 0) {
+          delete ss.row_heights;
+        } else {
+          ss.row_heights = { fp: block.fp, values: nextValues };
+        }
+        if (sheetIsEmpty(ss)) {
+          delete entry.sheets[sheetName];
+        } else {
+          entry.sheets[sheetName] = ss;
+        }
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const resetAllDimensions = useCallback(
     (sheetName: string) => {
       if (!path) return;
-      const entry0 = store[path];
-      const ss0 = entry0?.sheets?.[sheetName];
-      if (!ss0 || (!ss0.col_widths && !ss0.row_heights)) return;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      delete ss.col_widths;
-      delete ss.row_heights;
-      if (sheetIsEmpty(ss)) {
-        delete entry.sheets[sheetName];
-      } else {
-        entry.sheets[sheetName] = ss;
-      }
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const ss0 = prev[path]?.sheets?.[sheetName];
+        if (!ss0 || (!ss0.col_widths && !ss0.row_heights)) return prev;
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        delete ss.col_widths;
+        delete ss.row_heights;
+        if (sheetIsEmpty(ss)) {
+          delete entry.sheets[sheetName];
+        } else {
+          entry.sheets[sheetName] = ss;
+        }
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const detectStaleOverrides = useCallback(
@@ -391,61 +412,63 @@ export function useFileState(path: string | null): UseFileStateApi {
   const reapplyStaleOverrides = useCallback(
     (sheetName: string, sheet: SheetModel) => {
       if (!path) return;
-      const entry0 = store[path];
-      const ss0 = entry0?.sheets?.[sheetName];
-      if (!ss0) return;
       const fp = sheetFingerprint(sheet);
-      let changed = false;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      if (ss.col_widths && ss.col_widths.fp !== fp) {
-        ss.col_widths = { fp, values: ss.col_widths.values };
-        changed = true;
-      }
-      if (ss.row_heights && ss.row_heights.fp !== fp) {
-        ss.row_heights = { fp, values: ss.row_heights.values };
-        changed = true;
-      }
-      if (!changed) return;
-      entry.sheets[sheetName] = ss;
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const ss0 = prev[path]?.sheets?.[sheetName];
+        if (!ss0) return prev;
+        let changed = false;
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        if (ss.col_widths && ss.col_widths.fp !== fp) {
+          ss.col_widths = { fp, values: ss.col_widths.values };
+          changed = true;
+        }
+        if (ss.row_heights && ss.row_heights.fp !== fp) {
+          ss.row_heights = { fp, values: ss.row_heights.values };
+          changed = true;
+        }
+        if (!changed) return prev;
+        entry.sheets[sheetName] = ss;
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   const discardStaleOverrides = useCallback(
     (sheetName: string, sheet: SheetModel) => {
       if (!path) return;
-      const entry0 = store[path];
-      const ss0 = entry0?.sheets?.[sheetName];
-      if (!ss0 || (!ss0.col_widths && !ss0.row_heights)) return;
       const fp = sheetFingerprint(sheet);
-      let changed = false;
-      const next: Store = { ...store };
-      const entry = ensureEntry(next, path);
-      const ss = { ...(entry.sheets[sheetName] ?? {}) };
-      if (ss.col_widths && ss.col_widths.fp !== fp) {
-        delete ss.col_widths;
-        changed = true;
-      }
-      if (ss.row_heights && ss.row_heights.fp !== fp) {
-        delete ss.row_heights;
-        changed = true;
-      }
-      if (!changed) return;
-      if (sheetIsEmpty(ss)) {
-        delete entry.sheets[sheetName];
-      } else {
-        entry.sheets[sheetName] = ss;
-      }
-      entry.updatedAt = Date.now();
-      next[path] = entry;
-      commit(next);
+      commit((prev) => {
+        const ss0 = prev[path]?.sheets?.[sheetName];
+        if (!ss0 || (!ss0.col_widths && !ss0.row_heights)) return prev;
+        let changed = false;
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        const ss = { ...(entry.sheets[sheetName] ?? {}) };
+        if (ss.col_widths && ss.col_widths.fp !== fp) {
+          delete ss.col_widths;
+          changed = true;
+        }
+        if (ss.row_heights && ss.row_heights.fp !== fp) {
+          delete ss.row_heights;
+          changed = true;
+        }
+        if (!changed) return prev;
+        if (sheetIsEmpty(ss)) {
+          delete entry.sheets[sheetName];
+        } else {
+          entry.sheets[sheetName] = ss;
+        }
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
     },
-    [store, path, commit],
+    [path, commit],
   );
 
   useEffect(() => {
