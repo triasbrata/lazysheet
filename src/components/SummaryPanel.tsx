@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ChevronDown,
   ChevronRight,
   Copy,
+  ImageDown,
   Plus,
   Sigma,
   X,
 } from "lucide-react";
+import { copyNodeAsImage } from "@/lib/copy-as-image";
 import type { SheetModel } from "@/lib/types";
 import type { Selection } from "@/components/Grid/Grid";
 import {
@@ -339,6 +341,7 @@ export function SummaryPanel({
   const [viewMode, setViewMode] = useState<"tree" | "flat">("tree");
   const [includeSubtotals, setIncludeSubtotals] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset on bounds shape change.
   useEffect(() => {
@@ -466,6 +469,40 @@ export function SummaryPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, catLabels.join("|"), valueHeader]);
+
+  const handleCopyImage = useCallback(async () => {
+    if (result.rows.length === 0 || result.tooLarge) {
+      toast.message("Nothing to copy");
+      return;
+    }
+    const node = tableContainerRef.current;
+    if (!node) {
+      toast.error("Copy failed", { description: "Table not ready" });
+      return;
+    }
+
+    const originalMaxHeight = node.style.maxHeight;
+    const originalOverflow = node.style.overflow;
+    node.style.maxHeight = "none";
+    node.style.overflow = "visible";
+
+    try {
+      const res = await copyNodeAsImage(node);
+      if (res.ok) {
+        const suffix = result.truncated ? " (truncated)" : "";
+        toast.success(
+          `Copied ${result.totalGroups} group${result.totalGroups === 1 ? "" : "s"} as image${suffix}`,
+        );
+      } else {
+        toast.error("Copy failed", {
+          description: res.error ?? "Unknown error",
+        });
+      }
+    } finally {
+      node.style.maxHeight = originalMaxHeight;
+      node.style.overflow = originalOverflow;
+    }
+  }, [result]);
 
   // Category picker handlers.
   const updateCategoryCol = useCallback((idx: number, newCol: number) => {
@@ -699,6 +736,17 @@ export function SummaryPanel({
             <Button
               type="button"
               variant="ghost"
+              size="xs"
+              onClick={handleCopyImage}
+              disabled={result.rows.length === 0 || result.tooLarge}
+              title="Copy summary table as PNG image"
+            >
+              <ImageDown className="h-3 w-3" />
+              <span>Image</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               size="icon-xs"
               onClick={onClose}
               title="Close (Esc)"
@@ -710,7 +758,7 @@ export function SummaryPanel({
         </div>
       </div>
 
-      <div className="max-h-64 overflow-auto">
+      <div ref={tableContainerRef} className="max-h-64 overflow-auto">
         {result.tooLarge ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
             Selection too large to summarize. Pick a smaller range.
