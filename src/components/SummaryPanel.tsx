@@ -9,6 +9,20 @@ import {
   Sigma,
   X,
 } from "lucide-react";
+
+type CopyFormat = "markdown" | "tsv" | "image";
+const COPY_FORMAT_KEY = "summary-panel:copy-format";
+const DEFAULT_COPY_FORMAT: CopyFormat = "markdown";
+
+function readStoredCopyFormat(): CopyFormat {
+  try {
+    const v = localStorage.getItem(COPY_FORMAT_KEY);
+    if (v === "markdown" || v === "tsv" || v === "image") return v;
+  } catch {
+    // ignore
+  }
+  return DEFAULT_COPY_FORMAT;
+}
 import { copyNodeAsImage } from "@/lib/copy-as-image";
 import type { SheetModel } from "@/lib/types";
 import type { Selection } from "@/components/Grid/Grid";
@@ -341,7 +355,16 @@ export function SummaryPanel({
   const [viewMode, setViewMode] = useState<"tree" | "flat">("tree");
   const [includeSubtotals, setIncludeSubtotals] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [copyFormat, setCopyFormat] = useState<CopyFormat>(readStoredCopyFormat);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COPY_FORMAT_KEY, copyFormat);
+    } catch {
+      // ignore
+    }
+  }, [copyFormat]);
 
   // Reset on bounds shape change.
   useEffect(() => {
@@ -503,6 +526,30 @@ export function SummaryPanel({
       node.style.overflow = originalOverflow;
     }
   }, [result]);
+
+  const effectiveCopyFormat: CopyFormat =
+    copyFormat === "image" && result.tooLarge ? "markdown" : copyFormat;
+
+  const handleCopySelected = useCallback(() => {
+    if (effectiveCopyFormat === "markdown") void handleCopyMarkdown();
+    else if (effectiveCopyFormat === "tsv") void handleCopyTSV();
+    else void handleCopyImage();
+  }, [
+    effectiveCopyFormat,
+    handleCopyMarkdown,
+    handleCopyTSV,
+    handleCopyImage,
+  ]);
+
+  const onPickCopyFormat = useCallback(
+    (next: CopyFormat) => {
+      setCopyFormat(next);
+      if (next === "markdown") void handleCopyMarkdown();
+      else if (next === "tsv") void handleCopyTSV();
+      else void handleCopyImage();
+    },
+    [handleCopyMarkdown, handleCopyTSV, handleCopyImage],
+  );
 
   // Category picker handlers.
   const updateCategoryCol = useCallback((idx: number, newCol: number) => {
@@ -711,39 +758,81 @@ export function SummaryPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleCopyMarkdown}
-              disabled={result.rows.length === 0}
-              title="Copy as Markdown table"
-            >
-              <Copy className="h-3 w-3" />
-              <span>Markdown</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleCopyTSV}
-              disabled={result.rows.length === 0}
-              title="Copy as TSV"
-            >
-              <Copy className="h-3 w-3" />
-              <span>TSV</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleCopyImage}
-              disabled={result.rows.length === 0 || result.tooLarge}
-              title="Copy summary table as PNG image"
-            >
-              <ImageDown className="h-3 w-3" />
-              <span>Image</span>
-            </Button>
+            <div className="inline-flex items-stretch overflow-hidden rounded-md border border-border">
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={handleCopySelected}
+                disabled={
+                  result.rows.length === 0 ||
+                  (effectiveCopyFormat === "image" && result.tooLarge)
+                }
+                className="rounded-none border-0"
+                title={`Copy as ${
+                  effectiveCopyFormat === "markdown"
+                    ? "Markdown"
+                    : effectiveCopyFormat === "tsv"
+                      ? "TSV"
+                      : "Image"
+                }`}
+              >
+                {effectiveCopyFormat === "image" ? (
+                  <ImageDown className="h-3 w-3" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+                <span>
+                  Copy{" "}
+                  {effectiveCopyFormat === "markdown"
+                    ? "Markdown"
+                    : effectiveCopyFormat === "tsv"
+                      ? "TSV"
+                      : "Image"}
+                </span>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={result.rows.length === 0}
+                    className="rounded-none border-0 border-l border-border"
+                    title="Choose copy format"
+                    aria-label="Choose copy format"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-36 min-w-36"
+                >
+                  <DropdownMenuRadioGroup
+                    value={copyFormat}
+                    onValueChange={(v) => onPickCopyFormat(v as CopyFormat)}
+                  >
+                    <DropdownMenuRadioItem
+                      value="markdown"
+                      className="text-xs"
+                    >
+                      <Copy className="size-3" /> Markdown
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="tsv" className="text-xs">
+                      <Copy className="size-3" /> TSV
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem
+                      value="image"
+                      disabled={result.tooLarge}
+                      className="text-xs"
+                    >
+                      <ImageDown className="size-3" /> Image
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button
               type="button"
               variant="ghost"
