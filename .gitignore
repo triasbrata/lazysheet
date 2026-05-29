@@ -29,3 +29,4 @@ src-tauri/target/
 # RPI / Claude
 .rpi/
 .claude/
+.envrc

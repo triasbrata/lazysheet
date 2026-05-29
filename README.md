@@ -4,7 +4,9 @@
 
 # LazySheet
 
-A fast, native desktop viewer for Excel and CSV files — with pivot-style group-by summaries built in.
+### Fast. Simple. Spreadsheet Viewer.
+
+Connect to Excel and CSV files, browse sheets, and run pivot-style summaries with ease.
 
 <img src="website/example/lazy/application%20summary.png" alt="LazySheet screenshot" width="820" />
 
