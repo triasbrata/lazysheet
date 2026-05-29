@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ── Stitch "Precision Engineering" palette ── */
+  --st-primary: #0058c3;
+  --st-primary-container: #0070f3;
+  --st-primary-fixed: #d8e2ff;
+  --st-on-surface: #1b1c1c;
+  --st-on-surface-variant: #414754;
+  --st-surface-container-low: #f5f3f3;
+  --st-surface-container-high: #e9e8e7;
+  --st-surface-container-highest: #e4e2e2;
+  --st-secondary: #585f66;
+  --st-secondary-container: #dce3eb;
+  --st-on-secondary-container: #5e656c;
+  --st-green: #2d897c;
+
+  /* ── shadcn tokens mapped onto the stitch palette ── */
+  --background: #ffffff;
+  --foreground: #1b1c1c;
+  --card: #ffffff;
+  --card-foreground: #1b1c1c;
+  --popover: #ffffff;
+  --popover-foreground: #1b1c1c;
+  --primary: #0058c3;
+  --primary-foreground: #ffffff;
+  --secondary: #dce3eb;
+  --secondary-foreground: #5e656c;
+  --muted: #f5f3f3;
+  --muted-foreground: #414754;
+  --accent: #d8e2ff;
+  --accent-foreground: #0058c3;
+  --destructive: #ba1a1a;
+  --destructive-foreground: #ffffff;
+  --border: #e9e8e7;
+  --input: #e9e8e7;
+  --ring: #0058c3;
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* stitch helpers exposed as utilities */
+  --color-primary-fixed: var(--st-primary-fixed);
+  --color-on-surface: var(--st-on-surface);
+  --color-on-surface-variant: var(--st-on-surface-variant);
+  --color-surface-container-low: var(--st-surface-container-low);
+  --color-surface-container-high: var(--st-surface-container-high);
+  --color-surface-container-highest: var(--st-surface-container-highest);
+  --color-secondary-container: var(--st-secondary-container);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    margin: 0;
+    background-color: #ffffff;
+    color: var(--st-on-surface);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ── stitch helpers ── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at 50% -20%, #d8e2ff 0%, #ffffff 60%);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+.feature-card {
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
