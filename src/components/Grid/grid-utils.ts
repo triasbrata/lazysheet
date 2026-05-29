@@ -341,6 +341,21 @@ export function selectionRowRange(s: Selection | null, totalRows: number): [numb
   return null;
 }
 
+/** Row indices whose override value changed (added, changed, or removed) between two override maps. */
+export function changedRowIndices(
+  prev: Record<number, number> | undefined,
+  cur: Record<number, number> | undefined,
+): number[] {
+  const p = prev ?? {};
+  const c = cur ?? {};
+  const keys = new Set<number>();
+  for (const k of Object.keys(p)) keys.add(Number(k));
+  for (const k of Object.keys(c)) keys.add(Number(k));
+  const out: number[] = [];
+  for (const k of keys) if (p[k] !== c[k]) out.push(k);
+  return out;
+}
+
 export function parseA1(ref: string): { row: number; col: number } | null {
   const m = ref.trim().match(/^([A-Za-z]+)(\d+)$/);
   if (!m) return null;

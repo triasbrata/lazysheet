@@ -30,9 +30,23 @@ import { pickFile } from "@/lib/tauri-api";
 import { cellText } from "@/lib/types";
 import {
   buildSelectionMarkdown,
-  type MarkdownFormat,
+  type CopyFormat,
 } from "@/lib/markdown-export";
+import {
+  DEFAULT_COPY_FORMAT_KEY,
+  readStoredDefaultCopyFormat,
+} from "@/lib/copy-format-pref";
 import { SummaryPanel } from "@/components/SummaryPanel";
+
+const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
+  inline: "markdown",
+  title: "markdown title",
+  table: "markdown table",
+  ascii: "ASCII table",
+  csv: "CSV",
+  tsv: "TSV",
+  plain: "plain text",
+};
 
 function findNextAfterAnchor(
   matches: GridMatch[],
@@ -566,8 +580,21 @@ function App() {
     setSizeDialog(null);
   }, [sizeDialog, handleColReset, handleRowReset]);
 
+  // App-global default copy format (used by Cmd/Ctrl+C and the context-menu
+  // star). Persisted to localStorage; falls back to "inline".
+  const [defaultCopyFormat, setDefaultCopyFormat] = useState<CopyFormat>(
+    readStoredDefaultCopyFormat,
+  );
+  useEffect(() => {
+    try {
+      localStorage.setItem(DEFAULT_COPY_FORMAT_KEY, defaultCopyFormat);
+    } catch {
+      // ignore (disabled/quota)
+    }
+  }, [defaultCopyFormat]);
+
   const copyMarkdown = useCallback(
-    async (format: MarkdownFormat) => {
+    async (format: CopyFormat, headerOverride?: number | null) => {
       const sheet = wb.activeSheet;
       if (!sheet || !selection) return;
       const totalRows = sheet.rows.length;
@@ -575,9 +602,12 @@ function App() {
       const base = selectionBounds(selection, totalRows, totalCols);
       const merges = buildMergeInfo(sheet.merges);
       const bounds = expandBoundsForMerges(base, merges);
-      const headerIdx = activeSheetName
-        ? headerRows[activeSheetName] ?? null
-        : null;
+      const headerIdx =
+        headerOverride !== undefined
+          ? headerOverride
+          : activeSheetName
+            ? headerRows[activeSheetName] ?? null
+            : null;
       const { text, rowsEmitted, truncated } = buildSelectionMarkdown(
         sheet,
         bounds,
@@ -591,41 +621,71 @@ function App() {
       try {
         await navigator.clipboard.writeText(text);
         const suffix = truncated ? " (truncated)" : "";
-        const label =
-          format === "title"
-            ? "markdown title"
-            : format === "table"
-              ? "markdown table"
-              : format === "ascii"
-                ? "ASCII table"
-                : "markdown";
+        const label = COPY_FORMAT_LABELS[format];
         toast.success(
           `Copied ${rowsEmitted} row${rowsEmitted === 1 ? "" : "s"} as ${label}${suffix}`,
         );
+        if (headerIdx === null) {
+          const topRow = bounds.r1;
+          toast.custom(
+            (id) => (
+              <div className="flex w-full flex-col gap-2 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-lg">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium">
+                    No header row set — used column letters (A, B, C…).
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Markdown tables read best with a real header row.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    toast.dismiss(id);
+                    handleMarkAsHeader(topRow);
+                    void copyMarkdown(format, topRow);
+                  }}
+                  className="self-end rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-medium hover:bg-secondary/80"
+                >
+                  Mark row {topRow + 1} as header
+                </button>
+              </div>
+            ),
+            { unstyled: true, duration: 8000 },
+          );
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         toast.error("Copy failed", { description: msg });
       }
     },
-    [wb.activeSheet, selection, headerRows, activeSheetName],
+    [wb.activeSheet, selection, headerRows, activeSheetName, handleMarkAsHeader],
   );
 
-  const handleCopyAsMarkdown = useCallback(
-    () => copyMarkdown("inline"),
+  // Context-menu copy. Plain click → copy now. Cmd/Ctrl+click (setAsDefault)
+  // → copy now AND persist that format as the default.
+  const handleCopyFormat = useCallback(
+    (format: CopyFormat, setAsDefault: boolean) => {
+      copyMarkdown(format);
+      if (setAsDefault) {
+        setDefaultCopyFormat(format);
+        toast.success(`Set "${format}" as default copy format`);
+      }
+    },
     [copyMarkdown],
   );
-  const handleCopyAsMarkdownTitle = useCallback(
-    () => copyMarkdown("title"),
-    [copyMarkdown],
+
+  // Cmd/Ctrl+C → copy selection using the saved default format.
+  const handleCopyDefault = useCallback(
+    () => copyMarkdown(defaultCopyFormat),
+    [copyMarkdown, defaultCopyFormat],
   );
-  const handleCopyAsMarkdownTable = useCallback(
-    () => copyMarkdown("table"),
-    [copyMarkdown],
-  );
-  const handleCopyAsAscii = useCallback(
-    () => copyMarkdown("ascii"),
-    [copyMarkdown],
-  );
+
+  // Context-menu star click → set default only (no copy).
+  const handleSetDefaultFormat = useCallback((format: CopyFormat) => {
+    setDefaultCopyFormat(format);
+    toast.success(`Set "${format}" as default copy format`);
+  }, []);
 
   const findActive = findOpen && !!wb.activeSheet;
 
@@ -657,10 +717,10 @@ function App() {
               onSelectionChange={handleSelectionChange}
               headerRow={headerRow}
               onMarkHeader={handleMarkAsHeader}
-              onCopyMarkdown={handleCopyAsMarkdown}
-              onCopyMarkdownTitle={handleCopyAsMarkdownTitle}
-              onCopyMarkdownTable={handleCopyAsMarkdownTable}
-              onCopyAscii={handleCopyAsAscii}
+              defaultCopyFormat={defaultCopyFormat}
+              onCopyFormat={handleCopyFormat}
+              onSetDefaultFormat={handleSetDefaultFormat}
+              onCopyDefault={handleCopyDefault}
               onSummarize={handleOpenSummary}
               canSummarize={summaryEligible}
               colOverrides={colOverrides}

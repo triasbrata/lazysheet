@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { cellText, type CellModel, type SheetModel } from "@/lib/types";
@@ -11,9 +11,11 @@ import {
   GridContextMenuContent,
   type GridContextMenuTarget,
 } from "./GridContextMenu";
+import type { MarkdownFormat } from "@/lib/markdown-export";
 import {
   boundsInclude,
   buildMergeInfo,
+  changedRowIndices,
   clampResize,
   columnLetter,
   DEFAULT_COL_WIDTH,
@@ -66,10 +68,14 @@ interface GridProps {
   // User-marked header row (sheet-local, owned by App). 0-indexed.
   headerRow?: number | null;
   onMarkHeader?: (row: number | null) => void;
-  onCopyMarkdown?: () => void;
-  onCopyMarkdownTitle?: () => void;
-  onCopyMarkdownTable?: () => void;
-  onCopyAscii?: () => void;
+  // Current default copy format (drives the context-menu star).
+  defaultCopyFormat?: MarkdownFormat;
+  // Context-menu copy: plain click → copy; Cmd/Ctrl+click → copy + set default.
+  onCopyFormat?: (format: MarkdownFormat, setAsDefault: boolean) => void;
+  // Context-menu star click → set default only (no copy).
+  onSetDefaultFormat?: (format: MarkdownFormat) => void;
+  // Cmd/Ctrl+C → copy using the saved default format.
+  onCopyDefault?: () => void;
   onSummarize?: () => void;
   canSummarize?: boolean;
   // Resize feature
@@ -104,10 +110,10 @@ export function Grid({
   onSelectionChange,
   headerRow = null,
   onMarkHeader,
-  onCopyMarkdown,
-  onCopyMarkdownTitle,
-  onCopyMarkdownTable,
-  onCopyAscii,
+  defaultCopyFormat,
+  onCopyFormat,
+  onSetDefaultFormat,
+  onCopyDefault,
   onSummarize,
   canSummarize,
   colOverrides,
@@ -829,6 +835,13 @@ export function Grid({
         return;
       }
 
+      // Cmd/Ctrl+C → copy selection using the saved default format.
+      if (ctrl && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        onCopyDefault?.();
+        return;
+      }
+
       // Esc during drag → cancel (collapse to anchor)
       if (e.key === "Escape" && dragState.current?.active) {
         e.preventDefault();
@@ -954,6 +967,7 @@ export function Grid({
     [
       onSelectionChange,
       selectAll,
+      onCopyDefault,
       sheet,
       totalRows,
       totalCols,
@@ -980,26 +994,57 @@ export function Grid({
   const totalBodyHeight = rowVirtualizer.getTotalSize();
   const measurements = rowVirtualizer.measurementsCache;
 
-  // Invalidate virtualizer measurements on commit (rowOverrides change),
-  // NOT on rowPreview — keeps drag at 60fps; tiny visual mismatch during
-  // drag is acceptable, snaps correct on release.
-  //
-  // `rowVirtualizer.measure()` alone re-layouts using existing
-  // measurementsCache and itemSizeCache (TanStack caches per-row
-  // getBoundingClientRect results). After autofit, cached rects are stale
-  // until the row is scrolled out and back in. Force-clear both caches so
-  // estimateSize (which now reflects new overrides) takes effect immediately
-  // and measureElement re-runs on the next render.
+  // Apply row-height overrides to the virtualizer via the SUPPORTED resizeItem
+  // API. resizeItem(index, size) seeds the size cache for that row AND reflows
+  // subsequent offsets, so autofit/manual-resize take effect immediately without
+  // waiting on the ResizeObserver to re-fire (it stays silent when the row's
+  // real box size is unchanged). measureElement still refines afterward if the
+  // pushed size differs from the actual DOM box. Preview-only changes never
+  // reach here (rowOverrides is stable during drag), preserving 60fps.
+  const prevRowOverridesRef = useRef<Record<number, number> | undefined>(
+    undefined,
+  );
+  const prevSheetRef = useRef<SheetModel | null>(null);
+  const pendingMeasureRowsRef = useRef<Set<number>>(new Set());
+
   useEffect(() => {
-    type VWithCache = {
-      measurementsCache: unknown[];
-      itemSizeCache?: { clear?: () => void };
-    };
-    const v = rowVirtualizer as unknown as VWithCache;
-    v.itemSizeCache?.clear?.();
-    v.measurementsCache = [];
-    rowVirtualizer.measure();
-  }, [rowOverrides, rowVirtualizer]);
+    if (prevSheetRef.current !== sheet) {
+      prevSheetRef.current = sheet;
+      prevRowOverridesRef.current = rowOverrides;
+      rowVirtualizer.measure();
+      return;
+    }
+    const changed = changedRowIndices(prevRowOverridesRef.current, rowOverrides);
+    for (const r of changed) {
+      if (r < 0 || r >= totalRows) continue;
+      rowVirtualizer.resizeItem(r, effectiveRowHeight(sheet, r, rowOverrides));
+      pendingMeasureRowsRef.current.add(r);
+    }
+    prevRowOverridesRef.current = rowOverrides;
+  }, [rowOverrides, sheet, totalRows, rowVirtualizer]);
+
+  // After each render, measure actual DOM height for recently-resized rows and
+  // correct the virtualizer. Needed because overflow:visible cells keep the row
+  // at content_height even when vr.size changes — ResizeObserver stays silent
+  // (no DOM size change), so the corrected offset for the next row never fires
+  // unless we force-measure here. useLayoutEffect runs before paint so React
+  // can commit the correction before the user sees any overlap.
+  useLayoutEffect(() => {
+    if (pendingMeasureRowsRef.current.size === 0) return;
+    const rows = [...pendingMeasureRowsRef.current];
+    pendingMeasureRowsRef.current.clear();
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    for (const r of rows) {
+      const el = scrollEl.querySelector(
+        `[data-index="${r}"]`,
+      ) as HTMLElement | null;
+      if (el) {
+        const actual = Math.round(el.getBoundingClientRect().height);
+        if (actual > 0) rowVirtualizer.resizeItem(r, actual);
+      }
+    }
+  });
 
   // ── Scroll effect (driven by selection.focus changes) ───────────────────
   useEffect(() => {
@@ -1042,6 +1087,17 @@ export function Grid({
       });
     }
   }, [selection, totalRows, totalCols, cumColX, widths, rowVirtualizer]);
+
+  // Suppress native text selection during drag-select. `selectstart` is not in
+  // React's synthetic event system, so attach a native listener. Covers cells
+  // and sticky headers (the scroll root is their common ancestor).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const prevent = (e: Event) => e.preventDefault();
+    el.addEventListener("selectstart", prevent);
+    return () => el.removeEventListener("selectstart", prevent);
+  }, []);
 
   // ── Highlight derivation per cell ────────────────────────────────────────
   const rangeIsMultiCell =
@@ -1294,10 +1350,9 @@ export function Grid({
             canCopy={canCopy}
             canSummarize={canSummarize}
             onMarkHeader={(row) => onMarkHeader?.(row)}
-            onCopyMarkdown={() => onCopyMarkdown?.()}
-            onCopyMarkdownTitle={() => onCopyMarkdownTitle?.()}
-            onCopyMarkdownTable={() => onCopyMarkdownTable?.()}
-            onCopyAscii={() => onCopyAscii?.()}
+            defaultCopyFormat={defaultCopyFormat}
+            onCopyFormat={(fmt, setDef) => onCopyFormat?.(fmt, setDef)}
+            onSetDefaultFormat={(fmt) => onSetDefaultFormat?.(fmt)}
             onSummarize={onSummarize ? () => onSummarize() : undefined}
             hasColOverride={
               menuCtx?.type === "col" &&
