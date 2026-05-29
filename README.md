@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="src-tauri/icons/128x128@2x.png" alt="LazySheet" width="96" height="96" />
+<img src="public/app-icon-512.png" alt="LazySheet" width="96" height="96" />
 
 # LazySheet
 
 A fast, native desktop viewer for Excel and CSV files — with pivot-style group-by summaries built in.
 
-<img src="website/example/lazy/application%20summary.png" alt="LazySheet screenshot" width="820" />
+<img src="public/shots/application-summary.png" alt="LazySheet screenshot" width="820" />
 
 </div>
 
