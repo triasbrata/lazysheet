@@ -127,17 +127,11 @@ export function Cell({
   }
 
   if (highlight === "anchor") {
-    baseStyle.outline = "2px solid var(--primary)";
-    baseStyle.outlineOffset = "-2px";
-    baseStyle.background =
-      s?.bg ?? "color-mix(in oklab, var(--primary) 18%, transparent)";
-    baseStyle.zIndex = 20;
+    // Single-cell selection — marching-ants frame (z-index 18) draws the border;
+    // no bg tint, and NO z-index bump: a raised anchor cell would paint over the
+    // frame and hide it (the frame's edges sit on this single cell's bounds).
   } else if (highlight === "selected") {
-    // Uniform tint across the range, independent of each cell's own xlsx bg —
-    // otherwise neighboring cells with different style bgs render as mismatched
-    // bands within the selection.
-    baseStyle.background =
-      "color-mix(in oklab, var(--primary) 15%, var(--background))";
+    // No background tint — the animated marching-ants frame marks the range.
   } else if (highlight === "match") {
     baseStyle.background = "color-mix(in oklab, var(--primary) 10%, transparent)";
   }

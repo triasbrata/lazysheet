@@ -50,7 +50,7 @@ import {
   type MeasureOptions,
 } from "@/lib/measure";
 import { Filter } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
 import {
   buildMergedRowSet,
@@ -1210,15 +1210,20 @@ export function Grid({
           aria-label="Filter column"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setOpenFilter({ col: i, source }); }}
-          className={cn(
-            "inline-flex items-center justify-center rounded p-0.5 hover:bg-accent",
-            iconColor
-              ? (filterIsActive ? "opacity-100" : "opacity-60")
-              : (filterIsActive ? "text-primary" : "text-muted-foreground/60"),
-          )}
+          className="inline-flex items-center justify-center rounded p-0.5 transition-opacity hover:opacity-60"
           style={iconColor ? { color: iconColor } : undefined}
         >
-          <Filter className="size-3" />
+          {filterIsActive ? (
+            <motion.span
+              className="inline-flex"
+              animate={{ scale: [1, 1.18, 1], opacity: [1, 0.55, 1] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Filter className="size-3" fill="currentColor" />
+            </motion.span>
+          ) : (
+            <Filter className="size-3" fill="currentColor" />
+          )}
         </button>
       </ColumnFilterDropdown>
     );
@@ -1292,15 +1297,6 @@ export function Grid({
                 style={{ width: w, height: headerHeight }}
               >
                 {columnLetter(i)}
-                {headerRow != null && groupByAnchor.has(i) && (() => {
-                  const cf = activeFilters[i];
-                  const active = cf != null && (cf.condition.op !== "none" || cf.excluded.length > 0);
-                  return active ? (
-                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2">
-                      {renderFilterControl(i, "ruler")}
-                    </span>
-                  ) : null;
-                })()}
                 {w > 0 && (
                   <ResizeHandle
                     orientation="col"
@@ -1403,7 +1399,7 @@ export function Grid({
                   data-row-header={rowIdx}
                   onPointerDown={(e) => handleRowHeaderPointerDown(e, rowIdx)}
                   title={rowIdx === headerRow ? "Header row" : undefined}
-                  className={`sticky left-0 z-10 flex shrink-0 items-center justify-center border-r border-b border-border text-[10px] font-medium cursor-cell select-none relative backdrop-blur-md ${
+                  className={`sticky left-0 z-10 flex shrink-0 items-center justify-center border-r border-b border-border text-[10px] font-medium cursor-cell select-none relative backdrop-blur-xl ${
                     rowInSel
                       ? "bg-primary/20 text-foreground"
                       : rowIdx === headerRow
@@ -1509,7 +1505,7 @@ export function Grid({
             const rowH = effectiveRowHeight(sheet, headerRow, rowOverrides);
             return (
               <div
-                className="absolute z-[15]"
+                className="absolute z-[25]"
                 style={{ top: start, left: 0, width: bodyWidth, height: rowH, pointerEvents: "none" }}
               >
                 {Array.from({ length: totalCols }, (_, i) => {
@@ -1680,8 +1676,6 @@ function SelectionFrame({
   leftOffset,
 }: SelectionFrameProps) {
   if (!bounds || !mode) return null;
-  // Single cell — anchor's per-cell outline already does the job. Avoid stacking borders.
-  if (bounds.r1 === bounds.r2 && bounds.c1 === bounds.c2) return null;
 
   const rowStart = (r: number) => measurements[r]?.start ?? cumRowY[r] ?? 0;
   const rowEnd = (r: number) =>
@@ -1696,21 +1690,44 @@ function SelectionFrame({
     .slice(bounds.c1, bounds.c2 + 1)
     .reduce((a, b) => a + b, 0);
 
+  const w = Math.round(width);
+  const h = Math.round(height);
+  const bottomY = h - 2; // nudge bottom edge up so it clears the next-row gridline
+  const rightX = w - 2; // nudge right edge left so it clears the next-col gridline
+
   return (
-    <div
+    <svg
       aria-hidden
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
       style={{
         position: "absolute",
-        top,
-        left,
-        width,
-        height,
-        border: "2px solid var(--primary)",
-        boxSizing: "border-box",
+        top: Math.round(top),
+        left: Math.round(left),
+        // Pin to exact px in CSS too — a global `svg` reset can stretch the
+        // element, scaling its coord system non-uniformly (long+thick horizontal
+        // dashes, short+thin vertical). Explicit px + matching viewBox = 1:1.
+        width: w,
+        height: h,
+        display: "block",
         pointerEvents: "none",
         zIndex: 18,
+        overflow: "visible",
       }}
-    />
+    >
+      {/* Single rect inset so the 2px stroke stays inside the viewport (no
+          right/bottom clipping) and clears the next row/col gridline.
+          non-scaling-stroke keeps dashes uniform on all edges. */}
+      <rect
+        className="selection-ants"
+        vectorEffect="non-scaling-stroke"
+        x={1}
+        y={1}
+        width={Math.max(0, rightX - 1)}
+        height={Math.max(0, bottomY - 1)}
+      />
+    </svg>
   );
 }
 

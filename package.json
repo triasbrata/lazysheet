@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "run:dev": "tauri dev",
     "test": "vitest run",
-    "deploy": "bun run scripts/deploy.ts"
+    "app:deploy": "deno run -A scripts/deploy.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -26,6 +26,7 @@
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.16.0",
+    "motion": "^12.40.0",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
     "react": "^19.1.0",

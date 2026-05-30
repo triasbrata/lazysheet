@@ -1,8 +1,8 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S deno run -A
 /**
  * Local deploy script.
  *
- * Flow: load .envrc -> build changelog from commits since latest tag ->
+ * Flow: load .env -> build changelog from commits since latest tag ->
  * ask Claude Code to decide the semantic version bump -> bump version files ->
  * commit -> create annotated tag (message = changelog) -> push.
  *
@@ -10,45 +10,37 @@
  * cross-platform artifacts and publishes the release.
  *
  * Usage:
- *   pnpm deploy            # interactive, asks for confirmation
- *   pnpm deploy --yes      # skip confirmation
- *   pnpm deploy --dry-run  # print the plan, no git writes / push
+ *   deno task app:deploy            # interactive, asks for confirmation
+ *   deno task app:deploy --yes      # skip confirmation
+ *   deno task app:deploy --dry-run  # print the plan, no git writes / push
  */
 
-import { $ } from "bun";
-import dotenv from "dotenv";
+import { $ } from "jsr:@david/dax@^0.43.0";
+import dotenv from "npm:dotenv@^17.4.2";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const args = new Set(process.argv.slice(2));
+const ROOT = resolve(import.meta.dirname!, "..");
+const args = new Set(Deno.args);
 const DRY_RUN = args.has("--dry-run");
 const SKIP_CONFIRM = args.has("--yes") || args.has("-y");
 
 function die(msg: string): never {
   console.error(`\n✖ ${msg}\n`);
-  process.exit(1);
+  Deno.exit(1);
 }
 
 function log(msg: string) {
   console.log(msg);
 }
 
-/**
- * Load a direnv-style .envrc (`export KEY=value`) into process.env via dotenv.
- * dotenv ignores `export`-prefixed lines, so strip the prefix before parsing.
- */
-function loadEnvrc(path: string) {
+/** Load .env from the repo root into the environment via dotenv. */
+function loadEnv(path: string) {
   if (!existsSync(path)) {
     log(`⚠ ${path} not found — relying on existing environment.`);
     return;
   }
-  const raw = readFileSync(path, "utf8").replace(/^\s*export\s+/gm, "");
-  const parsed = dotenv.parse(raw);
-  for (const [key, value] of Object.entries(parsed)) {
-    if (process.env[key] === undefined) process.env[key] = value;
-  }
+  dotenv.config({ path, quiet: true });
 }
 
 type Bump = "major" | "minor" | "patch";
@@ -113,9 +105,9 @@ async function decideBump(
   currentVersion: string,
   commits: { subject: string }[],
 ): Promise<{ bump: Bump; version: string }> {
-  if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
+  if (!Deno.env.get("CLAUDE_CODE_OAUTH_TOKEN") && !Deno.env.get("ANTHROPIC_API_KEY")) {
     die(
-      "no CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY in env — check .envrc",
+      "no CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY in env — check .env",
     );
   }
   const subjects = commits.map((c) => `- ${c.subject}`).join("\n");
@@ -200,7 +192,7 @@ function bumpVersionFiles(newVersion: string) {
 }
 
 async function main() {
-  loadEnvrc(resolve(ROOT, ".envrc"));
+  loadEnv(resolve(ROOT, ".env"));
 
   // 1. clean working tree
   const status = (await $`git status --porcelain`.cwd(ROOT).quiet().text()).trim();
