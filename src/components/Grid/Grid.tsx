@@ -50,7 +50,7 @@ import {
   type MeasureOptions,
 } from "@/lib/measure";
 import { Filter } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
 import {
   buildMergedRowSet,
@@ -1210,15 +1210,20 @@ export function Grid({
           aria-label="Filter column"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setOpenFilter({ col: i, source }); }}
-          className={cn(
-            "inline-flex items-center justify-center rounded p-0.5 hover:bg-accent",
-            iconColor
-              ? (filterIsActive ? "opacity-100" : "opacity-60")
-              : (filterIsActive ? "text-primary" : "text-muted-foreground/60"),
-          )}
+          className="inline-flex items-center justify-center rounded p-0.5 transition-opacity hover:opacity-60"
           style={iconColor ? { color: iconColor } : undefined}
         >
-          <Filter className="size-3" />
+          {filterIsActive ? (
+            <motion.span
+              className="inline-flex"
+              animate={{ scale: [1, 1.18, 1], opacity: [1, 0.55, 1] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Filter className="size-3" fill="currentColor" />
+            </motion.span>
+          ) : (
+            <Filter className="size-3" fill="currentColor" />
+          )}
         </button>
       </ColumnFilterDropdown>
     );
@@ -1292,15 +1297,6 @@ export function Grid({
                 style={{ width: w, height: headerHeight }}
               >
                 {columnLetter(i)}
-                {headerRow != null && groupByAnchor.has(i) && (() => {
-                  const cf = activeFilters[i];
-                  const active = cf != null && (cf.condition.op !== "none" || cf.excluded.length > 0);
-                  return active ? (
-                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2">
-                      {renderFilterControl(i, "ruler")}
-                    </span>
-                  ) : null;
-                })()}
                 {w > 0 && (
                   <ResizeHandle
                     orientation="col"
@@ -1403,7 +1399,7 @@ export function Grid({
                   data-row-header={rowIdx}
                   onPointerDown={(e) => handleRowHeaderPointerDown(e, rowIdx)}
                   title={rowIdx === headerRow ? "Header row" : undefined}
-                  className={`sticky left-0 z-10 flex shrink-0 items-center justify-center border-r border-b border-border text-[10px] font-medium cursor-cell select-none relative backdrop-blur-md ${
+                  className={`sticky left-0 z-10 flex shrink-0 items-center justify-center border-r border-b border-border text-[10px] font-medium cursor-cell select-none relative backdrop-blur-xl ${
                     rowInSel
                       ? "bg-primary/20 text-foreground"
                       : rowIdx === headerRow
@@ -1509,7 +1505,7 @@ export function Grid({
             const rowH = effectiveRowHeight(sheet, headerRow, rowOverrides);
             return (
               <div
-                className="absolute z-[15]"
+                className="absolute z-[25]"
                 style={{ top: start, left: 0, width: bodyWidth, height: rowH, pointerEvents: "none" }}
               >
                 {Array.from({ length: totalCols }, (_, i) => {
