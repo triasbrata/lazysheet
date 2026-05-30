@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Nav } from '#/components/site/nav'
 import { Footer } from '#/components/site/footer'
 import {
-  AppleMark,
   ExcelIcon,
   CsvIcon,
   TsvIcon,
@@ -14,10 +13,13 @@ import {
   CopyIcon,
   TerminalIcon,
 } from '#/components/site/icons'
+import { getDownloadData, type DownloadData } from '#/lib/releases-data'
+import { DownloadButton } from '#/features/download/download-button'
 
-export const Route = createFileRoute('/')({ component: Home })
-
-const RELEASES_URL = 'https://github.com/triasbrata/lazysheet/releases/latest'
+export const Route = createFileRoute('/')({
+  component: Home,
+  loader: () => getDownloadData(),
+})
 
 const FORMATS = [
   { ext: '.xlsx', Icon: ExcelIcon, tint: '#16a34a' },
@@ -50,7 +52,7 @@ const SMALL_FEATURES = [
   },
 ]
 
-function Hero() {
+function Hero({ data }: { data: DownloadData }) {
   return (
     <section className="hero-gradient px-4 pt-24 pb-32 md:px-16">
       <div className="mx-auto max-w-[1200px] text-center">
@@ -73,15 +75,7 @@ function Hero() {
 
         <div className="group mb-16 flex flex-col items-center justify-center">
           <div className="mb-4 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <a
-              href={RELEASES_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-[var(--st-green)] px-8 py-5 text-2xl font-bold text-white no-underline transition-all hover:opacity-90 md:w-auto"
-            >
-              <AppleMark className="text-[26px]" />
-              Download for macOS
-            </a>
+            <DownloadButton data={data} />
             <Link
               to="/download"
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#cbd5e1] bg-white px-8 py-5 text-2xl font-bold text-[#4a5568] no-underline transition-all hover:bg-gray-50 md:w-auto"
@@ -233,11 +227,12 @@ function Features() {
 }
 
 function Home() {
+  const data = Route.useLoaderData()
   return (
     <div className="min-h-screen">
       <Nav />
       <main className="pt-16">
-        <Hero />
+        <Hero data={data} />
         <Formats />
         <Features />
       </main>
