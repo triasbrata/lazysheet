@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "run:dev": "tauri dev",
     "test": "vitest run",
-    "deploy": "bun run scripts/deploy.ts"
+    "app:deploy": "bun run scripts/deploy.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",

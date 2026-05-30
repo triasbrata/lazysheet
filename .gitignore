@@ -26,6 +26,10 @@ dist-ssr
 # Rust / Tauri
 src-tauri/target/
 
+# Env
+.env
+.env.local
+
 # RPI / Claude
 .rpi/
 .claude/

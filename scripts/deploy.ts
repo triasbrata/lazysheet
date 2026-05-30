@@ -35,20 +35,13 @@ function log(msg: string) {
   console.log(msg);
 }
 
-/**
- * Load a direnv-style .envrc (`export KEY=value`) into process.env via dotenv.
- * dotenv ignores `export`-prefixed lines, so strip the prefix before parsing.
- */
-function loadEnvrc(path: string) {
+/** Load .env from the repo root into process.env via dotenv. */
+function loadEnv(path: string) {
   if (!existsSync(path)) {
     log(`⚠ ${path} not found — relying on existing environment.`);
     return;
   }
-  const raw = readFileSync(path, "utf8").replace(/^\s*export\s+/gm, "");
-  const parsed = dotenv.parse(raw);
-  for (const [key, value] of Object.entries(parsed)) {
-    if (process.env[key] === undefined) process.env[key] = value;
-  }
+  dotenv.config({ path, quiet: true });
 }
 
 type Bump = "major" | "minor" | "patch";
@@ -200,7 +193,7 @@ function bumpVersionFiles(newVersion: string) {
 }
 
 async function main() {
-  loadEnvrc(resolve(ROOT, ".envrc"));
+  loadEnv(resolve(ROOT, ".env"));
 
   // 1. clean working tree
   const status = (await $`git status --porcelain`.cwd(ROOT).quiet().text()).trim();
