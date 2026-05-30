@@ -1,0 +1,5 @@
+website
+node_modules
+.rpi
+dist
+.vscode
