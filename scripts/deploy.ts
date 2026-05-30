@@ -77,16 +77,28 @@ const TYPE_HEADINGS: Record<string, string> = {
   chore: "### Chores",
 };
 
+/** Merge commits and the prior release-bump commit are noise in a summary. */
+function isNoiseCommit(subject: string): boolean {
+  if (/^Merge (pull request|branch|remote)/i.test(subject)) return true;
+  if (/^chore(\([^)]*\))?:\s*release\b/i.test(subject)) return true;
+  return false;
+}
+
 /** Group conventional-commit subjects into a markdown changelog. */
-function buildChangelog(commits: { subject: string; hash: string }[]): string {
+function buildChangelog(
+  commits: { subject: string; hash: string }[],
+  opts: { withHash?: boolean } = {},
+): string {
+  const withHash = opts.withHash ?? true;
   const groups = new Map<string, string[]>();
   for (const { subject, hash } of commits) {
+    if (isNoiseCommit(subject)) continue;
     const m = subject.match(/^(\w+)(?:\([^)]*\))?!?:\s*(.+)$/);
     const type = m ? m[1].toLowerCase() : "other";
     const text = m ? m[2] : subject;
     const heading = TYPE_HEADINGS[type] ?? "### Other";
     if (!groups.has(heading)) groups.set(heading, []);
-    groups.get(heading)!.push(`- ${text} (${hash})`);
+    groups.get(heading)!.push(withHash ? `- ${text} (${hash})` : `- ${text}`);
   }
   const order = [
     ...Object.values(TYPE_HEADINGS),
@@ -97,6 +109,7 @@ function buildChangelog(commits: { subject: string; hash: string }[]): string {
     const items = groups.get(heading);
     if (items?.length) sections.push(`${heading}\n${items.join("\n")}`);
   }
+  if (!sections.length) return "### Chores\n- maintenance release";
   return sections.join("\n\n");
 }
 
@@ -277,8 +290,9 @@ async function main() {
     .cwd(ROOT);
   await $`git commit -m ${`chore: release ${tag}`}`.cwd(ROOT);
 
-  // 9. annotated tag with changelog as message
-  await $`git tag -a ${tag} -m ${changelog}`.cwd(ROOT);
+  // 9. annotated tag — clean summary: no commit hashes, no merge/release noise
+  const tagMessage = buildChangelog(commits, { withHash: false });
+  await $`git tag -a ${tag} -m ${tagMessage}`.cwd(ROOT);
 
   // 10. push commit + tag
   await $`git push origin HEAD`.cwd(ROOT);
