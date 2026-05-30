@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ColumnFilter, ConditionOp } from "@/lib/grid-filter";
 
@@ -132,21 +133,18 @@ export function ColumnFilterDropdown({
             </span>
 
             {/* Condition selector */}
-            <select
-              value={op}
-              onChange={(e) => setOp(e.target.value as ConditionOp)}
-              className={cn(
-                "w-full rounded-md border border-input bg-background px-2 py-1 text-sm",
-                "text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
-                "cursor-pointer"
-              )}
-            >
-              {CONDITION_OPTIONS.map(({ op: o, label }) => (
-                <option key={o} value={o}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            <Select value={op} onValueChange={(v) => setOp(v as ConditionOp)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="item-aligned">
+                {CONDITION_OPTIONS.map(({ op: o, label }) => (
+                  <SelectItem key={o} value={o}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Operand input — visible only for ops that need one */}
             {!NO_OPERAND_OPS.has(op) && (
