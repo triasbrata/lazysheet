@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "run:dev": "tauri dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "deploy": "bun run scripts/deploy.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -41,6 +42,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "dotenv": "^17.4.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vitest": "^3.0.0"

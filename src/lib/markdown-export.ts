@@ -50,6 +50,7 @@ function buildMatrix(
   sheet: SheetModel,
   bounds: Bounds,
   headerRowIdx: number | null,
+  rowFilter?: (r: number) => boolean,
 ): Matrix {
   const headerRow =
     headerRowIdx != null && sheet.rows[headerRowIdx]
@@ -76,6 +77,7 @@ function buildMatrix(
   let truncated = false;
   for (let r = bounds.r1; r <= bounds.r2; r++) {
     if (r === headerRowIdx) continue;
+    if (rowFilter && !rowFilter(r)) continue;
     const row = sheet.rows[r];
     const out: string[] = [];
     for (const c of cols) {
@@ -117,6 +119,7 @@ export function buildSelectionMarkdown(
   bounds: Bounds,
   headerRowIdx: number | null,
   format: CopyFormat = "inline",
+  rowFilter?: (r: number) => boolean,
 ): BuildMarkdownResult {
   const headerRow =
     headerRowIdx != null && sheet.rows[headerRowIdx]
@@ -142,7 +145,7 @@ export function buildSelectionMarkdown(
     format === "tsv" ||
     format === "plain"
   ) {
-    const matrix = buildMatrix(sheet, bounds, headerRowIdx);
+    const matrix = buildMatrix(sheet, bounds, headerRowIdx, rowFilter);
     const { headers, dataRows, rowsEmitted, truncated } = matrix;
 
     if (format === "table") {
@@ -231,6 +234,7 @@ export function buildSelectionMarkdown(
 
   for (let r = bounds.r1; r <= bounds.r2; r++) {
     if (r === headerRowIdx) continue;
+    if (rowFilter && !rowFilter(r)) continue;
     const row = sheet.rows[r];
     const cellParts: string[] = [];
     for (let c = bounds.c1; c <= bounds.c2; c++) {

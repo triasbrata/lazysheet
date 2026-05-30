@@ -49,6 +49,18 @@ import {
   sampleCellFont,
   type MeasureOptions,
 } from "@/lib/measure";
+import { Filter } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
+import {
+  buildMergedRowSet,
+  headerGroups,
+  columnDistinctValues,
+  computeVisibleRows,
+  type SheetFilters,
+  type ColumnFilter,
+  type HeaderGroup,
+} from "@/lib/grid-filter";
 
 export type { Selection } from "./grid-utils";
 
@@ -90,6 +102,10 @@ interface GridProps {
   // Manual-input dialog open callbacks (App owns dialog state).
   onOpenColWidthDialog?: (col: number) => void;
   onOpenRowHeightDialog?: (row: number) => void;
+  // Per-column row filters for the active sheet. Filtering is merge-aware: merged
+  // rows/cols are exempt (see grid-filter). colAnchor (0-indexed) → ColumnFilter.
+  filters?: SheetFilters;
+  onColumnFilterChange?: (colAnchor: number, filter: ColumnFilter) => void;
 }
 
 type DragMode = "cell" | "rowHeader" | "colHeader";
@@ -126,6 +142,8 @@ export function Grid({
   onResetAllDimensions,
   onOpenColWidthDialog,
   onOpenRowHeightDialog,
+  filters,
+  onColumnFilterChange,
 }: GridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalRows = sheet.rows.length;
@@ -377,6 +395,42 @@ export function Grid({
   const merges = useMemo(() => buildMergeInfo(sheet.merges), [sheet.merges]);
 
   const headerHeight = 26;
+
+  // ── Filter-aware row visibility ─────────────────────────────────────────
+  const mergedRowSet = useMemo(() => buildMergedRowSet(sheet.merges), [sheet.merges]);
+  const filterGroups = useMemo(
+    () => headerGroups(merges, headerRow, totalCols),
+    [merges, headerRow, totalCols],
+  );
+  const activeFilters: SheetFilters = filters ?? {};
+  const visibleRowIndices = useMemo(
+    () => computeVisibleRows(sheet, mergedRowSet, headerRow, filterGroups, activeFilters, totalRows),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sheet, mergedRowSet, headerRow, filterGroups, activeFilters, totalRows],
+  );
+  const visiblePos = useMemo(() => {
+    const m = new Map<number, number>();
+    visibleRowIndices.forEach((r, i) => m.set(r, i));
+    return m;
+  }, [visibleRowIndices]);
+  // Fast lookup: anchorCol → HeaderGroup (for checking which col headers get a funnel button).
+  const groupByAnchor = useMemo(() => {
+    const m = new Map<number, HeaderGroup>();
+    for (const g of filterGroups) m.set(g.anchorCol, g);
+    return m;
+  }, [filterGroups]);
+  // Which column's filter dropdown is currently open and from which trigger source.
+  type FilterSource = "band" | "ruler" | "row";
+  const [openFilter, setOpenFilter] = useState<{ col: number; source: FilterSource } | null>(null);
+  const [headerStuck, setHeaderStuck] = useState(false);
+  const headerStuckRef = useRef(false);
+  // Distinct values for the currently-open column — computed lazily only when a dropdown is open.
+  const openFilterDistinct = useMemo(() => {
+    if (openFilter === null) return [];
+    const g = groupByAnchor.get(openFilter.col);
+    if (!g) return [];
+    return columnDistinctValues(sheet, g, headerRow, totalRows, mergedRowSet);
+  }, [openFilter, groupByAnchor, sheet, headerRow, totalRows, mergedRowSet]);
 
   // Expanded bounds — accounts for merges that intersect base selection.
   const expandedBounds: Bounds | null = useMemo(() => {
@@ -982,9 +1036,10 @@ export function Grid({
 
   // ── Virtualizer ─────────────────────────────────────────────────────────
   const rowVirtualizer = useVirtualizer({
-    count: totalRows,
+    count: visibleRowIndices.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (i) => heights[i] ?? DEFAULT_ROW_HEIGHT,
+    estimateSize: (i) => { const r = visibleRowIndices[i]; return heights[r] ?? DEFAULT_ROW_HEIGHT; },
+    getItemKey: (i) => visibleRowIndices[i] ?? i,
     overscan: 8,
     measureElement: (el) =>
       el ? el.getBoundingClientRect().height : DEFAULT_ROW_HEIGHT,
@@ -1017,11 +1072,13 @@ export function Grid({
     const changed = changedRowIndices(prevRowOverridesRef.current, rowOverrides);
     for (const r of changed) {
       if (r < 0 || r >= totalRows) continue;
-      rowVirtualizer.resizeItem(r, effectiveRowHeight(sheet, r, rowOverrides));
+      const pos = visiblePos.get(r);
+      if (pos === undefined) continue;
+      rowVirtualizer.resizeItem(pos, effectiveRowHeight(sheet, r, rowOverrides));
       pendingMeasureRowsRef.current.add(r);
     }
     prevRowOverridesRef.current = rowOverrides;
-  }, [rowOverrides, sheet, totalRows, rowVirtualizer]);
+  }, [rowOverrides, sheet, totalRows, rowVirtualizer, visiblePos]);
 
   // After each render, measure actual DOM height for recently-resized rows and
   // correct the virtualizer. Needed because overflow:visible cells keep the row
@@ -1041,7 +1098,10 @@ export function Grid({
       ) as HTMLElement | null;
       if (el) {
         const actual = Math.round(el.getBoundingClientRect().height);
-        if (actual > 0) rowVirtualizer.resizeItem(r, actual);
+        if (actual > 0) {
+          const pos = visiblePos.get(r);
+          if (pos !== undefined) rowVirtualizer.resizeItem(pos, actual);
+        }
       }
     }
   });
@@ -1060,8 +1120,10 @@ export function Grid({
     const el = scrollRef.current;
     if (!el) return;
 
+    const focusPos = visiblePos.get(focusR);
+
     if (mode === "center") {
-      rowVirtualizer.scrollToIndex(focusR, { align: "center" });
+      if (focusPos !== undefined) rowVirtualizer.scrollToIndex(focusPos, { align: "center" });
       const x = cumColX[focusC] ?? 0;
       const w = widths[focusC] ?? 0;
       const viewportW = el.clientWidth - ROW_NUM_COL_WIDTH;
@@ -1071,7 +1133,7 @@ export function Grid({
     }
 
     // ifNeeded
-    rowVirtualizer.scrollToIndex(focusR, { align: "auto" });
+    if (focusPos !== undefined) rowVirtualizer.scrollToIndex(focusPos, { align: "auto" });
     const x = cumColX[focusC] ?? 0;
     const w = widths[focusC] ?? 0;
     const viewportLeft = el.scrollLeft + ROW_NUM_COL_WIDTH;
@@ -1086,7 +1148,7 @@ export function Grid({
         behavior: "auto",
       });
     }
-  }, [selection, totalRows, totalCols, cumColX, widths, rowVirtualizer]);
+  }, [selection, totalRows, totalCols, cumColX, widths, rowVirtualizer, visiblePos]);
 
   // Suppress native text selection during drag-select. `selectstart` is not in
   // React's synthetic event system, so attach a native listener. Covers cells
@@ -1126,12 +1188,75 @@ export function Grid({
     return null;
   };
 
+  // Shared helper — renders a funnel button + ColumnFilterDropdown for column i
+  // triggered from the given source ("band" or "ruler").
+  const renderFilterControl = (i: number, source: FilterSource, iconColor?: string) => {
+    const colFilter = activeFilters[i];
+    const filterIsActive =
+      colFilter != null &&
+      (colFilter.condition.op !== "none" || colFilter.excluded.length > 0);
+    const isOpen = openFilter?.col === i && openFilter.source === source;
+    return (
+      <ColumnFilterDropdown
+        open={isOpen}
+        onOpenChange={(o) => setOpenFilter(o ? { col: i, source } : null)}
+        columnLabel={columnLetter(i)}
+        distinctValues={isOpen ? openFilterDistinct : []}
+        value={colFilter ?? { condition: { op: "none", operand: "" }, excluded: [] }}
+        onApply={(f) => onColumnFilterChange?.(i, f)}
+      >
+        <button
+          type="button"
+          aria-label="Filter column"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); setOpenFilter({ col: i, source }); }}
+          className={cn(
+            "inline-flex items-center justify-center rounded p-0.5 hover:bg-accent",
+            iconColor
+              ? (filterIsActive ? "opacity-100" : "opacity-60")
+              : (filterIsActive ? "text-primary" : "text-muted-foreground/60"),
+          )}
+          style={iconColor ? { color: iconColor } : undefined}
+        >
+          <Filter className="size-3" />
+        </button>
+      </ColumnFilterDropdown>
+    );
+  };
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let stuck = false;
+    if (headerRow != null) {
+      const pos = visiblePos.get(headerRow);
+      if (pos !== undefined) {
+        const cache = rowVirtualizer.measurementsCache;
+        let start = cache[pos]?.start;
+        if (start === undefined) {
+          // fallback: prefix-sum of effective row heights up to header position
+          start = 0;
+          for (let i = 0; i < pos; i++) {
+            const r = visibleRowIndices[i];
+            start += effectiveRowHeight(sheet, r, rowOverrides);
+          }
+        }
+        stuck = el.scrollTop >= start;
+      }
+    }
+    if (stuck !== headerStuckRef.current) {
+      headerStuckRef.current = stuck;
+      setHeaderStuck(stuck);
+    }
+  }, [headerRow, visiblePos, rowVirtualizer, sheet, rowOverrides, visibleRowIndices]);
+
   return (
     <div className="relative flex-1 overflow-hidden bg-background">
       <div
         ref={scrollRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        onScroll={handleScroll}
         className="h-full w-full overflow-auto outline-none focus:outline-none"
         style={{ contain: "strict" }}
       >
@@ -1167,6 +1292,15 @@ export function Grid({
                 style={{ width: w, height: headerHeight }}
               >
                 {columnLetter(i)}
+                {headerRow != null && groupByAnchor.has(i) && (() => {
+                  const cf = activeFilters[i];
+                  const active = cf != null && (cf.condition.op !== "none" || cf.excluded.length > 0);
+                  return active ? (
+                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                      {renderFilterControl(i, "ruler")}
+                    </span>
+                  ) : null;
+                })()}
                 {w > 0 && (
                   <ResizeHandle
                     orientation="col"
@@ -1200,9 +1334,52 @@ export function Grid({
                 userSelect: "none",
               }}
             >
+          {/* Sticky header band — mirrors the marked header row under the A/B/C ruler */}
+          {headerRow != null && headerStuck && (
+            <div
+              className="sticky left-0 z-20 flex border-b border-border bg-muted/85 backdrop-blur-md"
+              style={{ top: headerHeight, width: bodyWidth, height: effectiveRowHeight(sheet, headerRow, rowOverrides) }}
+            >
+              {/* Corner spacer aligns with row-number column */}
+              <div
+                className="sticky left-0 z-10 shrink-0 border-r border-border bg-muted/90"
+                style={{ width: ROW_NUM_COL_WIDTH }}
+              />
+              {Array.from({ length: totalCols }, (_, i) => {
+                const key = `${headerRow + 1}:${i + 1}`;
+                const anchor = merges.anchors.get(key);
+                // Skip cells covered by a horizontal header merge (anchor draws them).
+                const absorbedKey = merges.absorbed.get(key);
+                if (absorbedKey) {
+                  const parent = merges.anchors.get(absorbedKey);
+                  if (parent && isHorizontalOnlyMerge(parent)) return null;
+                }
+                const horizSpan = anchor && isHorizontalOnlyMerge(anchor) ? anchor.colSpan : 1;
+                const w = widths.slice(i, i + horizSpan).reduce((a, b) => a + b, 0);
+                const headerCell = sheet.rows[headerRow]?.[i];
+                const text = headerCell ? cellText(headerCell) : "";
+                const showFunnel = groupByAnchor.has(i);
+                return (
+                  <div
+                    key={i}
+                    className="relative flex shrink-0 items-center border-r border-border px-1.5 text-xs font-semibold text-foreground"
+                    style={{ width: w }}
+                  >
+                    <span className="truncate pr-5">{text}</span>
+                    {showFunnel && (
+                      <span className="absolute right-1 top-1/2 -translate-y-1/2">
+                        {renderFilterControl(i, "band")}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Row map */}
           {virtualRows.map((vr) => {
-            const rowIdx = vr.index;
+            const rowIdx = visibleRowIndices[vr.index];
             const row = sheet.rows[rowIdx];
             const rowInSel =
               expandedBounds &&
@@ -1320,10 +1497,52 @@ export function Grid({
             );
           })}
 
+          {/* Funnel overlay on in-flow header row (visible when header not scrolled off) */}
+          {headerRow != null && !headerStuck && (() => {
+            const pos = visiblePos.get(headerRow);
+            if (pos === undefined) return null;
+            let start = measurements[pos]?.start;
+            if (start === undefined) {
+              start = 0;
+              for (let i = 0; i < pos; i++) start += effectiveRowHeight(sheet, visibleRowIndices[i], rowOverrides);
+            }
+            const rowH = effectiveRowHeight(sheet, headerRow, rowOverrides);
+            return (
+              <div
+                className="absolute z-[15]"
+                style={{ top: start, left: 0, width: bodyWidth, height: rowH, pointerEvents: "none" }}
+              >
+                {Array.from({ length: totalCols }, (_, i) => {
+                  if (!groupByAnchor.has(i)) return null;
+                  const key = `${headerRow + 1}:${i + 1}`;
+                  const anchor = merges.anchors.get(key);
+                  const absorbedKey = merges.absorbed.get(key);
+                  if (absorbedKey) {
+                    const parent = merges.anchors.get(absorbedKey);
+                    if (parent && isHorizontalOnlyMerge(parent)) return null;
+                  }
+                  const horizSpan = anchor && isHorizontalOnlyMerge(anchor) ? anchor.colSpan : 1;
+                  const w = widths.slice(i, i + horizSpan).reduce((a, b) => a + b, 0);
+                  const x = ROW_NUM_COL_WIDTH + cumColX[i];
+                  return (
+                    <span
+                      key={i}
+                      className="absolute top-1/2 -translate-y-1/2"
+                      style={{ left: x + w - 22, pointerEvents: "auto" }}
+                    >
+                      {renderFilterControl(i, "row", sheet.rows[headerRow]?.[i]?.s?.fg)}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {/* Merge anchor layer */}
           <MergeLayer
             merges={merges}
             measurements={measurements}
+            visiblePos={visiblePos}
             sheet={sheet}
             widths={widths}
             cumColX={cumColX}
@@ -1503,6 +1722,12 @@ interface MergeLayerProps {
     end: number;
     size: number;
   }>;
+  // Maps an absolute row index → its position in the (possibly filtered)
+  // visible row list. `measurements` is indexed by virtual position, not by
+  // absolute row, so vertical merges must translate. Identity when no filter
+  // is active. Merged rows are always visible (filter exemption), so an
+  // anchor/end lookup is defined whenever the merge itself is.
+  visiblePos: Map<number, number>;
   sheet: SheetModel;
   widths: number[];
   cumColX: number[];
@@ -1517,6 +1742,7 @@ interface MergeLayerProps {
 function MergeLayer({
   merges,
   measurements,
+  visiblePos,
   sheet,
   widths,
   cumColX,
@@ -1534,8 +1760,11 @@ function MergeLayer({
         const r1 = parseInt(r1Str, 10) - 1;
         const c1 = parseInt(c1Str, 10) - 1;
         const r2 = r1 + span.rowSpan - 1;
-        const startMeas = measurements[r1];
-        const endMeas = measurements[r2];
+        const startPos = visiblePos.get(r1);
+        const endPos = visiblePos.get(r2);
+        if (startPos === undefined || endPos === undefined) return null;
+        const startMeas = measurements[startPos];
+        const endMeas = measurements[endPos];
         if (!startMeas || !endMeas) return null;
         const top = startMeas.start;
         const height = endMeas.end - startMeas.start;

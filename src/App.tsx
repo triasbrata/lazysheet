@@ -36,6 +36,14 @@ import {
   DEFAULT_COPY_FORMAT_KEY,
   readStoredDefaultCopyFormat,
 } from "@/lib/copy-format-pref";
+import {
+  buildMergedRowSet,
+  headerGroups,
+  hasActiveFilters,
+  computeVisibleRows,
+  type SheetFilters,
+  type ColumnFilter,
+} from "@/lib/grid-filter";
 import { SummaryPanel } from "@/components/SummaryPanel";
 
 const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
@@ -88,6 +96,8 @@ function App() {
   const [summaryPanelOpen, setSummaryPanelOpen] = useState(false);
   const fileState = useFileState(wb.workbook?.path ?? null);
   const headerRows = fileState.headerRows;
+
+  const [filters, setFilters] = useState<Record<string, SheetFilters>>({});
 
   const open = useCallback(
     async (path: string) => {
@@ -394,6 +404,7 @@ function App() {
   const activeSheetName = wb.activeSheet?.name ?? null;
   const headerRow =
     activeSheetName !== null ? headerRows[activeSheetName] ?? null : null;
+  const activeFilters = activeSheetName ? filters[activeSheetName] ?? {} : {};
 
   const handleMarkAsHeader = useCallback(
     (row: number | null) => {
@@ -406,6 +417,35 @@ function App() {
       );
     },
     [activeSheetName, fileState],
+  );
+
+  const handleColumnFilterChange = useCallback(
+    (colAnchor: number, filter: ColumnFilter) => {
+      if (!activeSheetName) return;
+      const sheet = wb.activeSheet;
+      const prevSheetFilters = filters[activeSheetName] ?? {};
+      const wasActive = hasActiveFilters(prevSheetFilters);
+
+      const isInactive =
+        filter.condition.op === "none" && filter.excluded.length === 0;
+      const nextSheetFilters: SheetFilters = { ...prevSheetFilters };
+      if (isInactive) delete nextSheetFilters[colAnchor];
+      else nextSheetFilters[colAnchor] = filter;
+      const nowActive = hasActiveFilters(nextSheetFilters);
+
+      setFilters((prev) => ({ ...prev, [activeSheetName]: nextSheetFilters }));
+
+      if (!wasActive && nowActive && sheet) {
+        const hasMerges = buildMergedRowSet(sheet.merges).size > 0;
+        if (hasMerges) {
+          toast.message("Filters skip merged cells", {
+            description:
+              "Merged cells are always shown; filters apply only to non-merged rows.",
+          });
+        }
+      }
+    },
+    [activeSheetName, filters, wb.activeSheet, headerRow],
   );
 
   // ── Resize: overrides + stale-prompt state ────────────────────────────────
@@ -608,11 +648,23 @@ function App() {
           : activeSheetName
             ? headerRows[activeSheetName] ?? null
             : null;
+      const sheetFilters = activeSheetName ? filters[activeSheetName] ?? {} : {};
+      let rowFilter: ((r: number) => boolean) | undefined;
+      if (hasActiveFilters(sheetFilters)) {
+        const mi = buildMergeInfo(sheet.merges);
+        const mergedRowSet = buildMergedRowSet(sheet.merges);
+        const groups = headerGroups(mi, headerIdx, sheet.max_col);
+        const visible = new Set(
+          computeVisibleRows(sheet, mergedRowSet, headerIdx, groups, sheetFilters, sheet.rows.length),
+        );
+        rowFilter = (r: number) => visible.has(r);
+      }
       const { text, rowsEmitted, truncated } = buildSelectionMarkdown(
         sheet,
         bounds,
         headerIdx,
         format,
+        rowFilter,
       );
       if (!text) {
         toast.message("Nothing to copy");
@@ -659,7 +711,7 @@ function App() {
         toast.error("Copy failed", { description: msg });
       }
     },
-    [wb.activeSheet, selection, headerRows, activeSheetName, handleMarkAsHeader],
+    [wb.activeSheet, selection, headerRows, activeSheetName, handleMarkAsHeader, filters],
   );
 
   // Context-menu copy. Plain click → copy now. Cmd/Ctrl+click (setAsDefault)
@@ -733,6 +785,8 @@ function App() {
               onResetAllDimensions={handleResetAllDimensions}
               onOpenColWidthDialog={handleOpenColWidthDialog}
               onOpenRowHeightDialog={handleOpenRowHeightDialog}
+              filters={activeFilters}
+              onColumnFilterChange={handleColumnFilterChange}
             />
           )}
           <StatusBar

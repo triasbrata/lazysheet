@@ -1,0 +1,199 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract tag annotation
+        id: tagbody
+        shell: bash
+        run: |
+          body=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
+          {
+            echo 'body<<TAGEOF'
+            echo "$body"
+            echo 'TAGEOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update changelog-app.log
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          DATE=$(date -u +%Y-%m-%d)
+          BODY="${{ steps.tagbody.outputs.body }}"
+          ENTRY="## ${TAG} (${DATE})\n\n${BODY}\n\n---\n\n"
+          if [ -f changelog-app.log ]; then
+            OLD=$(cat changelog-app.log)
+            printf "%b%s" "$ENTRY" "$OLD" > changelog-app.log
+          else
+            printf "%b" "$ENTRY" > changelog-app.log
+          fi
+
+      - name: Commit and push changelog
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add changelog-app.log
+          git commit -m "chore: update changelog for ${{ github.ref_name }}"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+          - platform: ubuntu-22.04
+            args: ''
+          - platform: windows-latest
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
+
+      - name: Rust build cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build application
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          args: ${{ matrix.args }}
+
+      - name: Upload macOS artifact
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-macos
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-linux
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-windows
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract tag annotation
+        id: tagbody
+        shell: bash
+        run: |
+          body=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
+          {
+            echo 'body<<TAGEOF'
+            echo "$body"
+            echo 'TAGEOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: artifact-*
+          merge-multiple: true
+          path: artifacts/
+
+      - name: Mirror tag to lazysheet-app
+        shell: bash
+        run: |
+          git remote add lazysheet-app \
+            "https://x-access-token:${{ secrets.LAZYSHEET_APP_TOKEN }}@github.com/triasbrata/lazysheet-app.git"
+          git push lazysheet-app "${{ github.ref_name }}"
+
+      - name: Create release in lazysheet-app
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.LAZYSHEET_APP_TOKEN }}
+          RELEASE_BODY: ${{ steps.tagbody.outputs.body }}
+        run: |
+          echo "$RELEASE_BODY" > /tmp/release-notes.md
+          gh release create "${{ github.ref_name }}" \
+            --repo triasbrata/lazysheet-app \
+            --title "LazySheet ${{ github.ref_name }}" \
+            --notes-file /tmp/release-notes.md \
+            artifacts/*
