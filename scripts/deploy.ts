@@ -189,6 +189,18 @@ function bumpVersionFiles(newVersion: string) {
     `$1"${newVersion}"`,
   );
   writeFileSync(cargoPath, cargoNew);
+
+  // src-tauri/Cargo.lock — the lazysheet package entry, so the lock stays in
+  // sync with Cargo.toml and the working tree is clean after the release.
+  const lockPath = resolve(ROOT, "src-tauri/Cargo.lock");
+  if (existsSync(lockPath)) {
+    const lock = readFileSync(lockPath, "utf8");
+    const lockNew = lock.replace(
+      /(name = "lazysheet"\nversion = )"[^"]+"/,
+      `$1"${newVersion}"`,
+    );
+    writeFileSync(lockPath, lockNew);
+  }
 }
 
 async function main() {
@@ -261,9 +273,8 @@ async function main() {
   bumpVersionFiles(version);
 
   // 8. commit
-  await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml`.cwd(
-    ROOT,
-  );
+  await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock`
+    .cwd(ROOT);
   await $`git commit -m ${`chore: release ${tag}`}`.cwd(ROOT);
 
   // 9. annotated tag with changelog as message
