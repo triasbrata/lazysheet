@@ -36,8 +36,8 @@ LazySheet has no published binaries yet. Build it from source for your platform.
 ```bash
 git clone https://github.com/triasbrata/lazysheet.git
 cd lazysheet
-pnpm install
-pnpm tauri build
+deno install
+deno task tauri build
 ```
 
 The signed `.app` / `.dmg` lands in `src-tauri/target/release/bundle/`.
@@ -47,8 +47,8 @@ The signed `.app` / `.dmg` lands in `src-tauri/target/release/bundle/`.
 ```bash
 git clone https://github.com/triasbrata/lazysheet.git
 cd lazysheet
-pnpm install
-pnpm tauri build
+deno install
+deno task tauri build
 ```
 
 The installer (`.msi` / `.exe`) lands in `src-tauri/target/release/bundle/`.
@@ -58,13 +58,13 @@ The installer (`.msi` / `.exe`) lands in `src-tauri/target/release/bundle/`.
 ```bash
 git clone https://github.com/triasbrata/lazysheet.git
 cd lazysheet
-pnpm install
-pnpm tauri build
+deno install
+deno task tauri build
 ```
 
 The `.deb` / `.AppImage` lands in `src-tauri/target/release/bundle/`.
 
-> Requires [Node.js](https://nodejs.org), [pnpm](https://pnpm.io), and the [Rust toolchain](https://rustup.rs) with [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
+> Requires [Deno](https://deno.com) and the [Rust toolchain](https://rustup.rs) with [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
 ## Supported Formats
 
@@ -84,8 +84,8 @@ The `.deb` / `.AppImage` lands in `src-tauri/target/release/bundle/`.
 ## Develop
 
 ```bash
-pnpm install
-pnpm tauri dev
+deno install
+deno task tauri dev
 ```
 
 ## Project Layout
