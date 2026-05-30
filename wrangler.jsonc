@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "lazysheet-landing",
+  "name": "lazysheet",
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry"
+  "routes": [{ "pattern": "lazysheet.brata.cloud", "custom_domain": true }],
+  "main": "@tanstack/react-start/server-entry",
 }
