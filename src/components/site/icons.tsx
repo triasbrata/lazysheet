@@ -19,6 +19,12 @@ import {
   faFileExcel,
   faFileCsv,
   faFileLines,
+  faMagnifyingGlass,
+  faFilter,
+  faThumbtack,
+  faUpRightAndDownLeftFromCenter,
+  faKeyboard,
+  faObjectGroup,
 } from '@fortawesome/free-solid-svg-icons'
 
 type IconProps = { className?: string; style?: CSSProperties }
@@ -45,6 +51,12 @@ export const LayersIcon = make(faLayerGroup)
 export const PaletteIcon = make(faPalette)
 export const CopyIcon = make(faCopy)
 export const TerminalIcon = make(faTerminal)
+export const SearchIcon = make(faMagnifyingGlass)
+export const FilterIcon = make(faFilter)
+export const PinIcon = make(faThumbtack)
+export const ResizeIcon = make(faUpRightAndDownLeftFromCenter)
+export const KeyboardIcon = make(faKeyboard)
+export const GroupIcon = make(faObjectGroup)
 
 // File-format marks
 export const ExcelIcon = make(faFileExcel)

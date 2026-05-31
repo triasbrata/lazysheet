@@ -5,13 +5,18 @@ import {
   ExcelIcon,
   CsvIcon,
   TsvIcon,
-  LockIcon,
   BoltIcon,
   CheckIcon,
   LayersIcon,
   PaletteIcon,
   CopyIcon,
-  TerminalIcon,
+  AppleMark,
+  GroupIcon,
+  SearchIcon,
+  FilterIcon,
+  PinIcon,
+  ResizeIcon,
+  KeyboardIcon,
 } from '#/components/site/icons'
 import { getDownloadData, type DownloadData } from '#/lib/releases-data'
 import { DownloadButton } from '#/features/download/download-button'
@@ -33,22 +38,47 @@ const SMALL_FEATURES = [
   {
     Icon: LayersIcon,
     title: 'Multi-sheet Navigation',
-    desc: 'Seamlessly switch between tabs in complex workbooks with a native sidebar.',
+    desc: 'Switch between worksheet tabs in any workbook from the bottom tab bar.',
+  },
+  {
+    Icon: SearchIcon,
+    title: 'Find in Sheet',
+    desc: 'Full-text search with Cmd+F. Jump between matches highlighted across the sheet.',
+  },
+  {
+    Icon: FilterIcon,
+    title: 'Column Filters',
+    desc: 'Click the funnel on any header. 14 filter types plus an Excel-style value checklist.',
+  },
+  {
+    Icon: PinIcon,
+    title: 'Sticky Header Row',
+    desc: 'Mark any row as the header — it stays pinned while you scroll through the data.',
+  },
+  {
+    Icon: ResizeIcon,
+    title: 'Resizable Columns & Rows',
+    desc: 'Drag to resize, double-click to autofit. Sizes are remembered per file.',
+  },
+  {
+    Icon: KeyboardIcon,
+    title: 'Command Palette',
+    desc: 'Cmd+K to jump to any cell reference or run an action — keyboard-first navigation.',
   },
   {
     Icon: PaletteIcon,
-    title: 'Rich Cell Features',
-    desc: 'Formatting preserved with full support for currency, dates, and styles.',
+    title: 'Rich Cell Formatting',
+    desc: 'Fonts, colors, alignment, merged cells, and clickable hyperlinks preserved from .xlsx files.',
   },
   {
     Icon: CopyIcon,
     title: 'Copy as Image',
-    desc: 'Instant capture summary report as PNG.',
+    desc: 'Capture a group-by summary report as a PNG straight to your clipboard.',
   },
   {
-    Icon: TerminalIcon,
-    title: 'Native Integration',
-    desc: "Drag & drop, macOS 'Open With', and Recent Files support built-in.",
+    Icon: AppleMark,
+    title: 'Native macOS Integration',
+    desc: "Drag & drop, 'Open With', and Recent Files support built in.",
   },
 ]
 
@@ -154,24 +184,22 @@ function Features() {
           <div className="flex flex-col items-center gap-8 md:flex-row">
             <div className="flex-1">
               <span className="mb-6 inline-flex rounded-lg bg-primary-fixed p-3 text-primary">
-                <LockIcon className="text-[22px]" />
+                <GroupIcon className="text-[22px]" />
               </span>
               <h3 className="font-display mb-4 text-2xl font-semibold">
-                Pivot-Style Grouping
+                Group-by Summary
               </h3>
               <p className="mb-6 text-on-surface-variant">
-                Instantly summarize data by any column. No complex pivot tables
-                required—just drag and group for instant roll-ups and
-                aggregations.
+                Summarize data by any column in seconds. Select a range, choose your category and value columns, and get instant roll-ups with SUM, AVG, MIN, MAX, and COUNT — no pivot-table setup.
               </p>
               <ul className="space-y-2 text-sm font-medium text-on-surface">
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-[16px] text-primary" />
-                  Multi-level grouping
+                  Multi-level grouping across up to 6 columns
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon className="text-[16px] text-primary" />
-                  Instant range selection stats
+                  Instant SUM / AVG / MIN / MAX / COUNT on any range selection
                 </li>
               </ul>
             </div>
@@ -195,8 +223,7 @@ function Features() {
               Virtualized Rendering
             </h3>
             <p className="text-on-surface-variant">
-              LazySheet only renders what you see. Open million-row sheets with
-              zero lag and smooth scrolling regardless of hardware.
+              LazySheet only renders the rows you can see. Scroll through massive sheets with smooth, lag-free movement regardless of hardware.
             </p>
           </div>
           <div className="mt-8 border-t border-surface-container-high pt-8">
@@ -214,7 +241,7 @@ function Features() {
         {SMALL_FEATURES.map((f) => (
           <div
             key={f.title}
-            className="feature-card col-span-12 rounded-xl border border-surface-container-high bg-white p-6 sm:col-span-6 md:col-span-3"
+            className="feature-card col-span-12 rounded-xl border border-surface-container-high bg-white p-6 sm:col-span-6 md:col-span-4"
           >
             <f.Icon className="mb-4 text-[22px] text-primary" />
             <h4 className="font-display mb-2 text-sm font-bold">{f.title}</h4>
