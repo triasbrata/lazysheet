@@ -17,9 +17,18 @@ import {
   PinIcon,
   ResizeIcon,
   KeyboardIcon,
+  LockIcon,
+  TerminalIcon,
 } from '#/components/site/icons'
 import { getDownloadData, type DownloadData } from '#/lib/releases-data'
 import { DownloadButton } from '#/features/download/download-button'
+import { CopyCommand } from '#/features/faq/copy-command'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '#/components/ui/accordion'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -253,6 +262,68 @@ function Features() {
   )
 }
 
+function Faq() {
+  return (
+    <section
+      id="faq"
+      className="border-t border-surface-container-high bg-surface-container-low py-24"
+    >
+      <div className="mx-auto max-w-[1000px] px-4 md:px-8">
+        <div className="mb-12 text-center">
+          <h2 className="font-display mb-4 text-[32px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[40px]">
+            Having trouble opening the app?
+          </h2>
+          <p className="text-on-surface-variant">
+            Common questions about installing LazySheet.
+          </p>
+        </div>
+
+        <Accordion
+          type="single"
+          collapsible
+          defaultValue="unsigned"
+          className="overflow-hidden rounded-xl border border-surface-container-high bg-white px-6 md:px-8"
+        >
+          <AccordionItem value="unsigned" className="border-surface-container-high">
+            <AccordionTrigger className="py-6 text-base">
+              <span className="flex items-center gap-3">
+                <span className="inline-flex shrink-0 rounded-lg bg-secondary-container p-2 text-[var(--st-secondary)]">
+                  <LockIcon className="text-[16px]" />
+                </span>
+                <span className="font-display font-semibold text-on-surface">
+                  macOS says LazySheet is “damaged” or from an “unidentified
+                  developer”
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6">
+              <p className="mb-4 text-on-surface-variant">
+                LazySheet isn’t code-signed with an Apple Developer certificate
+                yet, so macOS Gatekeeper quarantines it and blocks it from
+                opening. The app is safe — you just need to remove the
+                quarantine flag. Open the{' '}
+                <span className="inline-flex items-center gap-1 font-medium text-on-surface">
+                  <TerminalIcon className="text-[14px]" />
+                  Terminal
+                </span>{' '}
+                app and run:
+              </p>
+
+              <CopyCommand command={'xattr -dr com.apple.quarantine "/Applications/LazySheet.app"'} />
+
+              <p className="mt-4 text-sm text-on-surface-variant">
+                After it finishes, open LazySheet normally from Applications. If
+                you installed it elsewhere, change the path to match its
+                location.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </section>
+  )
+}
+
 function Home() {
   const data = Route.useLoaderData()
   return (
@@ -262,6 +333,7 @@ function Home() {
         <Hero data={data} />
         <Formats />
         <Features />
+        <Faq />
       </main>
       <Footer />
     </div>
