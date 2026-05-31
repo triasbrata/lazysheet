@@ -4,7 +4,7 @@ mod parser;
 mod state;
 
 use state::{OpenFile, PendingFiles};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -47,7 +47,10 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
-            if let RunEvent::Opened { urls } = event {
+            // RunEvent::Opened (macOS file-open / "Open With") only exists on macOS.
+            // Windows/Linux receive file paths via the single-instance plugin above.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = event {
                 let paths: Vec<String> = urls
                     .iter()
                     .filter_map(|u| u.to_file_path().ok())
@@ -60,5 +63,7 @@ pub fn run() {
                     let _ = app.emit("files-opened", paths);
                 }
             }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
         });
 }
