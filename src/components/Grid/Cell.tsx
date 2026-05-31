@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import type { CellModel } from "@/lib/types";
 import { cellText } from "@/lib/types";
@@ -32,6 +32,8 @@ interface CellProps {
   // Selection coords (0-indexed) used by Grid event delegation for click → select.
   dataRow?: number;
   dataCol?: number;
+  // Right-pinned slot rendered after content (used for the header filter funnel).
+  trailing?: ReactNode;
 }
 
 export function Cell({
@@ -52,6 +54,7 @@ export function Cell({
   inHeaderRow = false,
   dataRow,
   dataCol,
+  trailing,
 }: CellProps) {
   const w = spanWidth ?? width;
   const minH = spanHeight ?? minHeight;
@@ -107,7 +110,8 @@ export function Cell({
     fontSize: s?.font_size ? `${s.font_size}px` : undefined,
     fontFamily: s?.font_name,
     boxSizing: "border-box",
-    padding: "4px 6px",
+    // Keep in sync with measure.ts DEFAULT_PADDING_X/Y (halfX=10, halfY=6).
+    padding: "6px 10px",
     borderRight: "1px solid var(--border)",
     borderBottom: "1px solid var(--border)",
     display: "flex",
@@ -148,7 +152,10 @@ export function Cell({
   }
 
   const innerStyle: CSSProperties = {
-    width: "100%",
+    // Flex item that fills available width but shrinks when a `trailing` slot
+    // (header funnel) shares the row, keeping the funnel visible.
+    flex: "1 1 0",
+    minWidth: 0,
     whiteSpace: wrap ? "pre-wrap" : "nowrap",
     overflow: wrap ? (wrapClipped ? "hidden" : "visible") : "hidden",
     textOverflow: wrap ? undefined : "ellipsis",
@@ -198,6 +205,19 @@ export function Cell({
       data-c={dataCol}
     >
       {content}
+      {trailing != null && (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            alignSelf: "center",
+            marginLeft: "auto",
+            flexShrink: 0,
+          }}
+        >
+          {trailing}
+        </span>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { cellText, type CellModel, type SheetModel } from "@/lib/types";
@@ -31,6 +32,9 @@ import {
   mergeSpanAt,
   nextVisibleCol,
   nextVisibleRow,
+  headerBandStuck,
+  FUNNEL_ALLOWANCE_X,
+  FUNNEL_ICON_PX,
   resolveActiveCoords,
   ROW_NUM_COL_WIDTH,
   sampleRowIndices,
@@ -201,6 +205,19 @@ export function Grid({
     [onColResize, onRowResize],
   );
 
+  // Merge map + header-group anchors — declared before the autofit orchestrator
+  // because autofit reserves funnel space for funnel-bearing header columns.
+  const merges = useMemo(() => buildMergeInfo(sheet.merges), [sheet.merges]);
+  const filterGroups = useMemo(
+    () => headerGroups(merges, headerRow, totalCols),
+    [merges, headerRow, totalCols],
+  );
+  const groupByAnchor = useMemo(() => {
+    const m = new Map<number, HeaderGroup>();
+    for (const g of filterGroups) m.set(g.anchorCol, g);
+    return m;
+  }, [filterGroups]);
+
   // ── Autofit orchestrator ────────────────────────────────────────────────
   // Extract per-cell measurement options from a CellModel's style overrides.
   // Returns undefined when the cell carries no style worth merging.
@@ -243,9 +260,20 @@ export function Grid({
         perCell.push(cellMeasureOpts(c));
       }
       const base: MeasureOptions = { ...baseFont, wrap: colHasWrap };
-      return measureAutofitColumn(texts, base, perCell);
+      const measured = measureAutofitColumn(texts, base, perCell);
+      // A funnel-bearing header cell shows the inline funnel on its right, so
+      // the column must be wide enough for the header text PLUS the funnel.
+      if (headerRow == null || !groupByAnchor.has(colIdx)) return measured;
+      const hc = sheet.rows[headerRow]?.[colIdx];
+      const headerNeeded =
+        measureAutofitColumn(
+          [hc ? cellText(hc) : ""],
+          { ...baseFont, wrap: false },
+          [cellMeasureOpts(hc)],
+        ) + FUNNEL_ALLOWANCE_X;
+      return Math.max(measured, headerNeeded);
     },
-    [sheet, totalRows, totalCols, cellMeasureOpts],
+    [sheet, totalRows, totalCols, cellMeasureOpts, headerRow, groupByAnchor],
   );
 
   // Compute fit-to-content height for one row. Uses current effective column
@@ -269,9 +297,15 @@ export function Grid({
         ...baseFont,
         wrap: row.some((cc) => cc?.s?.wrap),
       };
-      return measureAutofitRow(texts, widthsForMeasure, base, perCell);
+      const measured = measureAutofitRow(texts, widthsForMeasure, base, perCell);
+      // The header row carries inline funnels; keep it tall enough for the icon
+      // (icon box + 2× cell vertical padding of 6px).
+      if (rowIdx === headerRow && groupByAnchor.size > 0) {
+        return Math.max(measured, FUNNEL_ICON_PX + 12);
+      }
+      return measured;
     },
-    [sheet, totalRows, totalCols, widths, cellMeasureOpts],
+    [sheet, totalRows, totalCols, widths, cellMeasureOpts, headerRow, groupByAnchor],
   );
 
   const handleAutofitCols = useCallback(
@@ -392,16 +426,10 @@ export function Grid({
   const totalContentWidth = cumColX[cumColX.length - 1] ?? 0;
   const bodyWidth = ROW_NUM_COL_WIDTH + totalContentWidth;
 
-  const merges = useMemo(() => buildMergeInfo(sheet.merges), [sheet.merges]);
-
   const headerHeight = 26;
 
   // ── Filter-aware row visibility ─────────────────────────────────────────
   const mergedRowSet = useMemo(() => buildMergedRowSet(sheet.merges), [sheet.merges]);
-  const filterGroups = useMemo(
-    () => headerGroups(merges, headerRow, totalCols),
-    [merges, headerRow, totalCols],
-  );
   const activeFilters: SheetFilters = filters ?? {};
   const visibleRowIndices = useMemo(
     () => computeVisibleRows(sheet, mergedRowSet, headerRow, filterGroups, activeFilters, totalRows),
@@ -414,11 +442,6 @@ export function Grid({
     return m;
   }, [visibleRowIndices]);
   // Fast lookup: anchorCol → HeaderGroup (for checking which col headers get a funnel button).
-  const groupByAnchor = useMemo(() => {
-    const m = new Map<number, HeaderGroup>();
-    for (const g of filterGroups) m.set(g.anchorCol, g);
-    return m;
-  }, [filterGroups]);
   // Which column's filter dropdown is currently open and from which trigger source.
   type FilterSource = "band" | "ruler" | "row";
   const [openFilter, setOpenFilter] = useState<{ col: number; source: FilterSource } | null>(null);
@@ -1229,6 +1252,14 @@ export function Grid({
     );
   };
 
+  // Inline header funnel for a cell: shown on the in-flow header row only while
+  // it is NOT scrolled off (the sticky band carries the funnel when stuck).
+  const headerFunnelFor = (colIdx: number, rowIdx: number): ReactNode => {
+    if (headerRow == null || headerStuck || rowIdx !== headerRow) return undefined;
+    if (!groupByAnchor.has(colIdx)) return undefined;
+    return renderFilterControl(colIdx, "row", sheet.rows[headerRow]?.[colIdx]?.s?.fg);
+  };
+
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -1246,7 +1277,7 @@ export function Grid({
             start += effectiveRowHeight(sheet, r, rowOverrides);
           }
         }
-        stuck = el.scrollTop >= start;
+        stuck = headerBandStuck(el.scrollTop, start);
       }
     }
     if (stuck !== headerStuckRef.current) {
@@ -1448,6 +1479,7 @@ export function Grid({
                         inHeaderRow={rowIdx === headerRow}
                         dataRow={rowIdx}
                         dataCol={colIdx}
+                        trailing={headerFunnelFor(colIdx, rowIdx)}
                       />
                     );
                   }
@@ -1486,53 +1518,13 @@ export function Grid({
                       inHeaderRow={rowIdx === headerRow}
                       dataRow={rowIdx}
                       dataCol={colIdx}
+                      trailing={headerFunnelFor(colIdx, rowIdx)}
                     />
                   );
                 })}
               </div>
             );
           })}
-
-          {/* Funnel overlay on in-flow header row (visible when header not scrolled off) */}
-          {headerRow != null && !headerStuck && (() => {
-            const pos = visiblePos.get(headerRow);
-            if (pos === undefined) return null;
-            let start = measurements[pos]?.start;
-            if (start === undefined) {
-              start = 0;
-              for (let i = 0; i < pos; i++) start += effectiveRowHeight(sheet, visibleRowIndices[i], rowOverrides);
-            }
-            const rowH = effectiveRowHeight(sheet, headerRow, rowOverrides);
-            return (
-              <div
-                className="absolute z-[25]"
-                style={{ top: start, left: 0, width: bodyWidth, height: rowH, pointerEvents: "none" }}
-              >
-                {Array.from({ length: totalCols }, (_, i) => {
-                  if (!groupByAnchor.has(i)) return null;
-                  const key = `${headerRow + 1}:${i + 1}`;
-                  const anchor = merges.anchors.get(key);
-                  const absorbedKey = merges.absorbed.get(key);
-                  if (absorbedKey) {
-                    const parent = merges.anchors.get(absorbedKey);
-                    if (parent && isHorizontalOnlyMerge(parent)) return null;
-                  }
-                  const horizSpan = anchor && isHorizontalOnlyMerge(anchor) ? anchor.colSpan : 1;
-                  const w = widths.slice(i, i + horizSpan).reduce((a, b) => a + b, 0);
-                  const x = ROW_NUM_COL_WIDTH + cumColX[i];
-                  return (
-                    <span
-                      key={i}
-                      className="absolute top-1/2 -translate-y-1/2"
-                      style={{ left: x + w - 22, pointerEvents: "auto" }}
-                    >
-                      {renderFilterControl(i, "row", sheet.rows[headerRow]?.[i]?.s?.fg)}
-                    </span>
-                  );
-                })}
-              </div>
-            );
-          })()}
 
           {/* Merge anchor layer */}
           <MergeLayer
