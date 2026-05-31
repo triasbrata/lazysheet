@@ -364,6 +364,14 @@ export function headerBandStuck(scrollTop: number, start: number): boolean {
   return scrollTop > start;
 }
 
+// Horizontal space the inline header funnel occupies on the right of a header
+// cell: icon (size-3 = 12px) + button padding (p-0.5 = 2px ×2) + gap from text.
+// Autofit adds this to a funnel-bearing header column so the text isn't clipped.
+export const FUNNEL_ALLOWANCE_X = 22;
+// Funnel icon box height (size-3 = 12px). Autofit ensures a funnel-bearing
+// header row is at least tall enough to show the icon within vertical padding.
+export const FUNNEL_ICON_PX = 12;
+
 export function parseA1(ref: string): { row: number; col: number } | null {
   const m = ref.trim().match(/^([A-Za-z]+)(\d+)$/);
   if (!m) return null;

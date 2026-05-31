@@ -21,8 +21,9 @@ export interface MeasuredSize {
   height: number;
 }
 
-const DEFAULT_PADDING_X = 12;
-const DEFAULT_PADDING_Y = 8;
+// Must stay in sync with Cell.tsx baseStyle padding ("6px 10px" → X=2*10, Y=2*6).
+const DEFAULT_PADDING_X = 20;
+const DEFAULT_PADDING_Y = 12;
 const DEFAULT_WRAP_LINE_HEIGHT = 1.35;
 // Safety buffer to avoid edge-case ellipsis-truncation from sub-pixel
 // rendering. 2px is below visual notice but covers float-rounding gaps.
