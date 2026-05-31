@@ -29,7 +29,22 @@ Connect to Excel and CSV files, browse sheets, and run pivot-style summaries wit
 
 ## Install
 
-LazySheet has no published binaries yet. Build it from source for your platform.
+Prebuilt binaries for each platform are attached to every [GitHub Release](https://github.com/triasbrata/lazysheet-app/releases). Download the one for your OS, or build from source below.
+
+### macOS — first launch
+
+macOS builds are **unsigned**, so Gatekeeper marks a freshly downloaded app as
+`"LazySheet" is damaged and can't be opened`. The app is fine — macOS just
+quarantines unsigned downloads. Remove the quarantine flag once:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/LazySheet.app"
+```
+
+(Point the path at wherever the `.app` lives if you haven't moved it to
+`/Applications`.) Then open it normally.
+
+## Build from source
 
 #### macOS
 
@@ -40,7 +55,7 @@ deno install
 deno task tauri build
 ```
 
-The signed `.app` / `.dmg` lands in `src-tauri/target/release/bundle/`.
+The `.app` / `.dmg` lands in `src-tauri/target/release/bundle/`.
 
 #### Windows
 

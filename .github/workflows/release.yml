@@ -198,7 +198,19 @@ jobs:
           GH_TOKEN: ${{ secrets.LAZYSHEET_APP_TOKEN }}
           RELEASE_BODY: ${{ steps.tagbody.outputs.body }}
         run: |
-          echo "$RELEASE_BODY" > /tmp/release-notes.md
+          {
+            echo "$RELEASE_BODY"
+            echo
+            echo "---"
+            echo
+            echo "### macOS — first launch"
+            echo
+            echo "Builds are unsigned, so macOS may report the app as \"damaged\". Remove the quarantine flag once, then open normally:"
+            echo
+            echo '```bash'
+            echo 'xattr -dr com.apple.quarantine "/Applications/LazySheet.app"'
+            echo '```'
+          } > /tmp/release-notes.md
           gh release create "${{ github.ref_name }}" \
             --repo triasbrata/lazysheet-app \
             --title "LazySheet ${{ github.ref_name }}" \
