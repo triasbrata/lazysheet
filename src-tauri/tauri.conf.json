@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "deno run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "deno run build",
+    "beforeBuildCommand": "deno run build:web",
     "frontendDist": "../dist"
   },
   "app": {
