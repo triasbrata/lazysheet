@@ -1,6 +1,6 @@
 [package]
 name = "lazysheet"
-version = "0.3.0"
+version = "0.3.1"
 description = "LazySheet — Tauri v2 desktop app"
 authors = ["edot"]
 edition = "2021"
