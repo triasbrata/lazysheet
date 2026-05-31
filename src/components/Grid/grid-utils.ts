@@ -356,6 +356,14 @@ export function changedRowIndices(
   return out;
 }
 
+// True when the in-flow header row has scrolled strictly above the ruler
+// bottom, so the duplicate sticky band should replace it. Strict `>` (not `>=`)
+// so a header at the very top (start=0) — or any header flush under the ruler —
+// keeps the in-flow row + funnel overlay instead of double-rendering the band.
+export function headerBandStuck(scrollTop: number, start: number): boolean {
+  return scrollTop > start;
+}
+
 export function parseA1(ref: string): { row: number; col: number } | null {
   const m = ref.trim().match(/^([A-Za-z]+)(\d+)$/);
   if (!m) return null;

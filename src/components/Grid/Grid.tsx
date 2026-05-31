@@ -31,6 +31,7 @@ import {
   mergeSpanAt,
   nextVisibleCol,
   nextVisibleRow,
+  headerBandStuck,
   resolveActiveCoords,
   ROW_NUM_COL_WIDTH,
   sampleRowIndices,
@@ -1246,7 +1247,7 @@ export function Grid({
             start += effectiveRowHeight(sheet, r, rowOverrides);
           }
         }
-        stuck = el.scrollTop >= start;
+        stuck = headerBandStuck(el.scrollTop, start);
       }
     }
     if (stuck !== headerStuckRef.current) {
