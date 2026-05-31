@@ -211,8 +211,21 @@ jobs:
             echo 'xattr -dr com.apple.quarantine "/Applications/LazySheet.app"'
             echo '```'
           } > /tmp/release-notes.md
-          gh release create "${{ github.ref_name }}" \
-            --repo triasbrata/lazysheet \
-            --title "LazySheet ${{ github.ref_name }}" \
-            --notes-file /tmp/release-notes.md \
-            artifacts/*
+          # download-artifact preserves the bundle/ subdir layout, so artifacts/
+          # holds files (dmg) alongside dirs (deb, appimage, msi, nsis). gh only
+          # uploads files, so collect them recursively.
+          mapfile -t FILES < <(find artifacts -type f)
+          if gh release view "${{ github.ref_name }}" --repo triasbrata/lazysheet >/dev/null 2>&1; then
+            gh release edit "${{ github.ref_name }}" \
+              --repo triasbrata/lazysheet \
+              --notes-file /tmp/release-notes.md
+            gh release upload "${{ github.ref_name }}" \
+              --repo triasbrata/lazysheet \
+              --clobber "${FILES[@]}"
+          else
+            gh release create "${{ github.ref_name }}" \
+              --repo triasbrata/lazysheet \
+              --title "LazySheet ${{ github.ref_name }}" \
+              --notes-file /tmp/release-notes.md \
+              "${FILES[@]}"
+          fi
