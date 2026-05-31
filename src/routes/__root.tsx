@@ -5,6 +5,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import appCss from '../styles.css?url'
 import '#/lib/fontawesome'
 
+const SITE_URL = 'https://lazysheet.brata.cloud'
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -24,8 +26,17 @@ export const Route = createRootRoute({
           'Open Excel, CSV and TSV files instantly. Free and open source for macOS, Windows and Linux.',
       },
       { property: 'og:type', content: 'website' },
-      { property: 'og:image', content: '/shots/application.png' },
+      { property: 'og:url', content: SITE_URL },
+      { property: 'og:image', content: `${SITE_URL}/app-icon-512.png` },
       { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'LazySheet — Fast, Simple Spreadsheet Viewer' },
+      {
+        name: 'twitter:description',
+        content:
+          'Open Excel, CSV and TSV files instantly. Free and open source for macOS, Windows and Linux.',
+      },
+      { name: 'twitter:url', content: SITE_URL },
+      { name: 'twitter:image', content: `${SITE_URL}/app-icon-512.png` },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
