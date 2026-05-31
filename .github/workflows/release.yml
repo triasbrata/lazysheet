@@ -185,12 +185,12 @@ jobs:
           merge-multiple: true
           path: artifacts/
 
-      - name: Mirror tag to lazysheet-app
+      - name: Mirror tag to lazysheet
         shell: bash
         run: |
-          git remote add lazysheet-app \
-            "https://x-access-token:${{ secrets.LAZYSHEET_APP_TOKEN }}@github.com/triasbrata/lazysheet-app.git"
-          git push lazysheet-app "${{ github.ref_name }}"
+          git remote add lazysheet \
+            "https://x-access-token:${{ secrets.LAZYSHEET_APP_TOKEN }}@github.com/triasbrata/lazysheet.git"
+          git push lazysheet "${{ github.ref_name }}"
 
       - name: Create release in lazysheet-app
         shell: bash
@@ -212,7 +212,7 @@ jobs:
             echo '```'
           } > /tmp/release-notes.md
           gh release create "${{ github.ref_name }}" \
-            --repo triasbrata/lazysheet-app \
+            --repo triasbrata/lazysheet \
             --title "LazySheet ${{ github.ref_name }}" \
             --notes-file /tmp/release-notes.md \
             artifacts/*

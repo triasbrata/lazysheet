@@ -29,7 +29,7 @@ Connect to Excel and CSV files, browse sheets, and run pivot-style summaries wit
 
 ## Install
 
-Prebuilt binaries for each platform are attached to every [GitHub Release](https://github.com/triasbrata/lazysheet-app/releases). Download the one for your OS, or build from source below.
+Prebuilt binaries for each platform are attached to every [GitHub Release](https://github.com/triasbrata/lazysheet/releases). Download the one for your OS, or build from source below.
 
 ### macOS — first launch
 
