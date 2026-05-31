@@ -1,0 +1,3 @@
+[submodule "website/landing"]
+	path = website/landing
+	url = git@github.com:triasbrata/lazysheet.git
