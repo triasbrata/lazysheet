@@ -27,6 +27,11 @@ jobs:
         id: tagbody
         shell: bash
         run: |
+          # actions/checkout overwrites the annotated tag with a lightweight one
+          # pointing at the commit, so %(contents) would return the commit
+          # message. Re-fetch the real annotated tag object first.
+          git fetch --force origin \
+            "refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
           body=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
           {
             echo 'body<<TAGEOF'
@@ -127,6 +132,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # macOS builds are produced unsigned. To enable codesigning, add the
           # APPLE_* repo secrets and restore them as env vars here.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           args: ${{ matrix.args }}
 
@@ -135,7 +142,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: artifact-macos
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
           if-no-files-found: error
 
       - name: Upload Linux artifacts
@@ -146,6 +156,8 @@ jobs:
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
+            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
           if-no-files-found: error
 
       - name: Upload Windows artifacts
@@ -156,6 +168,7 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sig
           if-no-files-found: error
 
   release:
@@ -172,6 +185,11 @@ jobs:
         id: tagbody
         shell: bash
         run: |
+          # actions/checkout overwrites the annotated tag with a lightweight one
+          # pointing at the commit, so %(contents) would return the commit
+          # message. Re-fetch the real annotated tag object first.
+          git fetch --force origin \
+            "refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
           body=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
           {
             echo 'body<<TAGEOF'
@@ -192,6 +210,91 @@ jobs:
           git remote add lazysheet \
             "https://x-access-token:${{ secrets.LAZYSHEET_APP_TOKEN }}@github.com/triasbrata/lazysheet.git"
           git push lazysheet "${{ github.ref_name }}"
+
+      - name: Generate latest.json
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          NOTES="${{ steps.tagbody.outputs.body }}"
+
+          # Helper: find a file matching a glob under artifacts/, return empty string if absent
+          find_artifact() {
+            local pattern="$1"
+            find artifacts -type f -name "$pattern" 2>/dev/null | head -n 1
+          }
+
+          PLATFORMS_JSON=""
+
+          # darwin-aarch64: *.app.tar.gz + *.app.tar.gz.sig
+          MAC_BUNDLE="$(find_artifact '*.app.tar.gz')"
+          MAC_SIG="$(find_artifact '*.app.tar.gz.sig')"
+          if [ -n "$MAC_BUNDLE" ] && [ -n "$MAC_SIG" ]; then
+            MAC_FILENAME="$(basename "$MAC_BUNDLE")"
+            MAC_SIGNATURE="$(cat "$MAC_SIG")"
+            MAC_URL="https://github.com/triasbrata/lazysheet/releases/download/${TAG}/${MAC_FILENAME}"
+            PLATFORMS_JSON="${PLATFORMS_JSON}$(jq -n \
+              --arg sig "$MAC_SIGNATURE" \
+              --arg url "$MAC_URL" \
+              '{"signature":$sig,"url":$url}')"
+            PLATFORMS_JSON="\"darwin-aarch64\":${PLATFORMS_JSON}"
+            DARWIN_ENTRY="\"darwin-aarch64\":$(jq -n --arg sig "$MAC_SIGNATURE" --arg url "$MAC_URL" '{"signature":$sig,"url":$url}')"
+          else
+            echo "::warning::darwin-aarch64 updater bundle or sig not found — omitting from latest.json"
+            DARWIN_ENTRY=""
+          fi
+
+          # linux-x86_64: *.AppImage.tar.gz + *.AppImage.tar.gz.sig
+          LINUX_BUNDLE="$(find_artifact '*.AppImage.tar.gz')"
+          LINUX_SIG="$(find_artifact '*.AppImage.tar.gz.sig')"
+          if [ -n "$LINUX_BUNDLE" ] && [ -n "$LINUX_SIG" ]; then
+            LINUX_FILENAME="$(basename "$LINUX_BUNDLE")"
+            LINUX_SIGNATURE="$(cat "$LINUX_SIG")"
+            LINUX_URL="https://github.com/triasbrata/lazysheet/releases/download/${TAG}/${LINUX_FILENAME}"
+            LINUX_ENTRY="\"linux-x86_64\":$(jq -n --arg sig "$LINUX_SIGNATURE" --arg url "$LINUX_URL" '{"signature":$sig,"url":$url}')"
+          else
+            echo "::warning::linux-x86_64 updater bundle or sig not found — omitting from latest.json"
+            LINUX_ENTRY=""
+          fi
+
+          # windows-x86_64: *-setup.exe + *-setup.exe.sig
+          WIN_BUNDLE="$(find_artifact '*-setup.exe')"
+          WIN_SIG="$(find_artifact '*-setup.exe.sig')"
+          if [ -n "$WIN_BUNDLE" ] && [ -n "$WIN_SIG" ]; then
+            WIN_FILENAME="$(basename "$WIN_BUNDLE")"
+            WIN_SIGNATURE="$(cat "$WIN_SIG")"
+            WIN_URL="https://github.com/triasbrata/lazysheet/releases/download/${TAG}/${WIN_FILENAME}"
+            WIN_ENTRY="\"windows-x86_64\":$(jq -n --arg sig "$WIN_SIGNATURE" --arg url "$WIN_URL" '{"signature":$sig,"url":$url}')"
+          else
+            echo "::warning::windows-x86_64 updater bundle or sig not found — omitting from latest.json"
+            WIN_ENTRY=""
+          fi
+
+          # Build platforms object from whichever entries are non-empty
+          PLATFORM_PARTS=()
+          [ -n "$DARWIN_ENTRY" ] && PLATFORM_PARTS+=("$DARWIN_ENTRY")
+          [ -n "$LINUX_ENTRY"  ] && PLATFORM_PARTS+=("$LINUX_ENTRY")
+          [ -n "$WIN_ENTRY"    ] && PLATFORM_PARTS+=("$WIN_ENTRY")
+
+          if [ ${#PLATFORM_PARTS[@]} -eq 0 ]; then
+            echo "::error::No updater platforms found — latest.json would be empty. Aborting."
+            exit 1
+          fi
+
+          # Join parts with commas and wrap in {}
+          PLATFORMS_JOINED=$(printf '%s\n' "${PLATFORM_PARTS[@]}" | paste -sd ',')
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes   "$NOTES" \
+            --arg pub_date "$PUB_DATE" \
+            --argjson platforms "{${PLATFORMS_JOINED}}" \
+            '{version:$version,notes:$notes,pub_date:$pub_date,platforms:$platforms}' \
+            > artifacts/latest.json
+
+          echo "Generated artifacts/latest.json:"
+          cat artifacts/latest.json
 
       - name: Create release in lazysheet-app
         shell: bash
