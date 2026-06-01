@@ -36,7 +36,7 @@ const FILE_FORMATS = ['.xlsx', '.xlsm', '.xls', '.csv', '.tsv']
 export const BENTO_TILES: BentoTile[] = [
   {
     id: 'group-by',
-    span: 'md:col-start-5 md:col-span-4 md:row-start-2 md:row-span-2',
+    span: 'md:col-start-5 md:col-span-4 md:row-start-1 md:row-span-3',
     tone: 'accent',
     icon: GroupIcon,
     title: 'Group-by Summary',
@@ -58,13 +58,13 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'formats',
-    span: 'md:col-start-5 md:col-span-4 md:row-start-1',
+    span: 'md:col-start-9 md:col-span-4 md:row-start-2',
     tone: 'tint',
     icon: ExcelIcon,
     title: 'Wide Format Support',
-    description: 'Open .xlsx, .xlsm, .xls, .csv, and .tsv files — no conversion, no setup.',
+    description: 'Open your spreadsheets directly — no conversion, no setup.',
     render: () => (
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {FILE_FORMATS.map((ext) => (
           <span
             key={ext}
@@ -78,14 +78,14 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'multi-sheet',
-    span: 'md:col-start-1 md:col-span-4 md:row-start-2',
+    span: 'md:col-start-11 md:col-span-2 md:row-start-1',
     icon: LayersIcon,
     title: 'Multi-sheet Navigation',
     description: 'Switch between worksheet tabs in any workbook from the bottom tab bar.',
   },
   {
     id: 'command',
-    span: 'md:col-start-9 md:col-span-4 md:row-start-2',
+    span: 'md:col-start-9 md:col-span-2 md:row-start-3',
     icon: KeyboardIcon,
     title: 'Command Palette',
     description:
@@ -99,21 +99,10 @@ export const BENTO_TILES: BentoTile[] = [
     title: 'Virtualized Rendering',
     description:
       'LazySheet only renders the rows you can see. Scroll through massive sheets with smooth, lag-free movement regardless of hardware.',
-    render: () => (
-      <div className="mt-8 border-t border-surface-container-high pt-8">
-        <div className="flex items-center justify-between text-sm font-medium">
-          <span>Scroll Latency</span>
-          <span className="font-bold text-primary">0.1ms</span>
-        </div>
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-surface-container-high">
-          <div className="h-full w-[20%] rounded-full bg-primary" />
-        </div>
-      </div>
-    ),
   },
   {
     id: 'filters',
-    span: 'md:col-start-9 md:col-span-4 md:row-start-1',
+    span: 'md:col-start-9 md:col-span-2 md:row-start-1',
     icon: FilterIcon,
     title: 'Column Filters',
     description:
@@ -121,7 +110,7 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'sticky',
-    span: 'md:col-start-1 md:col-span-4 md:row-start-3',
+    span: 'md:col-start-1 md:col-span-2 md:row-start-3',
     icon: PinIcon,
     title: 'Sticky Header Row',
     description:
@@ -129,14 +118,14 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'resize',
-    span: 'md:col-start-9 md:col-span-4 md:row-start-3',
+    span: 'md:col-start-3 md:col-span-2 md:row-start-3',
     icon: ResizeIcon,
     title: 'Resizable Columns & Rows',
     description: 'Drag to resize, double-click to autofit. Sizes are remembered per file.',
   },
   {
     id: 'format',
-    span: 'md:col-start-4 md:col-span-3 md:row-start-4',
+    span: 'md:col-start-11 md:col-span-2 md:row-start-3',
     icon: PaletteIcon,
     title: 'Rich Cell Formatting',
     description:
@@ -144,21 +133,21 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'copy',
-    span: 'md:col-start-7 md:col-span-3 md:row-start-4',
+    span: 'md:col-start-1 md:col-span-6 md:row-start-4',
     icon: CopyIcon,
     title: 'Copy as Image',
     description: 'Capture a group-by summary report as a PNG straight to your clipboard.',
   },
   {
     id: 'find',
-    span: 'md:col-start-1 md:col-span-3 md:row-start-4',
+    span: 'md:col-start-1 md:col-span-4 md:row-start-2',
     icon: SearchIcon,
     title: 'Find in Sheet',
     description: 'Full-text search with Cmd+F. Jump between matches highlighted across the sheet.',
   },
   {
     id: 'native',
-    span: 'md:col-start-10 md:col-span-3 md:row-start-4',
+    span: 'md:col-start-7 md:col-span-6 md:row-start-4',
     tone: 'plain',
     icon: AppleMark,
     title: 'Native macOS Integration',

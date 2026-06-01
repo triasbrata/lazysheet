@@ -63,7 +63,7 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
     <motion.div
       style={wrapperStyle}
       className={cn(
-        'group relative overflow-hidden rounded-3xl border border-surface-container-high p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-16px_rgba(0,0,0,0.14)] transition-shadow hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_18px_44px_-18px_rgba(0,0,0,0.20)] motion-safe:md:p-6',
+        'group relative overflow-hidden rounded-3xl border border-surface-container-high p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),inset_0_-12px_24px_-20px_rgba(0,0,0,0.18),0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-16px_rgba(0,0,0,0.14)] transition-shadow hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),inset_0_-12px_24px_-20px_rgba(0,0,0,0.18),0_2px_4px_rgba(0,0,0,0.05),0_18px_44px_-18px_rgba(0,0,0,0.20)] motion-safe:md:p-6',
         toneClass,
         tile.span,
       )}
@@ -113,28 +113,32 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
           </div>
         ) : (
           <div className="flex h-full flex-col">
-            {tile.icon && (
-              <span className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-fixed">
-                <tile.icon className="text-[20px] text-primary" />
-              </span>
-            )}
-            <h3
-              className={cn(
-                'font-display font-semibold text-on-surface',
-                tile.id === 'group-by' ? 'text-2xl' : 'text-base',
+            <div className="flex items-start gap-4">
+              {tile.icon && (
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-fixed">
+                  <tile.icon className="text-[20px] text-primary" />
+                </span>
               )}
-            >
-              {tile.title}
-            </h3>
-            {tile.description && (
-              <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                {tile.description}
-              </p>
-            )}
-            {tile.render && <div className="mt-4">{tile.render()}</div>}
+              <div className="min-w-0">
+                <h3
+                  className={cn(
+                    'font-display font-semibold text-on-surface',
+                    tile.id === 'group-by' ? 'text-2xl' : 'text-base',
+                  )}
+                >
+                  {tile.title}
+                </h3>
+                {tile.description && (
+                  <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">
+                    {tile.description}
+                  </p>
+                )}
+                {tile.render && <div className="mt-3">{tile.render()}</div>}
+              </div>
+            </div>
             {tile.media && (
               <motion.div
-                className="mt-6 motion-safe:md:mt-4 motion-safe:md:min-h-0 motion-safe:md:flex-1 motion-safe:md:overflow-hidden"
+                className="mt-6 overflow-hidden rounded-xl border border-surface-container-high motion-safe:md:mt-4 motion-safe:md:min-h-[220px] motion-safe:md:flex-1"
                 style={
                   reduce
                     ? undefined
@@ -144,7 +148,7 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
                 <img
                   src={tile.media.src}
                   alt={tile.media.alt}
-                  className="w-full rounded-xl border border-surface-container-high motion-safe:md:h-full motion-safe:md:object-cover motion-safe:md:object-left-top"
+                  className="h-full w-full object-cover object-left-top"
                 />
               </motion.div>
             )}

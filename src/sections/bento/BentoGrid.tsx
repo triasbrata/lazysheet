@@ -19,16 +19,14 @@ export function BentoGrid({ tiles, header }: BentoGridProps): JSX.Element {
     // Mobile / reduced-motion: height auto, normal document flow.
     <section id="features" ref={trackRef} className="relative motion-safe:md:h-[300vh]">
       {/* Pinned stage: sticky + full-screen + vertically centered when pinning is active. */}
-      <div className="mx-auto flex max-w-[1800px] flex-col px-4 py-24 md:px-10 lg:px-16 motion-safe:md:sticky motion-safe:md:top-16 motion-safe:md:h-[calc(100vh-4rem)] motion-safe:md:justify-center motion-safe:md:overflow-hidden motion-safe:md:py-8">
+      <div className="mx-auto flex max-w-[1800px] flex-col px-4 py-24 md:px-10 lg:px-16 motion-safe:md:sticky motion-safe:md:top-16 motion-safe:md:py-8">
         {header}
         <motion.div
           className={[
-            'grid grid-cols-1 gap-5 [grid-auto-rows:minmax(190px,auto)]',
-            'md:grid-cols-12 md:gap-6',
-            // pinned (motion-safe + md): fill remaining viewport height, rows split evenly
-            'motion-safe:md:min-h-0 motion-safe:md:flex-1 motion-safe:md:[grid-template-rows:repeat(4,minmax(0,1fr))]',
-            // reduced-motion desktop: natural row heights, no fill
-            'motion-reduce:md:[grid-template-rows:repeat(4,minmax(200px,auto))]',
+            // content-driven rows: each card sizes to its own content (varied heights)
+            'grid grid-cols-1 gap-3 [grid-auto-rows:minmax(160px,auto)]',
+            'min-[480px]:grid-cols-2',
+            'md:grid-cols-12 md:gap-3 md:[grid-auto-rows:minmax(0,auto)]',
           ].join(' ')}
         >
           {tiles.map((t, i) => (
