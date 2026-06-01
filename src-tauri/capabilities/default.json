@@ -16,6 +16,9 @@
     "fs:allow-read-text-file",
     "log:default",
     "opener:default",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    "drag:allow-start-drag",
+    "clipboard:allow-write-files-uris",
+    "clipboard:allow-write-text"
   ]
 }

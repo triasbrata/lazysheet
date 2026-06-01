@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Crosshair, Sigma } from "lucide-react";
+import { ArrowRight, ClipboardCopy, Crosshair, Files, Sigma } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,8 @@ interface CommandPaletteProps {
   onModeChange: (mode: PaletteMode) => void;
   onGoto: (cellRef: string) => string | null;
   onOpenSummary?: () => void;
+  onCopyFile?: () => void;
+  onCopyFilePath?: () => void;
 }
 
 export function CommandPalette({
@@ -33,6 +35,8 @@ export function CommandPalette({
   onModeChange,
   onGoto,
   onOpenSummary,
+  onCopyFile,
+  onCopyFilePath,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +75,36 @@ export function CommandPalette({
             },
           ]
         : []),
+      ...(onCopyFile
+        ? [
+            {
+              id: "copy-file",
+              label: "Copy file",
+              hint: "Copy .xlsx to clipboard",
+              icon: Files,
+              run: () => {
+                onOpenChange(false);
+                onCopyFile!();
+              },
+            },
+          ]
+        : []),
+      ...(onCopyFilePath
+        ? [
+            {
+              id: "copy-file-path",
+              label: "Copy file path",
+              hint: "Copy path as text",
+              icon: ClipboardCopy,
+              run: () => {
+                onOpenChange(false);
+                onCopyFilePath!();
+              },
+            },
+          ]
+        : []),
     ],
-    [onModeChange, onOpenChange, onOpenSummary],
+    [onModeChange, onOpenChange, onOpenSummary, onCopyFile, onCopyFilePath],
   );
 
   const filtered = useMemo(() => {

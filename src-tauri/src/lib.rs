@@ -33,6 +33,8 @@ pub fn run() {
     }
 
     builder
+        .plugin(tauri_plugin_drag::init())
+        .plugin(tauri_plugin_clipboard::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_log::Builder::new().build())

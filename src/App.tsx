@@ -29,6 +29,11 @@ import { useFileState } from "@/hooks/useFileState";
 import { pickFile } from "@/lib/tauri-api";
 import { cellText } from "@/lib/types";
 import {
+  copyFilePath,
+  copyFileToClipboard,
+  dragOutFile,
+} from "@/lib/file-actions";
+import {
   buildSelectionMarkdown,
   type CopyFormat,
 } from "@/lib/markdown-export";
@@ -741,6 +746,49 @@ function App() {
 
   const findActive = findOpen && !!wb.activeSheet;
 
+  const filePath = wb.workbook?.path ?? null;
+
+  const handleCopyFilePath = useCallback(async () => {
+    if (!filePath) {
+      toast.message("No file open");
+      return;
+    }
+    try {
+      await copyFilePath(filePath);
+      toast.success("Copied file path");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Copy failed", { description: msg });
+    }
+  }, [filePath]);
+
+  const handleCopyFile = useCallback(async () => {
+    if (!filePath) {
+      toast.message("No file open");
+      return;
+    }
+    try {
+      await copyFileToClipboard(filePath);
+      toast.success("Copied file to clipboard");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Copy failed", { description: msg });
+    }
+  }, [filePath]);
+
+  const handleDragOut = useCallback(async () => {
+    if (!filePath) {
+      toast.message("No file open");
+      return;
+    }
+    try {
+      await dragOutFile(filePath);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Drag failed", { description: msg });
+    }
+  }, [filePath]);
+
   return (
     <div className="flex h-screen flex-col bg-background text-foreground antialiased overflow-hidden">
       <TitleBar
@@ -748,7 +796,12 @@ function App() {
         recents={recents}
         onOpen={open}
         onPick={handlePick}
+        onOpenCommand={() => openPalette("root")}
         onClose={wb.workbook ? handleClose : undefined}
+        filePath={filePath}
+        onCopyFile={handleCopyFile}
+        onCopyFilePath={handleCopyFilePath}
+        onDragOut={handleDragOut}
       />
 
       {wb.loading && (
@@ -830,6 +883,8 @@ function App() {
         onModeChange={setPaletteMode}
         onGoto={handleGoto}
         onOpenSummary={handleOpenSummary}
+        onCopyFile={filePath ? handleCopyFile : undefined}
+        onCopyFilePath={filePath ? handleCopyFilePath : undefined}
       />
 
       <ResizeDialog
