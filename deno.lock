@@ -23,6 +23,8 @@
     "npm:@tauri-apps/plugin-fs@^2.5.1": "2.5.1",
     "npm:@tauri-apps/plugin-log@^2.8.0": "2.8.0",
     "npm:@tauri-apps/plugin-opener@2": "2.5.4",
+    "npm:@tauri-apps/plugin-process@2": "2.3.1",
+    "npm:@tauri-apps/plugin-updater@2": "2.10.1",
     "npm:@types/node@^25.9.0": "25.9.1",
     "npm:@types/react-dom@^19.1.6": "19.2.3_@types+react@19.2.15",
     "npm:@types/react@^19.1.8": "19.2.15",
@@ -2042,6 +2044,18 @@
     },
     "@tauri-apps/plugin-opener@2.5.4": {
       "integrity": "sha512-1HnPkb+AmgO29HBazm4uPLKB+r7zzcTBW1d0fyYp1uP+jwtpoiNDGKMMzz58SFp49nOIrxdE3aUJtT57lfO9CQ==",
+      "dependencies": [
+        "@tauri-apps/api@2.11.0"
+      ]
+    },
+    "@tauri-apps/plugin-process@2.3.1": {
+      "integrity": "sha512-nCa4fGVaDL/B9ai03VyPOjfAHRHSBz5v6F/ObsB73r/dA3MHHhZtldaDMIc0V/pnUw9ehzr2iEG+XkSEyC0JJA==",
+      "dependencies": [
+        "@tauri-apps/api@2.11.0"
+      ]
+    },
+    "@tauri-apps/plugin-updater@2.10.1": {
+      "integrity": "sha512-NFYMg+tWOZPJdzE/PpFj2qfqwAWwNS3kXrb1tm1gnBJ9mYzZ4WDRrwy8udzWoAnfGCHLuePNLY1WVCNHnh3eRA==",
       "dependencies": [
         "@tauri-apps/api@2.11.0"
       ]
@@ -4268,6 +4282,8 @@
         "npm:@tauri-apps/plugin-fs@^2.5.1",
         "npm:@tauri-apps/plugin-log@^2.8.0",
         "npm:@tauri-apps/plugin-opener@2",
+        "npm:@tauri-apps/plugin-process@2",
+        "npm:@tauri-apps/plugin-updater@2",
         "npm:@types/node@^25.9.0",
         "npm:@types/react-dom@^19.1.6",
         "npm:@types/react@^19.1.8",

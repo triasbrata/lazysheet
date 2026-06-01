@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ClipboardCopy, Crosshair, FileSpreadsheet, Files, FolderOpen, Sigma } from "lucide-react";
+import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, Sigma } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ interface CommandPaletteProps {
   onOpenRecent: (path: string) => void;
   onPickFile?: () => void;
   currentPath?: string | null;
+  onCheckUpdates?: () => void;
 }
 
 export function CommandPalette({
@@ -54,6 +55,7 @@ export function CommandPalette({
   onOpenRecent,
   onPickFile,
   currentPath,
+  onCheckUpdates,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -153,6 +155,19 @@ export function CommandPalette({
             },
           ]
         : []),
+      ...(onCheckUpdates
+        ? [
+            {
+              id: "check-updates",
+              label: "Check for Updates",
+              icon: DownloadCloud,
+              run: () => {
+                onOpenChange(false);
+                onCheckUpdates();
+              },
+            },
+          ]
+        : []),
     ];
 
     return [
@@ -170,6 +185,7 @@ export function CommandPalette({
     onOpenSummary,
     onCopyFile,
     onCopyFilePath,
+    onCheckUpdates,
   ]);
 
   const filteredSections = useMemo<Section[]>(() => {

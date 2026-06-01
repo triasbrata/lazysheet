@@ -19,6 +19,9 @@
     "opener:allow-open-url",
     "drag:allow-start-drag",
     "clipboard:allow-write-files-uris",
-    "clipboard:allow-write-text"
+    "clipboard:allow-write-text",
+    "updater:default",
+    "process:default",
+    "process:allow-restart"
   ]
 }

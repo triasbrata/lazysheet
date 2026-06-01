@@ -50,6 +50,7 @@ import {
   type ColumnFilter,
 } from "@/lib/grid-filter";
 import { SummaryPanel } from "@/components/SummaryPanel";
+import { runUpdateCheck } from "@/lib/updater";
 
 const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
   inline: "markdown",
@@ -217,6 +218,15 @@ function App() {
   }, [wb.activeSheet, wb.workbook, wb.switchSheet, fileState]);
 
   useFileEvents(open);
+
+  // Silent startup update check — shows nothing unless an update is available.
+  useEffect(() => {
+    void runUpdateCheck({ trigger: "startup" });
+  }, []);
+
+  const handleCheckUpdates = useCallback(() => {
+    void runUpdateCheck({ trigger: "manual" });
+  }, []);
 
   useEffect(() => {
     const unlistenPromise = getCurrentWebview().onDragDropEvent((event) => {
@@ -887,6 +897,7 @@ function App() {
         onOpenRecent={open}
         onPickFile={handlePick}
         currentPath={filePath}
+        onCheckUpdates={handleCheckUpdates}
       />
 
       <ResizeDialog

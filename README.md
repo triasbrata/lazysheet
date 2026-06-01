@@ -81,6 +81,42 @@ The `.deb` / `.AppImage` lands in `src-tauri/target/release/bundle/`.
 
 > Requires [Deno](https://deno.com) and the [Rust toolchain](https://rustup.rs) with [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
+## Auto-Update (OTA)
+
+LazySheet ships over-the-air updates via the [Tauri updater](https://v2.tauri.app/plugin/updater/). On launch the app checks the latest GitHub Release for a newer signed build and, if found, offers to download, install, and relaunch. You can also trigger a check manually from the command palette (`Cmd/Ctrl+K` → **Check for Updates**).
+
+Updates are verified with a [minisign](https://jedisct1.github.io/minisign/) signature — separate from OS code-signing. Maintainers need a signing keypair before cutting a release.
+
+### Generate the signing key (one time)
+
+```bash
+deno task tauri signer generate -w ~/.tauri/lazysheet.key
+```
+
+This prints two things:
+
+- a **private key** (written to `~/.tauri/lazysheet.key`) and the **password** you set — these sign release artifacts.
+- a **public key** string — this is embedded in `src-tauri/tauri.conf.json` under `plugins.updater.pubkey` so installed apps can verify updates.
+
+Keep the private key and password safe and **offline-backed-up**. Rotating the key invalidates auto-update for every existing install (they pin the old public key).
+
+### Register CI secrets
+
+Add these as GitHub Actions secrets on the `lazysheet-app` repo so the release workflow can sign artifacts:
+
+| Secret | Value |
+|--------|-------|
+| `TAURI_SIGNING_PRIVATE_KEY` | contents of `~/.tauri/lazysheet.key` |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | the password you set during `signer generate` |
+
+On the next tagged release the workflow builds signed updater bundles plus a `latest.json` manifest and attaches them to the [GitHub Release](https://github.com/triasbrata/lazysheet/releases). The app's updater endpoint points at `releases/latest/download/latest.json`.
+
+### Caveats
+
+- **macOS** builds are unsigned/un-notarized, so auto-update is best-effort — if an in-place update is blocked, download the latest build manually.
+- Only **Apple Silicon (arm64)** macOS builds are produced; Intel Macs receive no update entry.
+- The **first updater-enabled release must be installed manually once** — earlier installs predate the updater plugin and cannot self-update into it.
+
 ## Supported Formats
 
 - [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) — `.csv`
