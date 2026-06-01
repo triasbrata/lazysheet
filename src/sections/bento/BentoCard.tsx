@@ -113,29 +113,27 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
           </div>
         ) : (
           <div className="flex h-full flex-col">
-            <div className="flex items-start gap-4">
+            <div className="flex items-center gap-3">
               {tile.icon && (
                 <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-fixed">
                   <tile.icon className="text-[20px] text-primary" />
                 </span>
               )}
-              <div className="min-w-0">
-                <h3
-                  className={cn(
-                    'font-display font-semibold text-on-surface',
-                    tile.id === 'group-by' ? 'text-2xl' : 'text-base',
-                  )}
-                >
-                  {tile.title}
-                </h3>
-                {tile.description && (
-                  <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">
-                    {tile.description}
-                  </p>
+              <h3
+                className={cn(
+                  'font-display font-semibold leading-none text-on-surface',
+                  tile.id === 'group-by' ? 'text-2xl' : 'text-lg',
                 )}
-                {tile.render && <div className="mt-3">{tile.render()}</div>}
-              </div>
+              >
+                {tile.title}
+              </h3>
             </div>
+            {tile.description && (
+              <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+                {tile.description}
+              </p>
+            )}
+            {tile.render && <div className="mt-3">{tile.render()}</div>}
             {tile.media && (
               <motion.div
                 className="mt-6 overflow-hidden rounded-xl border border-surface-container-high motion-safe:md:mt-4 motion-safe:md:min-h-[220px] motion-safe:md:flex-1"

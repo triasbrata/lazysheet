@@ -118,7 +118,7 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'resize',
-    span: 'md:col-start-3 md:col-span-2 md:row-start-3',
+    span: 'md:col-start-1 md:col-span-4 md:row-start-2',
     icon: ResizeIcon,
     title: 'Resizable Columns & Rows',
     description: 'Drag to resize, double-click to autofit. Sizes are remembered per file.',
@@ -140,7 +140,7 @@ export const BENTO_TILES: BentoTile[] = [
   },
   {
     id: 'find',
-    span: 'md:col-start-1 md:col-span-4 md:row-start-2',
+    span: 'md:col-start-3 md:col-span-2 md:row-start-3',
     icon: SearchIcon,
     title: 'Find in Sheet',
     description: 'Full-text search with Cmd+F. Jump between matches highlighted across the sheet.',
