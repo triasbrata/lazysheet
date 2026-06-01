@@ -202,8 +202,8 @@ function Home() {
   const data = Route.useLoaderData()
   return (
     <div className="min-h-screen">
-      <Nav />
-      <main className="pt-16">
+      <Nav overHero />
+      <main>
         <Hero data={data} />
         <Formats />
         <Features />

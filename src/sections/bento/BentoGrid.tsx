@@ -19,7 +19,7 @@ export function BentoGrid({ tiles, header }: BentoGridProps): JSX.Element {
     // Mobile / reduced-motion: height auto, normal document flow.
     <section id="features" ref={trackRef} className="relative motion-safe:md:h-[300vh]">
       {/* Pinned stage: sticky + full-screen + vertically centered when pinning is active. */}
-      <div className="mx-auto flex max-w-[1800px] flex-col px-4 py-24 md:px-10 lg:px-16 motion-safe:md:sticky motion-safe:md:top-20 motion-safe:md:h-[calc(100vh-5rem)] motion-safe:md:justify-center motion-safe:md:overflow-hidden motion-safe:md:py-8">
+      <div className="mx-auto flex max-w-[1800px] flex-col px-4 py-24 md:px-10 lg:px-16 motion-safe:md:sticky motion-safe:md:top-16 motion-safe:md:h-[calc(100vh-4rem)] motion-safe:md:justify-center motion-safe:md:overflow-hidden motion-safe:md:py-8">
         {header}
         <motion.div
           className={[
