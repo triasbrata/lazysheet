@@ -10,7 +10,7 @@ import {
   type ReleaseAsset,
 } from '#/lib/releases'
 import { useClientOSArch } from '#/features/download/use-os-arch'
-import { getDownloadData } from '#/lib/releases-data'
+import { getDownloadData, type DownloadData } from '#/lib/releases-data'
 
 export const Route = createFileRoute('/download')({
   component: Download,
@@ -48,7 +48,10 @@ const OS_CONFIG = [
 ]
 
 function Download() {
-  const data = Route.useLoaderData()
+  return <DownloadView data={Route.useLoaderData()} />
+}
+
+export function DownloadView({ data }: { data: DownloadData }) {
   const { os: detectedOS } = useClientOSArch({ os: data.serverOS, arch: null })
   const groups = data.release ? groupByOS(data.release.assets) : null
 

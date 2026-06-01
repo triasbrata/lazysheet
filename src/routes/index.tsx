@@ -5,18 +5,6 @@ import {
   ExcelIcon,
   CsvIcon,
   TsvIcon,
-  BoltIcon,
-  CheckIcon,
-  LayersIcon,
-  PaletteIcon,
-  CopyIcon,
-  AppleMark,
-  GroupIcon,
-  SearchIcon,
-  FilterIcon,
-  PinIcon,
-  ResizeIcon,
-  KeyboardIcon,
   LockIcon,
   TerminalIcon,
 } from '#/components/site/icons'
@@ -29,6 +17,8 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '#/components/ui/accordion'
+import { BentoGrid } from '#/sections/bento/BentoGrid'
+import { BENTO_TILES } from '#/sections/bento/features'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -43,55 +33,8 @@ const FORMATS = [
   { ext: '.tsv', Icon: TsvIcon, tint: '#f59e0b' },
 ]
 
-const SMALL_FEATURES = [
-  {
-    Icon: LayersIcon,
-    title: 'Multi-sheet Navigation',
-    desc: 'Switch between worksheet tabs in any workbook from the bottom tab bar.',
-  },
-  {
-    Icon: SearchIcon,
-    title: 'Find in Sheet',
-    desc: 'Full-text search with Cmd+F. Jump between matches highlighted across the sheet.',
-  },
-  {
-    Icon: FilterIcon,
-    title: 'Column Filters',
-    desc: 'Click the funnel on any header. 14 filter types plus an Excel-style value checklist.',
-  },
-  {
-    Icon: PinIcon,
-    title: 'Sticky Header Row',
-    desc: 'Mark any row as the header — it stays pinned while you scroll through the data.',
-  },
-  {
-    Icon: ResizeIcon,
-    title: 'Resizable Columns & Rows',
-    desc: 'Drag to resize, double-click to autofit. Sizes are remembered per file.',
-  },
-  {
-    Icon: KeyboardIcon,
-    title: 'Command Palette',
-    desc: 'Cmd+K to jump to any cell reference or run an action — keyboard-first navigation.',
-  },
-  {
-    Icon: PaletteIcon,
-    title: 'Rich Cell Formatting',
-    desc: 'Fonts, colors, alignment, merged cells, and clickable hyperlinks preserved from .xlsx files.',
-  },
-  {
-    Icon: CopyIcon,
-    title: 'Copy as Image',
-    desc: 'Capture a group-by summary report as a PNG straight to your clipboard.',
-  },
-  {
-    Icon: AppleMark,
-    title: 'Native macOS Integration',
-    desc: "Drag & drop, 'Open With', and Recent Files support built in.",
-  },
-]
 
-function Hero({ data }: { data: DownloadData }) {
+export function Hero({ data }: { data: DownloadData }) {
   return (
     <section className="hero-gradient px-4 pt-24 pb-32 md:px-16">
       <div className="mx-auto max-w-[1200px] text-center">
@@ -148,7 +91,7 @@ function Hero({ data }: { data: DownloadData }) {
   )
 }
 
-function Formats() {
+export function Formats() {
   return (
     <section className="border-y border-surface-container-high bg-surface-container-low py-20">
       <div className="mx-auto max-w-[1200px] px-4 text-center">
@@ -177,92 +120,23 @@ function Formats() {
 
 function Features() {
   return (
-    <section id="features" className="mx-auto max-w-[1200px] px-4 py-24 md:px-16">
-      <div className="mb-16 text-center">
-        <h2 className="font-display mb-4 text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[48px] sm:leading-[56px]">
-          Engineered for Performance
-        </h2>
-        <p className="text-on-surface-variant">
-          The feature set you need to analyze data without the bloat.
-        </p>
-      </div>
-
-      <div className="bento-grid">
-        {/* Group-by Summary — large */}
-        <div className="feature-card col-span-12 rounded-xl border border-surface-container-high bg-white p-8 md:col-span-8">
-          <div className="flex flex-col items-center gap-8 md:flex-row">
-            <div className="flex-1">
-              <span className="mb-6 inline-flex rounded-lg bg-primary-fixed p-3 text-primary">
-                <GroupIcon className="text-[22px]" />
-              </span>
-              <h3 className="font-display mb-4 text-2xl font-semibold">
-                Group-by Summary
-              </h3>
-              <p className="mb-6 text-on-surface-variant">
-                Summarize data by any column in seconds. Select a range, choose your category and value columns, and get instant roll-ups with SUM, AVG, MIN, MAX, and COUNT — no pivot-table setup.
-              </p>
-              <ul className="space-y-2 text-sm font-medium text-on-surface">
-                <li className="flex items-center gap-2">
-                  <CheckIcon className="text-[16px] text-primary" />
-                  Multi-level grouping across up to 6 columns
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckIcon className="text-[16px] text-primary" />
-                  Instant SUM / AVG / MIN / MAX / COUNT on any range selection
-                </li>
-              </ul>
-            </div>
-            <div className="flex-1 overflow-hidden rounded-lg border border-surface-container-high">
-              <img
-                src="/shots/application-summary.png"
-                alt="Group-by summary in LazySheet"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          </div>
+    <BentoGrid
+      tiles={BENTO_TILES}
+      header={
+        <div className="mb-8 text-center motion-safe:md:mb-6">
+          <h2 className="font-display mb-4 text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[48px] sm:leading-[56px]">
+            Engineered for Performance
+          </h2>
+          <p className="text-on-surface-variant">
+            The feature set you need to analyze data without the bloat.
+          </p>
         </div>
-
-        {/* Virtualized Rendering — speed */}
-        <div className="feature-card col-span-12 flex flex-col justify-between rounded-xl border border-surface-container-high bg-white p-8 md:col-span-4">
-          <div>
-            <span className="mb-6 inline-flex rounded-lg bg-secondary-container p-3 text-[var(--st-secondary)]">
-              <BoltIcon className="text-[22px]" />
-            </span>
-            <h3 className="font-display mb-4 text-2xl font-semibold">
-              Virtualized Rendering
-            </h3>
-            <p className="text-on-surface-variant">
-              LazySheet only renders the rows you can see. Scroll through massive sheets with smooth, lag-free movement regardless of hardware.
-            </p>
-          </div>
-          <div className="mt-8 border-t border-surface-container-high pt-8">
-            <div className="flex items-center justify-between text-sm font-medium">
-              <span>Scroll Latency</span>
-              <span className="font-bold text-primary">0.1ms</span>
-            </div>
-            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-surface-container-high">
-              <div className="h-full w-[10%] bg-primary" />
-            </div>
-          </div>
-        </div>
-
-        {/* Small feature cards */}
-        {SMALL_FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="feature-card col-span-12 rounded-xl border border-surface-container-high bg-white p-6 sm:col-span-6 md:col-span-4"
-          >
-            <f.Icon className="mb-4 text-[22px] text-primary" />
-            <h4 className="font-display mb-2 text-sm font-bold">{f.title}</h4>
-            <p className="text-sm text-on-surface-variant">{f.desc}</p>
-          </div>
-        ))}
-      </div>
-    </section>
+      }
+    />
   )
 }
 
-function Faq() {
+export function Faq() {
   return (
     <section
       id="faq"

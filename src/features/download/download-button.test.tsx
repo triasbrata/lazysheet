@@ -1,6 +1,16 @@
-// @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+// @vitest-environment happy-dom
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
+
+// Pin client OS/arch detection to "unknown" so serverOS stays authoritative.
+// (happy-dom's userAgent contains "Linux", which would otherwise override it.)
+vi.mock('#/lib/os', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#/lib/os')>()
+  return {
+    ...actual,
+    detectClientOSArch: () => Promise.resolve({ os: 'unknown', arch: null }),
+  }
+})
 
 afterEach(cleanup)
 import { DownloadButton } from './download-button'
