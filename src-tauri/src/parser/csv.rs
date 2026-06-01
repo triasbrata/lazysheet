@@ -66,6 +66,7 @@ pub fn parse_sheet(path: &Path, name: &str) -> Result<SheetModel, String> {
                 v: parse_csv_value(s),
                 s: None,
                 h: None,
+                f: None,
             })
             .collect();
         if row.len() > max_col {

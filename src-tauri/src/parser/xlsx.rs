@@ -167,7 +167,12 @@ fn cell_to_model(cell: &umya_spreadsheet::Cell) -> CellModel {
     let v = cell_value(cell);
     let s = extract_style(cell);
     let h = cell.get_hyperlink().map(|hl| hl.get_url().to_string());
-    CellModel { v, s, h }
+    let f = if cell.is_formula() {
+        Some(format!("={}", cell.get_formula()))
+    } else {
+        None
+    };
+    CellModel { v, s, h, f }
 }
 
 fn cell_value(cell: &umya_spreadsheet::Cell) -> CellValue {

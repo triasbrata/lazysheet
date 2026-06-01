@@ -58,6 +58,7 @@ fn range_to_sheet(name: String, range: &calamine::Range<Data>) -> SheetModel {
                 v: data_to_value(cell),
                 s: None,
                 h: None,
+                f: None,
             });
         }
         rows.push(row_cells);

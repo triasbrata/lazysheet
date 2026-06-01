@@ -4,6 +4,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuShortcut,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
@@ -53,6 +54,8 @@ interface GridContextMenuContentProps {
   onAutofitRow?: () => void;
   onOpenColWidthDialog?: () => void;
   onOpenRowHeightDialog?: () => void;
+  canCopyFormula: boolean;
+  onCopyFormula: () => void;
 }
 
 export function GridContextMenuContent({
@@ -77,6 +80,8 @@ export function GridContextMenuContent({
   onAutofitRow,
   onOpenColWidthDialog,
   onOpenRowHeightDialog,
+  canCopyFormula,
+  onCopyFormula,
 }: GridContextMenuContentProps) {
   // Tracks whether the pointer that triggered onSelect held Cmd/Ctrl. Radix's
   // onSelect event does not expose modifier keys, so we stash it on pointerdown.
@@ -195,6 +200,15 @@ export function GridContextMenuContent({
         </ContextMenuItem>
       )}
       {isRow && canCopy && <ContextMenuSeparator />}
+      {ctx.type === "cell" && canCopyFormula && (
+        <>
+          <ContextMenuItem onSelect={onCopyFormula}>
+            Copy Function
+            <ContextMenuShortcut>⌘⇧C</ContextMenuShortcut>
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+        </>
+      )}
       {ctx.type === "cell" && canSummarize && onSummarize && (
         <>
           <ContextMenuItem onSelect={() => onSummarize()}>

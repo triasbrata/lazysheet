@@ -23,6 +23,8 @@ export interface CellModel {
   v: CellValue;
   s?: CellStyle;
   h?: string;
+  /** Formula source incl. leading "=", e.g. "=SUM(A1:A5)". Present only for formula cells (xlsx/xlsm). */
+  f?: string;
 }
 
 export interface MergeRange {

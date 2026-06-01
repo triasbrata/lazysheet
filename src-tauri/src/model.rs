@@ -33,6 +33,8 @@ pub struct CellModel {
     pub s: Option<CellStyle>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub h: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub f: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]

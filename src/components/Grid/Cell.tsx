@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 import type { CellModel } from "@/lib/types";
 import { cellText } from "@/lib/types";
 import { openExternal } from "@/lib/tauri-api";
+import { FormulaBadge } from "./FormulaBadge";
 
 // Normalize CRLF / lone CR to LF so `white-space: pre-wrap` doesn't produce
 // double line breaks on Windows-authored files.
@@ -128,6 +129,8 @@ export function Cell({
     baseStyle.position = "absolute";
     baseStyle.top = absoluteTop;
     baseStyle.left = absoluteLeft;
+  } else {
+    baseStyle.position = "relative";
   }
 
   if (highlight === "anchor") {
@@ -205,6 +208,7 @@ export function Cell({
       data-c={dataCol}
     >
       {content}
+      {cell?.f ? <FormulaBadge formula={cell.f} /> : null}
       {trailing != null && (
         <span
           style={{

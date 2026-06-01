@@ -53,6 +53,7 @@ import {
   sampleCellFont,
   type MeasureOptions,
 } from "@/lib/measure";
+import { getCellFormula, copyFormula } from "@/lib/formula-copy";
 import { Filter } from "lucide-react";
 import { motion } from "motion/react";
 import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
@@ -894,6 +895,26 @@ export function Grid({
   // Menu shows "Copy as markdown" whenever there's a non-empty selection.
   const canCopy = !!expandedBounds && !!selection;
 
+  // Formula available for right-clicked cell (used by context menu).
+  const menuFormula =
+    menuCtx?.type === "cell"
+      ? getCellFormula(sheet.rows[menuCtx.row]?.[menuCtx.col])
+      : null;
+
+  // ── Copy formula ────────────────────────────────────────────────────────
+  const copyFormulaAt = useCallback(
+    (row: number, col: number) => {
+      const cell = sheet.rows[row]?.[col];
+      const f = getCellFormula(cell);
+      if (f) {
+        copyFormula(f);
+      } else {
+        toast.message("No formula in this cell");
+      }
+    },
+    [sheet],
+  );
+
   // ── Keyboard handler ────────────────────────────────────────────────────
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -909,6 +930,14 @@ export function Grid({
       if (ctrl && e.key.toLowerCase() === "a") {
         e.preventDefault();
         selectAll();
+        return;
+      }
+
+      // Cmd/Ctrl+Shift+C → copy formula of anchor cell.
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        const a = selectionRef.current?.anchor;
+        if (a) copyFormulaAt(a.row, a.col);
         return;
       }
 
@@ -1636,6 +1665,10 @@ export function Grid({
                     )
                 : undefined
             }
+            canCopyFormula={!!menuFormula}
+            onCopyFormula={() => {
+              if (menuCtx?.type === "cell") copyFormulaAt(menuCtx.row, menuCtx.col);
+            }}
           />
         </ContextMenu>
       </div>
