@@ -1,6 +1,9 @@
 ## v0.4.0 (2026-06-01)
 
-chore: release v0.4.0
+- Adjust macOS traffic light position and refine command palette subtitles
+- Move recent files and open-file action into command palette
+- Add clipboard and drag-and-drop file support
+- Update website landing submodule
 
 ---
 
