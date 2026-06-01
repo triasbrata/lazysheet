@@ -77,7 +77,7 @@ export function CommandPalette({
       fileItems.push({
         id: "open-file",
         label: "Open file…",
-        hint: "Browse (.xlsx, .csv…)",
+        subtitle: "Browse (.xlsx, .csv…)",
         icon: FolderOpen,
         run: () => {
           onOpenChange(false);
@@ -106,7 +106,7 @@ export function CommandPalette({
       {
         id: "goto",
         label: "Goto",
-        hint: "Jump to cell (e.g. A1, B12)",
+        subtitle: "Jump to cell (e.g. A1, B12)",
         icon: Crosshair,
         run: () => onModeChange("goto"),
       },
@@ -115,7 +115,8 @@ export function CommandPalette({
             {
               id: "summarize",
               label: "Summarize selection",
-              hint: "Group-by (⌘⇧Y)",
+              subtitle: "Group-by",
+              hint: "⌘⇧Y",
               icon: Sigma,
               run: () => {
                 onOpenChange(false);
@@ -129,7 +130,7 @@ export function CommandPalette({
             {
               id: "copy-file",
               label: "Copy file",
-              hint: "Copy .xlsx to clipboard",
+              subtitle: "Copy .xlsx to clipboard",
               icon: Files,
               run: () => {
                 onOpenChange(false);
@@ -143,7 +144,7 @@ export function CommandPalette({
             {
               id: "copy-file-path",
               label: "Copy file path",
-              hint: "Copy path as text",
+              subtitle: "Copy path as text",
               icon: ClipboardCopy,
               run: () => {
                 onOpenChange(false);
@@ -314,10 +315,10 @@ export function CommandPalette({
                         >
                           <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           <span className="flex min-w-0 flex-1 flex-col">
-                            <span className="truncate">{c.label}</span>
+                            <span className="truncate" title={c.label}>{c.label}</span>
                             {c.subtitle && (
                               <span
-                                className="truncate text-[11px] text-muted-foreground"
+                                className="max-w-[60%] truncate text-[11px] text-muted-foreground"
                                 title={c.subtitle}
                               >
                                 {c.subtitle}
