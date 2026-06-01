@@ -793,9 +793,6 @@ function App() {
     <div className="flex h-screen flex-col bg-background text-foreground antialiased overflow-hidden">
       <TitleBar
         fileName={wb.workbook?.file_name ?? null}
-        recents={recents}
-        onOpen={open}
-        onPick={handlePick}
         onOpenCommand={() => openPalette("root")}
         onClose={wb.workbook ? handleClose : undefined}
         filePath={filePath}
@@ -885,6 +882,11 @@ function App() {
         onOpenSummary={handleOpenSummary}
         onCopyFile={filePath ? handleCopyFile : undefined}
         onCopyFilePath={filePath ? handleCopyFilePath : undefined}
+        hasFile={!!wb.workbook}
+        recents={recents}
+        onOpenRecent={open}
+        onPickFile={handlePick}
+        currentPath={filePath}
       />
 
       <ResizeDialog

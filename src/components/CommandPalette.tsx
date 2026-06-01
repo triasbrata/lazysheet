@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ClipboardCopy, Crosshair, Files, Sigma } from "lucide-react";
+import { ArrowRight, ClipboardCopy, Crosshair, FileSpreadsheet, Files, FolderOpen, Sigma } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { RecentFile } from "@/hooks/useWorkbook";
 
 export type PaletteMode = "root" | "goto";
 
@@ -13,8 +14,14 @@ interface CommandItem {
   id: string;
   label: string;
   hint?: string;
+  subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
   run: () => void;
+}
+
+interface Section {
+  title: string;
+  items: CommandItem[];
 }
 
 interface CommandPaletteProps {
@@ -26,6 +33,11 @@ interface CommandPaletteProps {
   onOpenSummary?: () => void;
   onCopyFile?: () => void;
   onCopyFilePath?: () => void;
+  hasFile: boolean;
+  recents: RecentFile[];
+  onOpenRecent: (path: string) => void;
+  onPickFile?: () => void;
+  currentPath?: string | null;
 }
 
 export function CommandPalette({
@@ -37,6 +49,11 @@ export function CommandPalette({
   onOpenSummary,
   onCopyFile,
   onCopyFilePath,
+  hasFile,
+  recents,
+  onOpenRecent,
+  onPickFile,
+  currentPath,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +69,40 @@ export function CommandPalette({
     }
   }, [open, mode]);
 
-  const commands = useMemo<CommandItem[]>(
-    () => [
+  const sections = useMemo<Section[]>(() => {
+    const visibleRecents = recents.filter((r) => r.path !== currentPath);
+
+    const fileItems: CommandItem[] = [];
+    if (onPickFile) {
+      fileItems.push({
+        id: "open-file",
+        label: "Open file…",
+        hint: "Browse (.xlsx, .csv…)",
+        icon: FolderOpen,
+        run: () => {
+          onOpenChange(false);
+          onPickFile();
+        },
+      });
+    }
+    for (const r of visibleRecents) {
+      fileItems.push({
+        id: "recent:" + r.path,
+        label: r.fileName,
+        subtitle: r.path,
+        icon: FileSpreadsheet,
+        run: () => {
+          onOpenChange(false);
+          onOpenRecent(r.path);
+        },
+      });
+    }
+
+    if (!hasFile) {
+      return [{ title: "Recent Files", items: fileItems }];
+    }
+
+    const cmdItems: CommandItem[] = [
       {
         id: "goto",
         label: "Goto",
@@ -103,20 +152,47 @@ export function CommandPalette({
             },
           ]
         : []),
-    ],
-    [onModeChange, onOpenChange, onOpenSummary, onCopyFile, onCopyFilePath],
-  );
+    ];
 
-  const filtered = useMemo(() => {
-    if (mode !== "root") return commands;
+    return [
+      { title: "Commands", items: cmdItems },
+      { title: "Recent Files", items: fileItems },
+    ];
+  }, [
+    hasFile,
+    recents,
+    currentPath,
+    onOpenRecent,
+    onPickFile,
+    onModeChange,
+    onOpenChange,
+    onOpenSummary,
+    onCopyFile,
+    onCopyFilePath,
+  ]);
+
+  const filteredSections = useMemo<Section[]>(() => {
+    if (mode !== "root") return [];
     const q = query.trim().toLowerCase();
-    if (!q) return commands;
-    return commands.filter(
-      (c) =>
-        c.label.toLowerCase().includes(q) ||
-        c.hint?.toLowerCase().includes(q),
-    );
-  }, [commands, query, mode]);
+    return sections
+      .map((s) => ({
+        ...s,
+        items: q
+          ? s.items.filter(
+              (c) =>
+                c.label.toLowerCase().includes(q) ||
+                c.hint?.toLowerCase().includes(q) ||
+                c.subtitle?.toLowerCase().includes(q),
+            )
+          : s.items,
+      }))
+      .filter((s) => s.items.length > 0);
+  }, [sections, query, mode]);
+
+  const flatItems = useMemo(
+    () => filteredSections.flatMap((s) => s.items),
+    [filteredSections],
+  );
 
   useEffect(() => {
     setActiveIdx(0);
@@ -124,7 +200,7 @@ export function CommandPalette({
 
   const submit = () => {
     if (mode === "root") {
-      const cmd = filtered[activeIdx];
+      const cmd = flatItems[activeIdx];
       if (cmd) cmd.run();
       return;
     }
@@ -152,7 +228,7 @@ export function CommandPalette({
     if (mode === "root") {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setActiveIdx((i) => Math.min(i + 1, filtered.length - 1));
+        setActiveIdx((i) => Math.min(i + 1, flatItems.length - 1));
         return;
       }
       if (e.key === "ArrowUp") {
@@ -169,7 +245,7 @@ export function CommandPalette({
 
   const placeholder =
     mode === "root"
-      ? "Type a command…"
+      ? (!hasFile ? "Search recent files…" : "Type a command…")
       : "Cell reference (e.g. A1, B12, AB45)";
 
   return (
@@ -208,37 +284,58 @@ export function CommandPalette({
         )}
 
         {mode === "root" && (
-          <div className="max-h-72 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
+          <div className="max-h-72 overflow-y-auto px-2 py-1">
+            {flatItems.length === 0 ? (
               <div className="px-3 py-4 text-xs text-muted-foreground">
-                No commands match.
+                {!hasFile ? "No recent files." : "No commands match."}
               </div>
             ) : (
-              filtered.map((c, i) => {
-                const Icon = c.icon;
-                return (
-                  <button
-                    key={c.id}
-                    onMouseEnter={() => setActiveIdx(i)}
-                    onClick={() => c.run()}
-                    className={cn(
-                      "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                      i === activeIdx
-                        ? "bg-muted text-foreground"
-                        : "text-foreground/90",
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="flex-1">{c.label}</span>
-                    {c.hint && (
-                      <span className="text-[11px] text-muted-foreground">
-                        {c.hint}
-                      </span>
-                    )}
-                    <ArrowRight className="h-3 w-3 opacity-40" />
-                  </button>
-                );
-              })
+              (() => {
+                let idx = 0;
+                return filteredSections.map((section) => (
+                  <div key={section.title}>
+                    <div className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      {section.title}
+                    </div>
+                    {section.items.map((c) => {
+                      const globalIdx = idx++;
+                      const Icon = c.icon;
+                      return (
+                        <button
+                          key={c.id}
+                          onMouseEnter={() => setActiveIdx(globalIdx)}
+                          onClick={() => c.run()}
+                          className={cn(
+                            "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm",
+                            globalIdx === activeIdx
+                              ? "bg-muted text-foreground"
+                              : "text-foreground/90",
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate">{c.label}</span>
+                            {c.subtitle && (
+                              <span
+                                className="truncate text-[11px] text-muted-foreground"
+                                title={c.subtitle}
+                              >
+                                {c.subtitle}
+                              </span>
+                            )}
+                          </span>
+                          {c.hint && (
+                            <span className="shrink-0 text-[11px] text-muted-foreground">
+                              {c.hint}
+                            </span>
+                          )}
+                          <ArrowRight className="h-3 w-3 shrink-0 opacity-40" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ));
+              })()
             )}
           </div>
         )}
