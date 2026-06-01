@@ -51,6 +51,7 @@ import {
 } from "@/lib/grid-filter";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { runUpdateCheck } from "@/lib/updater";
+import { shouldCloseSheet } from "@/lib/keyboard-shortcuts";
 
 const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
   inline: "markdown",
@@ -275,6 +276,11 @@ function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (shouldCloseSheet(e, !!wb.workbook)) {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
       const k = e.key.toLowerCase();
@@ -300,7 +306,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openPalette, openFind, summaryEligible, summaryPanelOpen]);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, wb.workbook]);
 
   const handleGoto = useCallback(
     (ref: string): string | null => {
