@@ -5,3 +5,11 @@ export function shouldCloseSheet(e: KeyboardEvent, hasWorkbook: boolean): boolea
   if (e.shiftKey) return false;
   return hasWorkbook;
 }
+
+export function shouldOpenFile(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  if (e.key.toLowerCase() !== "o") return false;
+  if (e.shiftKey) return false;
+  return true;
+}

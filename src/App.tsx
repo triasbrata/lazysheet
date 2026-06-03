@@ -51,7 +51,7 @@ import {
 } from "@/lib/grid-filter";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { runUpdateCheck } from "@/lib/updater";
-import { shouldCloseSheet } from "@/lib/keyboard-shortcuts";
+import { shouldCloseSheet, shouldOpenFile } from "@/lib/keyboard-shortcuts";
 
 const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
   inline: "markdown",
@@ -281,6 +281,11 @@ function App() {
         handleClose();
         return;
       }
+      if (shouldOpenFile(e)) {
+        e.preventDefault();
+        handlePick();
+        return;
+      }
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
       const k = e.key.toLowerCase();
@@ -306,7 +311,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, wb.workbook]);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook]);
 
   const handleGoto = useCallback(
     (ref: string): string | null => {
