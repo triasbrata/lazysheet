@@ -16,6 +16,16 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
+// Stub FeedbackDialog so it doesn't pull in createServerFn (server-only)
+vi.mock('#/features/feedback/feedback-dialog', () => ({
+  FeedbackDialog: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</>,
+}))
+
+// Stub GithubStars so it doesn't pull in the fetch hook
+vi.mock('#/features/github/github-stars', () => ({
+  GithubStars: () => null,
+}))
+
 // Pin client OS detection so the "recommended" highlight is deterministic.
 vi.mock('#/lib/os', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#/lib/os')>()

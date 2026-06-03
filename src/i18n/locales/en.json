@@ -178,7 +178,8 @@
     "cancel": "Cancel",
     "successToast": "Thanks! Issue #{{number}} created.",
     "errorToast": "Couldn't send. Please try again.",
-    "validationError": "Title and description are required."
+    "validationError": "Title and description are required.",
+    "captchaError": "Please complete the verification."
   },
   "seo": {
     "title": "LazySheet | Fast, Native Excel & CSV Viewer",

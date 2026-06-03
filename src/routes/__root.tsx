@@ -5,6 +5,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import appCss from '../styles.css?url'
 import '#/lib/fontawesome'
 import { LOCALE_META, localeFromPathname } from '#/i18n/config'
+import { Toaster } from '#/components/ui/sonner'
 
 const SITE_URL = 'https://lazysheet.brata.cloud'
 
@@ -70,6 +71,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             },
           ]}
         />
+        <Toaster />
         <Scripts />
       </body>
     </html>

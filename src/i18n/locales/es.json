@@ -178,7 +178,8 @@
     "cancel": "Cancelar",
     "successToast": "¡Gracias! Issue #{{number}} creado.",
     "errorToast": "No se pudo enviar. Por favor, inténtalo de nuevo.",
-    "validationError": "El título y la descripción son obligatorios."
+    "validationError": "El título y la descripción son obligatorios.",
+    "captchaError": "Por favor completa la verificación."
   },
   "seo": {
     "title": "LazySheet | Visor Nativo Rápido de Excel y CSV",

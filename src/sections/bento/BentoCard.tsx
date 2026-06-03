@@ -5,15 +5,29 @@ import type { BentoTile } from './features'
 
 type BentoCardProps = { tile: BentoTile; index: number; progress: MotionValue<number> }
 
+// Scroll-linked timeline over the pinned section's scrollYProgress (0→1):
+// staggered entrance → a HOLD where every card (and the whole container) is
+// fully visible → a staggered exit where cards fade out one-by-one.
+const IN_STAGGER = 0.03 // per-index entrance offset
+const IN_STAGGER_MAX = 0.22 // cap so late cards finish before the hold
+const IN_DUR = 0.18 // entrance window width (max inEnd ≈ 0.40)
+const HOLD_END = 0.56 // exit begins here — gives a clear all-visible hold (0.40→0.56)
+const OUT_STAGGER = 0.02 // per-index exit offset → one-by-one fade-out
+const OUT_DUR = 0.16 // per-card exit window width
+
 export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Element {
   const reduce = useReducedMotion()
 
-  // Staggered scroll-linked entrance — always compute unconditionally
-  const start = Math.min(index * 0.05, 0.5)
-  const end = start + 0.4
-  const opacity = useTransform(progress, [start, end], [0, 1])
-  const y = useTransform(progress, [start, end], [40, 0])
-  const scale = useTransform(progress, [start, end], [0.92, 1])
+  // Entrance: staggered fade-in. Exit: staggered fade-out (one card at a time),
+  // only after the hold — fade + lift + slight recede.
+  const inStart = Math.min(index * IN_STAGGER, IN_STAGGER_MAX)
+  const inEnd = inStart + IN_DUR
+  const outStart = HOLD_END + index * OUT_STAGGER
+  const outEnd = Math.min(outStart + OUT_DUR, 1)
+  const keys = [inStart, inEnd, outStart, outEnd]
+  const opacity = useTransform(progress, keys, [0, 1, 1, 0])
+  const y = useTransform(progress, keys, [40, 0, 0, -56])
+  const scale = useTransform(progress, keys, [0.92, 1, 1, 0.96])
 
   // Pointer parallax for media — always compute unconditionally
   const mouseX = useMotionValue(0)

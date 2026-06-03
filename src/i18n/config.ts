@@ -10,11 +10,11 @@ export const SUPPORTED_LOCALES = ['en', 'id', 'zh', 'es'] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE: Locale = 'en'
 
-export const LOCALE_META: Record<Locale, { htmlLang: string; ogLocale: string; label: string }> = {
-  en: { htmlLang: 'en', ogLocale: 'en_US', label: 'English' },
-  id: { htmlLang: 'id', ogLocale: 'id_ID', label: 'Bahasa Indonesia' },
-  zh: { htmlLang: 'zh-CN', ogLocale: 'zh_CN', label: '简体中文' },
-  es: { htmlLang: 'es', ogLocale: 'es_ES', label: 'Español' },
+export const LOCALE_META: Record<Locale, { htmlLang: string; ogLocale: string; label: string; flag: string }> = {
+  en: { htmlLang: 'en', ogLocale: 'en_US', label: 'English', flag: '🇬🇧' },
+  id: { htmlLang: 'id', ogLocale: 'id_ID', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+  zh: { htmlLang: 'zh-CN', ogLocale: 'zh_CN', label: '简体中文', flag: '🇨🇳' },
+  es: { htmlLang: 'es', ogLocale: 'es_ES', label: 'Español', flag: '🇪🇸' },
 }
 
 export const resources: Record<Locale, { translation: object }> = {

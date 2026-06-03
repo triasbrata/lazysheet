@@ -178,7 +178,8 @@
     "cancel": "取消",
     "successToast": "感谢！Issue #{{number}} 已创建。",
     "errorToast": "发送失败，请重试。",
-    "validationError": "标题和描述为必填项。"
+    "validationError": "标题和描述为必填项。",
+    "captchaError": "请完成验证。"
   },
   "seo": {
     "title": "LazySheet | 快速的原生 Excel 和 CSV 查看器",

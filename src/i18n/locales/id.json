@@ -178,7 +178,8 @@
     "cancel": "Batal",
     "successToast": "Terima kasih! Issue #{{number}} telah dibuat.",
     "errorToast": "Gagal mengirim. Silakan coba lagi.",
-    "validationError": "Judul dan deskripsi wajib diisi."
+    "validationError": "Judul dan deskripsi wajib diisi.",
+    "captchaError": "Mohon selesaikan verifikasi."
   },
   "seo": {
     "title": "LazySheet | Penampil Excel & CSV Cepat dan Native",

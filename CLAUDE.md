@@ -53,6 +53,15 @@ import { Button } from '#/components/ui/button'
 import { Nav } from '#/layouts/nav'
 ```
 
+## Testing Rule
+
+**Every feature change MUST ship with unit tests.** No feature PR is complete without accompanying tests covering the new/changed behavior.
+
+- Coverage gate: **95%** — `pnpm test` must keep coverage at or above 95%.
+- New feature → add UT in the same change.
+- Changed feature → update/extend UT to cover the change.
+- Do not merge if coverage drops below 95%.
+
 ## Commands
 
 ```bash

@@ -18,6 +18,16 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
+// Stub FeedbackDialog so it doesn't pull in createServerFn (server-only)
+vi.mock("#/features/feedback/feedback-dialog", () => ({
+  FeedbackDialog: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</>,
+}))
+
+// Stub GithubStars so it doesn't pull in the fetch hook
+vi.mock("#/features/github/github-stars", () => ({
+  GithubStars: () => null,
+}))
+
 // Pin client OS detection to "unknown" so the DownloadButton label is driven
 // by serverOS (happy-dom's userAgent says "Linux", which would override it).
 vi.mock("#/lib/os", async (importOriginal) => {

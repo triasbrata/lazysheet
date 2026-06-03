@@ -17,7 +17,15 @@ export function BentoGrid({ tiles, header }: BentoGridProps): JSX.Element {
   return (
     // Tall scroll track — only on desktop with motion enabled (motion-safe + md).
     // Mobile / reduced-motion: height auto, normal document flow.
-    <section id="features" ref={trackRef} className="relative motion-safe:md:h-[300vh]">
+    <section ref={trackRef} className="relative motion-safe:md:h-[300vh]">
+      {/* Nav #features anchor — lands in the all-cards-visible HOLD beat on desktop
+          (≈50% through the 300vh track → scrollYProgress ~0.5, before the staggered
+          exit begins), or at the section top on mobile / reduced-motion. */}
+      <span
+        id="features"
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 scroll-mt-16 motion-safe:md:top-[100vh]"
+      />
       {/* Pinned stage: sticky + full-screen + vertically centered when pinning is active. */}
       <div className="mx-auto flex max-w-[1800px] flex-col px-4 py-24 md:px-10 lg:px-16 motion-safe:md:sticky motion-safe:md:top-16 motion-safe:md:py-8">
         {header}

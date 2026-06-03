@@ -6,6 +6,8 @@ import { GithubMark } from '#/components/site/icons'
 import { LanguageSwitcher } from '#/features/i18n/language-switcher'
 import { cn } from '#/lib/utils'
 import { isLocale, DEFAULT_LOCALE, type Locale } from '#/i18n/config'
+import { FeedbackDialog } from '#/features/feedback/feedback-dialog'
+import { GithubStars } from '#/features/github/github-stars'
 
 type NavProps = { overHero?: boolean }
 
@@ -40,7 +42,8 @@ export function Nav({ overHero = false }: NavProps) {
             {t('nav.features')}
           </a>
           <Link
-            to="/guide"
+            to="/$locale/guide"
+            params={{ locale }}
             className="font-display text-sm font-medium text-on-surface no-underline transition-colors hover:text-primary"
           >
             Guide
@@ -52,15 +55,29 @@ export function Nav({ overHero = false }: NavProps) {
           >
             {t('nav.download')}
           </Link>
-          <a
-            href="https://github.com/triasbrata/lazysheet"
-            target="_blank"
-            rel="noreferrer"
-            aria-label={t('nav.githubAria')}
-            className="inline-flex size-9 items-center justify-center rounded-lg text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary"
-          >
-            <GithubMark className="text-[18px]" />
-          </a>
+          <FeedbackDialog
+            trigger={
+              <button
+                type="button"
+                aria-label={t('nav.feedbackAria')}
+                className="hidden font-display text-sm font-medium text-on-surface no-underline transition-colors hover:text-primary sm:inline-flex"
+              >
+                {t('feedback.trigger')}
+              </button>
+            }
+          />
+          <div className="inline-flex items-center gap-1">
+            <a
+              href="https://github.com/triasbrata/lazysheet"
+              target="_blank"
+              rel="noreferrer"
+              aria-label={t('nav.githubAria')}
+              className="inline-flex size-9 items-center justify-center rounded-lg text-on-surface transition-colors hover:bg-surface-container-low hover:text-primary"
+            >
+              <GithubMark className="text-[18px]" />
+            </a>
+            <GithubStars className="hidden sm:inline-flex" />
+          </div>
           <LanguageSwitcher />
         </div>
       </div>
