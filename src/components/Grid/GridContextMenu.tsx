@@ -10,6 +10,13 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import type { CopyFormat } from "@/lib/markdown-export";
+import type { QueryKind } from "@/lib/sql-copy";
+
+const QUERY_KINDS: { kind: QueryKind; label: string }[] = [
+  { kind: "insert", label: "INSERT" },
+  { kind: "update", label: "UPDATE" },
+  { kind: "upsert", label: "UPSERT" },
+];
 
 const MARKDOWN_FORMATS: { fmt: CopyFormat; label: string }[] = [
   { fmt: "inline", label: "Inline" },
@@ -56,6 +63,8 @@ interface GridContextMenuContentProps {
   onOpenRowHeightDialog?: () => void;
   canCopyFormula: boolean;
   onCopyFormula: () => void;
+  canCopyQuery?: boolean;
+  onCopyQuery?: (kind: QueryKind) => void;
 }
 
 export function GridContextMenuContent({
@@ -82,6 +91,8 @@ export function GridContextMenuContent({
   onOpenRowHeightDialog,
   canCopyFormula,
   onCopyFormula,
+  canCopyQuery,
+  onCopyQuery,
 }: GridContextMenuContentProps) {
   // Tracks whether the pointer that triggered onSelect held Cmd/Ctrl. Radix's
   // onSelect event does not expose modifier keys, so we stash it on pointerdown.
@@ -241,6 +252,18 @@ export function GridContextMenuContent({
               </ContextMenuSubContent>
             </ContextMenuSub>
             {COPY_LEAVES.map(({ fmt, label }) => renderCopyItem(fmt, label))}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+      )}
+      {canCopyQuery && onCopyQuery && (
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>Copy as Query</ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            {QUERY_KINDS.map(({ kind, label }) => (
+              <ContextMenuItem key={kind} onSelect={() => onCopyQuery(kind)}>
+                {label}
+              </ContextMenuItem>
+            ))}
           </ContextMenuSubContent>
         </ContextMenuSub>
       )}

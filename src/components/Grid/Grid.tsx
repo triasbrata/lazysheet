@@ -13,6 +13,7 @@ import {
   type GridContextMenuTarget,
 } from "./GridContextMenu";
 import type { MarkdownFormat } from "@/lib/markdown-export";
+import type { QueryKind } from "@/lib/sql-copy";
 import {
   boundsInclude,
   buildMergeInfo,
@@ -112,6 +113,8 @@ interface GridProps {
   // rows/cols are exempt (see grid-filter). colAnchor (0-indexed) → ColumnFilter.
   filters?: SheetFilters;
   onColumnFilterChange?: (colAnchor: number, filter: ColumnFilter) => void;
+  canCopyQuery?: boolean;
+  onCopyQuery?: (kind: QueryKind) => void;
 }
 
 type DragMode = "cell" | "rowHeader" | "colHeader";
@@ -150,6 +153,8 @@ export function Grid({
   onOpenRowHeightDialog,
   filters,
   onColumnFilterChange,
+  canCopyQuery,
+  onCopyQuery,
 }: GridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalRows = sheet.rows.length;
@@ -1661,6 +1666,8 @@ export function Grid({
             onCopyFormula={() => {
               if (menuCtx?.type === "cell") copyFormulaAt(menuCtx.row, menuCtx.col);
             }}
+            canCopyQuery={canCopyQuery && canCopy}
+            onCopyQuery={onCopyQuery}
           />
         </ContextMenu>
       </div>

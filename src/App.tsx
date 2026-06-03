@@ -13,6 +13,7 @@ import {
 import { FindBar } from "@/components/FindBar";
 import {
   buildMergeInfo,
+  columnLetter,
   effectiveColWidth,
   effectiveRowHeight,
   expandBoundsForMerges,
@@ -52,6 +53,28 @@ import {
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { runUpdateCheck } from "@/lib/updater";
 import { shouldCloseSheet, shouldOpenFile } from "@/lib/keyboard-shortcuts";
+import {
+  buildSqlQuery,
+  generateSqlWithProgress,
+  keyHasDuplicates,
+  sqlColumns,
+  SQL_ASYNC_THRESHOLD,
+  type QueryKind,
+  type SqlDialect,
+  type BuildSqlOptions,
+  type SqlProgress,
+} from "@/lib/sql-copy";
+import {
+  readStoredDialect,
+  writeStoredDialect,
+  readStoredTableName,
+  writeStoredTableName,
+  readStoredKeyCols,
+  writeStoredKeyCols,
+  sanitizeTableName,
+  stripExt,
+} from "@/lib/sql-pref";
+import { QueryModal, type QueryModalState, type QueryConfirm } from "@/components/QueryModal";
 
 const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
   inline: "markdown",
@@ -605,6 +628,11 @@ function App() {
   // ── Manual-size input dialog ────────────────────────────────────────────
   const [sizeDialog, setSizeDialog] = useState<SizeDialogState>(null);
 
+  // ── Copy-as-Query (SQL) ─────────────────────────────────────────────────
+  const [queryModal, setQueryModal] = useState<QueryModalState | null>(null);
+  const [queryProgress, setQueryProgress] = useState<SqlProgress | null>(null);
+  const queryAbortRef = useRef<AbortController | null>(null);
+
   const handleOpenColWidthDialog = useCallback(
     (col: number) => {
       if (!activeSheet) return;
@@ -740,6 +768,300 @@ function App() {
     [wb.activeSheet, selection, headerRows, activeSheetName, handleMarkAsHeader, filters],
   );
 
+  // ── Copy-as-Query helpers ───────────────────────────────────────────────
+
+  const resolveSqlContext = useCallback(() => {
+    const sheet = wb.activeSheet;
+    if (!sheet || !selection) return null;
+    const totalRows = sheet.rows.length;
+    const totalCols = sheet.max_col;
+    const base = selectionBounds(selection, totalRows, totalCols);
+    const merges = buildMergeInfo(sheet.merges);
+    const bounds = expandBoundsForMerges(base, merges);
+    const headerIdx = activeSheetName ? (headerRows[activeSheetName] ?? null) : null;
+    const sheetFilters = activeSheetName ? filters[activeSheetName] ?? {} : {};
+    let rowFilter: ((r: number) => boolean) | undefined;
+    if (hasActiveFilters(sheetFilters)) {
+      const mi = buildMergeInfo(sheet.merges);
+      const mergedRowSet = buildMergedRowSet(sheet.merges);
+      const groups = headerGroups(mi, headerIdx, sheet.max_col);
+      const visible = new Set(
+        computeVisibleRows(sheet, mergedRowSet, headerIdx, groups, sheetFilters, sheet.rows.length),
+      );
+      rowFilter = (r: number) => visible.has(r);
+    }
+    return { sheet, bounds, headerIdx, rowFilter };
+  }, [wb.activeSheet, selection, headerRows, activeSheetName, filters]);
+
+  const reconfigureRef = useRef<(kind: QueryKind) => void>(() => {});
+
+  // Shared: generate + clipboard + result toast (with a "Change here" CTA).
+  // Shows the progress view (via the modal shell) only for large async copies.
+  const runQueryCopy = useCallback(
+    async (args: {
+      snapshot: {
+        sheet: BuildSqlOptions["sheet"];
+        bounds: BuildSqlOptions["bounds"];
+        headerIdx: number;
+        rowFilter?: (r: number) => boolean;
+      };
+      kind: QueryKind;
+      tableName: string;
+      dialect: SqlDialect;
+      keyCols: number[];
+      progressState: QueryModalState;
+      fromModal: boolean; // true → just configured via modal: no "Change here" CTA
+    }) => {
+      const { snapshot: s, kind, tableName, dialect, keyCols, progressState, fromModal } = args;
+      const opts: BuildSqlOptions = {
+        sheet: s.sheet,
+        bounds: s.bounds,
+        headerRowIdx: s.headerIdx,
+        kind,
+        tableName,
+        dialect,
+        keyCols,
+        rowFilter: s.rowFilter,
+      };
+      const estRows = s.bounds.r2 - s.bounds.r1 + 1;
+      let res: Awaited<ReturnType<typeof buildSqlQuery>>;
+      try {
+        if (estRows <= SQL_ASYNC_THRESHOLD) {
+          res = buildSqlQuery(opts);
+        } else {
+          const ac = new AbortController();
+          queryAbortRef.current = ac;
+          setQueryModal(progressState);
+          setQueryProgress({ done: 0, total: estRows });
+          res = await generateSqlWithProgress(opts, (p) => setQueryProgress(p), ac.signal);
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+          toast.message("Cancelled");
+        } else {
+          toast.error("Copy failed", { description: e instanceof Error ? e.message : String(e) });
+        }
+        queryAbortRef.current = null;
+        setQueryProgress(null);
+        setQueryModal(null);
+        return;
+      }
+
+      if (!res.text) {
+        toast.message(
+          res.skippedRows.length
+            ? `Nothing to copy · ${res.skippedRows.length} row(s) skipped`
+            : "Nothing to copy",
+        );
+      } else {
+        try {
+          await navigator.clipboard.writeText(res.text);
+        } catch (e) {
+          toast.error("Copy failed", { description: e instanceof Error ? e.message : String(e) });
+          queryAbortRef.current = null;
+          setQueryProgress(null);
+          setQueryModal(null);
+          return;
+        }
+        const suffix = res.truncated ? " (truncated)" : "";
+        const skipNote = res.skippedRows.length
+          ? ` · ${res.skippedRows.length} row(s) skipped (see comment in copied SQL)`
+          : "";
+        const base = `Copied ${res.rowsEmitted} row(s) as ${kind.toUpperCase()} into table ${tableName} (${dialect})${suffix}${skipNote}`;
+        if (fromModal) {
+          toast.success(base);
+        } else {
+          toast.success(`${base}. Not what you want?`, {
+            action: {
+              label: "Change here",
+              onClick: () => reconfigureRef.current(kind),
+            },
+          });
+        }
+      }
+
+      queryAbortRef.current = null;
+      setQueryProgress(null);
+      setQueryModal(null);
+    },
+    [],
+  );
+
+  const handleCopyQuery = useCallback(
+    (kind: QueryKind, forceModal = false) => {
+      const ctx = resolveSqlContext();
+      if (!ctx) return;
+
+      if (ctx.headerIdx == null) {
+        const topRow = ctx.bounds.r1;
+        toast.custom(
+          (id) => (
+            <div className="flex w-full flex-col gap-2 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-lg">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">
+                  Use row {topRow + 1} as column names for the query?
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  A header row is required to generate a SQL query.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  toast.dismiss(id);
+                  handleMarkAsHeader(topRow);
+                  handleCopyQuery(kind, forceModal);
+                }}
+                className="self-end rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-medium hover:bg-secondary/80"
+              >
+                Use as header
+              </button>
+            </div>
+          ),
+          { unstyled: true, duration: 8000 },
+        );
+        return;
+      }
+
+      const cols = sqlColumns(ctx.sheet, ctx.bounds, ctx.headerIdx);
+
+      const emptyCols = cols.filter((c) => c.name.trim() === "");
+      if (emptyCols.length > 0) {
+        toast.error(
+          `Cannot copy as query: column(s) ${emptyCols.map((c) => columnLetter(c.index)).join(", ")} have no name. Set a header value first.`,
+        );
+        return;
+      }
+
+      const nameCounts: Record<string, number> = {};
+      for (const c of cols) {
+        nameCounts[c.name] = (nameCounts[c.name] ?? 0) + 1;
+      }
+      const dup = cols.filter((c) => nameCounts[c.name] > 1).map((c) => c.name);
+      if (dup.length > 0) {
+        toast.error(
+          `Cannot copy as query: duplicate column names (${[...new Set(dup)].join(", ")}). Rename to continue.`,
+        );
+        return;
+      }
+
+      const fileName = wb.workbook?.file_name ?? (activeSheetName ?? "table");
+      const sheetKey = activeSheetName ?? "";
+      const storedTable = readStoredTableName(fileName, sheetKey);
+      const dialect = readStoredDialect();
+      const needsKey = kind === "update" || kind === "upsert";
+
+      const colIndexSet = new Set(cols.map((c) => c.index));
+      const storedKeys = needsKey ? readStoredKeyCols(fileName, sheetKey, kind) : null;
+      const validKeys = storedKeys?.filter((k) => colIndexSet.has(k)) ?? null;
+      const missingKeys = storedKeys?.filter((k) => !colIndexSet.has(k)) ?? [];
+
+      // Header label for an absolute column index (used in warnings).
+      const labelAt = (idx: number) => {
+        const cell = ctx.sheet.rows[ctx.headerIdx!]?.[idx];
+        const t = cell ? cellText(cell) : "";
+        return t.trim() !== "" ? t : columnLetter(idx);
+      };
+
+      const snapshot = {
+        sheet: ctx.sheet,
+        bounds: ctx.bounds,
+        headerIdx: ctx.headerIdx!, // non-null here (guarded above)
+        rowFilter: ctx.rowFilter,
+      };
+      const keyDupCheck = (keyCols: number[]) =>
+        keyHasDuplicates(snapshot.sheet, snapshot.bounds, snapshot.headerIdx, keyCols, snapshot.rowFilter);
+
+      const keyWarning =
+        missingKeys.length > 0
+          ? `WHERE field(s) ${missingKeys.map(labelAt).join(", ")} from your last setting are not in the current range — re-select.`
+          : undefined;
+
+      const modalState: QueryModalState = {
+        kind,
+        columns: cols,
+        tableName: storedTable ?? sanitizeTableName(stripExt(fileName)),
+        dialect,
+        keyDupCheck,
+        initialKeyCols: validKeys ?? undefined,
+        keyWarning,
+        _snapshot: snapshot,
+      };
+
+      // Skip the modal once the sheet is configured (table stored) and, for
+      // update/upsert, the remembered keys are all still in range.
+      const configured = storedTable != null;
+      const keysReady =
+        !needsKey ||
+        (validKeys != null && validKeys.length > 0 && missingKeys.length === 0);
+      const canSkip = !forceModal && configured && keysReady;
+
+      if (canSkip) {
+        void runQueryCopy({
+          snapshot,
+          kind,
+          tableName: storedTable!,
+          dialect,
+          keyCols: needsKey ? validKeys! : [],
+          progressState: modalState,
+          fromModal: false,
+        });
+        return;
+      }
+
+      if (missingKeys.length > 0) {
+        toast.warning(
+          `Key field(s) ${missingKeys.map(labelAt).join(", ")} are no longer in the selected range — please re-select.`,
+        );
+      }
+
+      setQueryModal(modalState);
+    },
+    [resolveSqlContext, handleMarkAsHeader, wb.workbook?.file_name, activeSheetName, runQueryCopy],
+  );
+
+  useEffect(() => {
+    reconfigureRef.current = (kind: QueryKind) => handleCopyQuery(kind, true);
+  }, [handleCopyQuery]);
+
+  const handleQueryConfirm = useCallback(
+    (c: QueryConfirm) => {
+      const m = queryModal;
+      if (!m) return;
+      const s = m._snapshot as {
+        sheet: BuildSqlOptions["sheet"];
+        bounds: BuildSqlOptions["bounds"];
+        headerIdx: number;
+        rowFilter?: (r: number) => boolean;
+      };
+
+      const fileName = wb.workbook?.file_name ?? (activeSheetName ?? "table");
+      writeStoredDialect(c.dialect);
+      writeStoredTableName(fileName, activeSheetName ?? "", c.tableName);
+      if (m.kind === "update" || m.kind === "upsert") {
+        writeStoredKeyCols(fileName, activeSheetName ?? "", m.kind, c.keyCols);
+      }
+
+      void runQueryCopy({
+        snapshot: s,
+        kind: m.kind,
+        tableName: c.tableName,
+        dialect: c.dialect,
+        keyCols: c.keyCols,
+        progressState: { ...m, tableName: c.tableName, dialect: c.dialect },
+        fromModal: true,
+      });
+    },
+    [queryModal, wb.workbook?.file_name, activeSheetName, runQueryCopy],
+  );
+
+  const handleQueryCancel = useCallback(() => {
+    queryAbortRef.current?.abort();
+    queryAbortRef.current = null;
+    setQueryProgress(null);
+    setQueryModal(null);
+  }, []);
+
   // Context-menu copy. Plain click → copy now. Cmd/Ctrl+click (setAsDefault)
   // → copy now AND persist that format as the default.
   const handleCopyFormat = useCallback(
@@ -858,6 +1180,8 @@ function App() {
               onOpenRowHeightDialog={handleOpenRowHeightDialog}
               filters={activeFilters}
               onColumnFilterChange={handleColumnFilterChange}
+              canCopyQuery
+              onCopyQuery={handleCopyQuery}
             />
           )}
           <StatusBar
@@ -916,6 +1240,12 @@ function App() {
         onConfirm={handleSizeDialogConfirm}
         onReset={handleSizeDialogReset}
         onCancel={() => setSizeDialog(null)}
+      />
+      <QueryModal
+        state={queryModal}
+        progress={queryProgress}
+        onConfirm={handleQueryConfirm}
+        onCancel={handleQueryCancel}
       />
     </div>
   );
