@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileSpreadsheet, FolderOpen, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { pickFile } from "@/lib/tauri-api";
 import type { RecentFile } from "@/hooks/useWorkbook";
@@ -12,6 +13,7 @@ interface WelcomeProps {
 
 export function Welcome({ onOpen, recents, dragOver }: WelcomeProps) {
   const [picking, setPicking] = useState(false);
+  const { t } = useTranslation();
 
   async function handlePick() {
     setPicking(true);
@@ -38,15 +40,15 @@ export function Welcome({ onOpen, recents, dragOver }: WelcomeProps) {
           }`}
           strokeWidth={1.25}
         />
-        <h2 className="mb-1 text-lg font-medium">Open a spreadsheet</h2>
+        <h2 className="mb-1 text-lg font-medium">{t("welcome.title")}</h2>
         <p className="mb-6 text-center text-sm text-muted-foreground">
-          Drop a file here, or browse to open
+          {t("welcome.dropHint")}
           <br />
-          <span className="text-xs">.xlsx · .xlsm · .xls · .csv · .tsv</span>
+          <span className="text-xs">{t("welcome.extensions")}</span>
         </p>
         <Button onClick={handlePick} disabled={picking} size="sm">
           <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
-          {picking ? "Opening…" : "Open File"}
+          {picking ? t("common.openingEllipsis") : t("welcome.openFile")}
         </Button>
       </div>
 
@@ -54,7 +56,7 @@ export function Welcome({ onOpen, recents, dragOver }: WelcomeProps) {
         <div className="mt-8 w-full max-w-lg">
           <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <Clock className="h-3 w-3" />
-            Recent
+            {t("welcome.recent")}
           </div>
           <ul className="space-y-0.5">
             {recents.slice(0, 5).map((r) => (

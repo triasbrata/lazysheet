@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, Sigma } from "lucide-react";
 import {
   Dialog,
@@ -57,6 +58,7 @@ export function CommandPalette({
   currentPath,
   onCheckUpdates,
 }: CommandPaletteProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -78,8 +80,8 @@ export function CommandPalette({
     if (onPickFile) {
       fileItems.push({
         id: "open-file",
-        label: "Open file…",
-        subtitle: "Browse (.xlsx, .csv…)",
+        label: t("command.openFile"),
+        subtitle: t("command.openFileSub"),
         icon: FolderOpen,
         run: () => {
           onOpenChange(false);
@@ -101,14 +103,14 @@ export function CommandPalette({
     }
 
     if (!hasFile) {
-      return [{ title: "Recent Files", items: fileItems }];
+      return [{ title: t("command.sectionRecent"), items: fileItems }];
     }
 
     const cmdItems: CommandItem[] = [
       {
         id: "goto",
-        label: "Goto",
-        subtitle: "Jump to cell (e.g. A1, B12)",
+        label: t("command.goto"),
+        subtitle: t("command.gotoSub"),
         icon: Crosshair,
         run: () => onModeChange("goto"),
       },
@@ -116,8 +118,8 @@ export function CommandPalette({
         ? [
             {
               id: "summarize",
-              label: "Summarize selection",
-              subtitle: "Group-by",
+              label: t("command.summarize"),
+              subtitle: t("command.summarizeSub"),
               hint: "⌘⇧Y",
               icon: Sigma,
               run: () => {
@@ -131,8 +133,8 @@ export function CommandPalette({
         ? [
             {
               id: "copy-file",
-              label: "Copy file",
-              subtitle: "Copy .xlsx to clipboard",
+              label: t("command.copyFile"),
+              subtitle: t("command.copyFileSub"),
               icon: Files,
               run: () => {
                 onOpenChange(false);
@@ -145,8 +147,8 @@ export function CommandPalette({
         ? [
             {
               id: "copy-file-path",
-              label: "Copy file path",
-              subtitle: "Copy path as text",
+              label: t("command.copyFilePath"),
+              subtitle: t("command.copyFilePathSub"),
               icon: ClipboardCopy,
               run: () => {
                 onOpenChange(false);
@@ -159,7 +161,7 @@ export function CommandPalette({
         ? [
             {
               id: "check-updates",
-              label: "Check for Updates",
+              label: t("command.checkUpdates"),
               icon: DownloadCloud,
               run: () => {
                 onOpenChange(false);
@@ -171,10 +173,11 @@ export function CommandPalette({
     ];
 
     return [
-      { title: "Commands", items: cmdItems },
-      { title: "Recent Files", items: fileItems },
+      { title: t("command.sectionCommands"), items: cmdItems },
+      { title: t("command.sectionRecent"), items: fileItems },
     ];
   }, [
+    t,
     hasFile,
     recents,
     currentPath,
@@ -262,8 +265,8 @@ export function CommandPalette({
 
   const placeholder =
     mode === "root"
-      ? (!hasFile ? "Search recent files…" : "Type a command…")
-      : "Cell reference (e.g. A1, B12, AB45)";
+      ? (!hasFile ? t("command.searchRecent") : t("command.typeCommand"))
+      : t("command.cellRefPlaceholder");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -271,7 +274,7 @@ export function CommandPalette({
         className="max-w-md p-0 gap-0 overflow-hidden sm:max-w-md"
         showCloseButton={false}
       >
-        <DialogTitle className="sr-only">Command Palette</DialogTitle>
+        <DialogTitle className="sr-only">{t("command.paletteTitle")}</DialogTitle>
         <div className="flex items-center gap-2 border-b border-border px-3 py-2">
           {mode !== "root" && (
             <button
@@ -304,7 +307,7 @@ export function CommandPalette({
           <div className="max-h-72 overflow-y-auto px-2 py-1">
             {flatItems.length === 0 ? (
               <div className="px-3 py-4 text-xs text-muted-foreground">
-                {!hasFile ? "No recent files." : "No commands match."}
+                {!hasFile ? t("command.noRecent") : t("command.noMatch")}
               </div>
             ) : (
               (() => {
@@ -359,7 +362,7 @@ export function CommandPalette({
 
         {mode === "goto" && (
           <div className="px-3 py-2 text-[11px] text-muted-foreground">
-            Press Enter to jump. Esc to back.
+            {t("command.gotoHelp")}
           </div>
         )}
       </DialogContent>

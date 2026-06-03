@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Sigma } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { SheetModel } from "@/lib/types";
 import { cellText } from "@/lib/types";
 import {
@@ -30,6 +31,7 @@ export function StatusBar({
   canSummarize,
   onOpenSummary,
 }: StatusBarProps) {
+  const { t } = useTranslation();
   if (!sheet || !selection) {
     return (
       <div
@@ -70,7 +72,7 @@ export function StatusBar({
   } else {
     const rows = bounds.r2 - bounds.r1 + 1;
     const cols = bounds.c2 - bounds.c1 + 1;
-    summary = `${rows}R × ${cols}C · ${rows * cols} cells`;
+    summary = t("statusbar.selectionSize", { rows, cols, count: rows * cols });
   }
 
   const stats = useMemo(
@@ -102,7 +104,7 @@ export function StatusBar({
         <span
           data-tauri-drag-region
           className="font-mono tabular-nums text-foreground/60"
-          title="Active cell"
+          title={t("statusbar.activeCell")}
         >
           ⇢ {anchorLabel}
         </span>
@@ -128,10 +130,10 @@ export function StatusBar({
           type="button"
           onClick={onOpenSummary}
           className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-foreground/70 hover:bg-muted/50 hover:text-foreground"
-          title="Group-by summary (⌘⇧Y)"
+          title={t("statusbar.summaryTitle", { shortcut: "⌘⇧Y" })}
         >
           <Sigma className="h-3 w-3" />
-          <span>Analyze</span>
+          <span>{t("statusbar.analyze")}</span>
         </button>
       )}
     </div>

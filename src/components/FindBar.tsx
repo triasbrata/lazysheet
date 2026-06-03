@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export interface FindBarProps {
@@ -26,6 +27,7 @@ export function FindBar({
   onClose,
 }: FindBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -57,10 +59,10 @@ export function FindBar({
   const counterText =
     matchCount > 0
       ? activeIndex >= 0
-        ? `${activeIndex + 1} of ${matchCount}`
-        : `${matchCount} matches`
+        ? t("find.position", { current: activeIndex + 1, total: matchCount })
+        : t("find.matches", { count: matchCount })
       : query
-        ? "No matches"
+        ? t("find.noMatches")
         : "";
 
   const disabled = matchCount === 0;
@@ -80,14 +82,14 @@ export function FindBar({
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Find in sheet…"
+        placeholder={t("find.placeholder")}
         className="w-56 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        aria-label="Find in sheet"
+        aria-label={t("find.ariaFind")}
       />
       <span
         className={cn(
           "min-w-[4.5rem] text-right text-[11px] tabular-nums",
-          counterText === "No matches"
+          counterText === t("find.noMatches")
             ? "text-destructive"
             : "text-muted-foreground",
         )}
@@ -98,7 +100,7 @@ export function FindBar({
         type="button"
         onClick={onPrev}
         disabled={disabled}
-        aria-label="Previous match"
+        aria-label={t("find.ariaPrev")}
         className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
       >
         <ChevronUp className="h-3.5 w-3.5" />
@@ -107,7 +109,7 @@ export function FindBar({
         type="button"
         onClick={onNext}
         disabled={disabled}
-        aria-label="Next match"
+        aria-label={t("find.ariaNext")}
         className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
       >
         <ChevronDown className="h-3.5 w-3.5" />
@@ -115,7 +117,7 @@ export function FindBar({
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close find"
+        aria-label={t("find.ariaClose")}
         className="rounded p-1 text-muted-foreground hover:bg-muted"
       >
         <X className="h-3.5 w-3.5" />
