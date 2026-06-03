@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { screen, cleanup } from '@testing-library/react'
 
 // Pin client OS/arch detection to "unknown" so serverOS stays authoritative.
 // (happy-dom's userAgent contains "Linux", which would otherwise override it.)
@@ -16,6 +16,7 @@ afterEach(cleanup)
 import { DownloadButton } from './download-button'
 import { LATEST_PAGE_URL, type ReleaseData } from '#/lib/releases'
 import type { DownloadData } from '#/lib/releases-data'
+import { renderWithI18n } from '#/test/i18n'
 
 const release: ReleaseData = {
   tag: 'v1.0.0',
@@ -31,7 +32,7 @@ const release: ReleaseData = {
 describe('DownloadButton', () => {
   it('points at the macOS asset URL when serverOS is macOS', async () => {
     const data: DownloadData = { release, serverOS: 'macOS' }
-    render(<DownloadButton data={data} />)
+    renderWithI18n(<DownloadButton data={data} />)
     const link = await screen.findByRole('link')
     expect(link.getAttribute('href')).toBe('https://dl/mac.dmg')
     expect(link.textContent).toMatch(/macOS/)
@@ -39,7 +40,7 @@ describe('DownloadButton', () => {
 
   it('points at the Windows asset URL when serverOS is Windows', async () => {
     const data: DownloadData = { release, serverOS: 'Windows' }
-    render(<DownloadButton data={data} />)
+    renderWithI18n(<DownloadButton data={data} />)
     const link = await screen.findByRole('link')
     expect(link.getAttribute('href')).toBe('https://dl/win.exe')
     expect(link.textContent).toMatch(/Windows/)
@@ -47,7 +48,7 @@ describe('DownloadButton', () => {
 
   it('falls back to the releases page when there is no release', async () => {
     const data: DownloadData = { release: null, serverOS: 'unknown' }
-    render(<DownloadButton data={data} />)
+    renderWithI18n(<DownloadButton data={data} />)
     const link = await screen.findByRole('link')
     expect(link.getAttribute('href')).toBe(LATEST_PAGE_URL)
     expect(link.textContent).toMatch(/Download/)

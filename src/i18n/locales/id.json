@@ -1,0 +1,111 @@
+{
+  "nav": {
+    "features": "Fitur",
+    "download": "Unduh",
+    "githubAria": "Repositori GitHub",
+    "logoAlt": "Logo LazySheet"
+  },
+  "hero": {
+    "iconAlt": "Ikon LazySheet",
+    "titleLine1": "Cepat. Sederhana.",
+    "titleLine2": "Penampil Spreadsheet.",
+    "subtitle": "Hentikan menunggu perangkat lunak spreadsheet yang berat. Buka CSV 100MB seketika dan dapatkan wawasan tanpa latensi.",
+    "otherDownloads": "Unduhan lainnya",
+    "licensePrefix": "Dengan menggunakan LazySheet, Anda menyetujui",
+    "license": "Lisensi",
+    "dashboardAlt": "Dasbor LazySheet"
+  },
+  "formats": {
+    "heading": "Dukungan format yang luas",
+    "bodyPrefix": "Buka file data apa pun dengan mudah menggunakan",
+    "dragDrop": "Seret & Lepas"
+  },
+  "features": {
+    "heading": "Dirancang untuk Performa",
+    "subtitle": "Fitur-fitur yang Anda butuhkan untuk menganalisis data tanpa pemborosan."
+  },
+  "bento": {
+    "groupBy": {
+      "title": "Ringkasan Group-by",
+      "description": "Rangkum data berdasarkan kolom mana pun dalam hitungan detik. Pilih rentang, tentukan kolom kategori dan nilai, lalu dapatkan rekap instan dengan SUM, AVG, MIN, MAX, dan COUNT — tanpa konfigurasi pivot table.",
+      "bullet1": "Pengelompokan multi-level hingga 6 kolom",
+      "bullet2": "SUM / AVG / MIN / MAX / COUNT instan untuk seleksi rentang apa pun",
+      "mediaAlt": "Ringkasan group-by"
+    },
+    "formats": {
+      "title": "Dukungan Format yang Luas",
+      "description": "Buka spreadsheet Anda langsung — tanpa konversi, tanpa pengaturan."
+    },
+    "multiSheet": {
+      "title": "Navigasi Multi-sheet",
+      "description": "Beralih antar tab lembar kerja di buku kerja mana pun dari bilah tab bawah."
+    },
+    "command": {
+      "title": "Palet Perintah",
+      "description": "Cmd+K untuk melompat ke referensi sel mana pun atau menjalankan tindakan — navigasi yang mengutamakan keyboard."
+    },
+    "virtualized": {
+      "title": "Rendering Tervirtualisasi",
+      "description": "LazySheet hanya merender baris yang dapat Anda lihat. Gulir melalui lembar besar dengan gerakan yang mulus tanpa hambatan, apa pun perangkat kerasnya."
+    },
+    "filters": {
+      "title": "Filter Kolom",
+      "description": "Klik ikon corong di header mana pun. 14 jenis filter ditambah daftar nilai bergaya Excel."
+    },
+    "sticky": {
+      "title": "Baris Header Tetap",
+      "description": "Tandai baris mana pun sebagai header — baris tersebut tetap tersemat saat Anda menggulir data."
+    },
+    "resize": {
+      "title": "Kolom & Baris yang Dapat Diubah Ukurannya",
+      "description": "Seret untuk mengubah ukuran, klik dua kali untuk autofit. Ukuran diingat per file."
+    },
+    "format": {
+      "title": "Pemformatan Sel yang Kaya",
+      "description": "Font, warna, perataan, sel yang digabungkan, dan hyperlink yang dapat diklik dipertahankan dari file .xlsx."
+    },
+    "copy": {
+      "title": "Salin sebagai Gambar",
+      "description": "Tangkap laporan ringkasan group-by sebagai PNG langsung ke clipboard Anda."
+    },
+    "find": {
+      "title": "Cari di Sheet",
+      "description": "Pencarian teks lengkap dengan Cmd+F. Lompat di antara kecocokan yang disorot di seluruh sheet."
+    },
+    "native": {
+      "title": "Integrasi macOS Asli",
+      "description": "Seret & lepas, 'Buka Dengan', dan dukungan File Terbaru sudah tersedia."
+    }
+  },
+  "faq": {
+    "heading": "Mengalami masalah membuka aplikasi?",
+    "subtitle": "Pertanyaan umum tentang menginstal LazySheet.",
+    "unsignedQuestion": "macOS mengatakan LazySheet \"rusak\" atau berasal dari \"pengembang yang tidak diidentifikasi\"",
+    "unsignedAnswerPre": "LazySheet belum ditandatangani secara kode dengan sertifikat Apple Developer, sehingga macOS Gatekeeper mengkarantinanya dan memblokir pembukaannya. Aplikasi ini aman — Anda hanya perlu menghapus tanda karantina. Buka aplikasi",
+    "terminal": "Terminal",
+    "unsignedAnswerPost": "Setelah selesai, buka LazySheet secara normal dari Aplikasi. Jika Anda menginstalnya di tempat lain, ubah path agar sesuai dengan lokasinya.",
+    "copy": "Salin",
+    "copied": "Disalin",
+    "copyAria": "Salin perintah"
+  },
+  "footer": {
+    "tagline": "© 2026 LazySheet. Dibangun untuk kecepatan."
+  },
+  "download": {
+    "pageTitle": "Unduh LazySheet — macOS, Windows & Linux",
+    "heading": "Unduh",
+    "noBuilds": "Build belum diterbitkan — periksa halaman rilis untuk unduhan terbaru.",
+    "viewReleases": "Lihat Rilis di GitHub",
+    "licensePrefix": "Dengan menggunakan LazySheet, Anda menyetujui",
+    "license": "Lisensi",
+    "viewAllReleases": "Lihat semua rilis di GitHub",
+    "buttonGeneric": "Unduh",
+    "buttonForOs": "Unduh untuk {{os}}"
+  },
+  "seo": {
+    "title": "LazySheet | Penampil Excel & CSV Cepat dan Native",
+    "description": "LazySheet adalah penampil desktop yang cepat, gratis, dan open-source untuk file Excel, CSV, dan TSV. Buka lembar besar seketika dengan latensi nol di macOS, Windows, dan Linux.",
+    "ogTitle": "LazySheet — Penampil Spreadsheet Cepat dan Sederhana",
+    "ogDescription": "Buka file Excel, CSV, dan TSV seketika. Gratis dan open source untuk macOS, Windows, dan Linux."
+  }
+}

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 
 // DownloadView pulls in <Nav>, which renders TanStack <Link>s.
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -9,6 +10,9 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return {
     ...actual,
     Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
+    useParams: () => ({ locale: 'en' }),
+    useNavigate: () => () => {},
+    useLocation: () => ({ pathname: '/en/download' }),
   }
 })
 
@@ -21,9 +25,10 @@ vi.mock('#/lib/os', async (importOriginal) => {
   }
 })
 
-import { DownloadView } from '#/routes/download'
+import { DownloadView } from '#/routes/$locale/download'
 import { RELEASES_PAGE_URL, type ReleaseData } from '#/lib/releases'
 import type { DownloadData } from '#/lib/releases-data'
+import { renderWithI18n } from '#/test/i18n'
 
 const release: ReleaseData = {
   tag: 'v1.0.0',
@@ -40,20 +45,20 @@ afterEach(cleanup)
 
 describe('Download page — what the user sees', () => {
   it('shows the "Download" heading', () => {
-    render(<DownloadView data={{ release, serverOS: 'macOS' }} />)
+    renderWithI18n(<DownloadView data={{ release, serverOS: 'macOS' }} />)
     expect(
       screen.getByRole('heading', { level: 1, name: 'Download' }),
     ).toBeTruthy()
   })
 
   it('groups available builds by OS', () => {
-    render(<DownloadView data={{ release, serverOS: 'macOS' }} />)
+    renderWithI18n(<DownloadView data={{ release, serverOS: 'macOS' }} />)
     expect(screen.getByRole('heading', { name: 'macOS' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Windows' })).toBeTruthy()
   })
 
   it('lists each downloadable asset with format and arch', () => {
-    render(<DownloadView data={{ release, serverOS: 'macOS' }} />)
+    renderWithI18n(<DownloadView data={{ release, serverOS: 'macOS' }} />)
 
     const dmg = screen.getByText('DMG').closest('a')
     expect(dmg?.getAttribute('href')).toBe('https://dl/mac.dmg')
@@ -65,7 +70,7 @@ describe('Download page — what the user sees', () => {
   })
 
   it('shows an empty state with a releases link when no builds are published', () => {
-    render(<DownloadView data={{ release: null, serverOS: 'unknown' }} />)
+    renderWithI18n(<DownloadView data={{ release: null, serverOS: 'unknown' }} />)
 
     expect(screen.getByText(/Builds aren't published yet/i)).toBeTruthy()
     const link = screen.getByText('View Releases on GitHub')

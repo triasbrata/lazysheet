@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import type { DownloadData } from '#/lib/releases-data'
 import { pickPrimaryAsset, osLabel, LATEST_PAGE_URL } from '#/lib/releases'
 import { AppleMark, WindowsMark, LinuxMark } from '#/components/site/icons'
 import { useClientOSArch } from './use-os-arch'
 
 export function DownloadButton({ data }: { data: DownloadData }) {
+  const { t } = useTranslation()
   const { os, arch } = useClientOSArch({ os: data.serverOS, arch: null })
   const asset = data.release ? pickPrimaryAsset(data.release.assets, os, arch) : null
   const href = asset?.url ?? data.release?.htmlUrl ?? LATEST_PAGE_URL
   const Icon = os === 'Windows' ? WindowsMark : os === 'Linux' ? LinuxMark : AppleMark
-  const label = os === 'unknown' ? 'Download' : `Download for ${osLabel(os)}`
+  const label = os === 'unknown' ? t('download.buttonGeneric') : t('download.buttonForOs', { os: osLabel(os) })
   return (
     <a
       href={href}
