@@ -3,7 +3,9 @@
     "features": "Fitur",
     "download": "Unduh",
     "githubAria": "Repositori GitHub",
-    "logoAlt": "Logo LazySheet"
+    "logoAlt": "Logo LazySheet",
+    "feedbackAria": "Buka formulir umpan balik",
+    "githubStarsAria": "{{count}} bintang GitHub"
   },
   "hero": {
     "iconAlt": "Ikon LazySheet",
@@ -101,6 +103,82 @@
     "viewAllReleases": "Lihat semua rilis di GitHub",
     "buttonGeneric": "Unduh",
     "buttonForOs": "Unduh untuk {{os}}"
+  },
+  "guide": {
+    "pageTitle": "Cara menggunakan LazySheet — Panduan",
+    "pageDescription": "Pelajari cara membuka, menjelajah, memfilter, dan menganalisis spreadsheet dengan LazySheet dalam sembilan langkah singkat.",
+    "heading": "Cara menggunakan LazySheet",
+    "subtitle": "Buka file dan mulai menganalisis dalam hitungan detik — tanpa setup, tanpa rumus.",
+    "stepLabel": "Langkah {{n}}",
+    "ctaDownload": "Unduh LazySheet",
+    "steps": {
+      "open": {
+        "title": "Buka file apa pun",
+        "body": "Tekan ⌘O untuk membuka pemilih file, atau cukup seret dan letakkan file ke jendela. LazySheet mendukung xlsx, xls, csv, dan tsv — tanpa konversi.",
+        "alt": "Pemilih file bawaan menampilkan file CSV di folder Downloads"
+      },
+      "browse": {
+        "title": "Jelajahi seketika",
+        "body": "Data Anda dimuat dalam milidetik. Gulir ratusan ribu baris tanpa lag — setiap kolom terlihat sekilas, persis seperti pada file sumber.",
+        "alt": "Grid data lengkap menampilkan semua kolom dari file CSV besar"
+      },
+      "setheader": {
+        "title": "Atur baris header",
+        "body": "Klik kanan baris mana pun dan pilih \"Mark as header\" untuk menjadikannya header kolom — cocok untuk hasil ekspor yang baris header aslinya ada beberapa baris di bawah. Grid langsung memberi label ulang.",
+        "alt": "Menu klik kanan baris dengan opsi \"Mark as header\" terbuka di atas grid data"
+      },
+      "filter": {
+        "title": "Filter kolom",
+        "body": "Klik ikon filter pada header kolom mana pun untuk membuka popover filter. Pilih nilai tertentu dari daftar yang dapat dicari, atau atur kondisi seperti \"lebih besar dari\" atau \"mengandung\" untuk mempersempit data seketika.",
+        "alt": "Popover filter kolom dengan kotak centang nilai yang dapat dicari dan opsi kondisi"
+      },
+      "stats": {
+        "title": "Statistik instan",
+        "body": "Pilih rentang sel mana pun dan bilah status di bawah menampilkan statistik agregat langsung — SUM, AVG, MIN, MAX, dan COUNT — tanpa menulis satu rumus pun.",
+        "alt": "Bilah statistik seleksi menampilkan SUM, AVG, MIN, MAX, dan COUNT untuk sel terpilih"
+      },
+      "groupby": {
+        "title": "Group-by & agregasi",
+        "body": "Buka \"Summarize selection\" untuk mengagregasi satu kolom yang dikelompokkan berdasarkan kolom lain — pilih SUM, AVG, MIN, MAX, atau COUNT. Lalu salin hasilnya sebagai Markdown atau TSV untuk ditempel langsung ke catatan, dokumen, atau pesan Anda.",
+        "alt": "Panel ringkasan group-by dengan opsi agregasi dan tombol Copy Markdown / Copy TSV"
+      },
+      "copyformats": {
+        "title": "Salin dalam format apa pun",
+        "body": "Pilih rentang atau ringkasan, lalu salin sebagai Markdown, TSV, atau bahkan Image. Tempel langsung ke dokumen, pesan chat, atau formulir web — tanpa format ulang, tanpa dialog ekspor.",
+        "alt": "Menu salin terbuka menampilkan opsi format Markdown, TSV, dan Image"
+      },
+      "dragout": {
+        "title": "Seret ke aplikasi mana pun",
+        "body": "Seret file yang terbuka langsung dari LazySheet ke zona unggah browser, jendela chat, atau aplikasi apa pun yang menerima drop file. Tanpa \"Save As\", tanpa file sementara — cukup ambil dan lepas.",
+        "alt": "Menyeret file spreadsheet dari LazySheet ke zona drop CloudConvert di browser"
+      },
+      "command": {
+        "title": "Command palette",
+        "body": "Tekan ⌘P (atau klik bilah pencarian) untuk membuka command palette. Lompat cepat ke sel dengan Goto, jalankan Summarize selection (⌘⇧Y), Copy file, Copy file path, atau buka file baru — semua dari keyboard.",
+        "alt": "Command palette menampilkan perintah Goto, Summarize selection, Copy file, Copy file path, dan Open file"
+      }
+    }
+  },
+  "feedback": {
+    "trigger": "Umpan Balik",
+    "title": "Kirim umpan balik",
+    "subtitle": "Menemukan bug atau ingin fitur baru? Ini akan membuka GitHub issue.",
+    "typeLabel": "Jenis",
+    "typeBug": "Laporan bug",
+    "typeFeature": "Permintaan fitur",
+    "typeOther": "Lainnya",
+    "titleLabel": "Judul",
+    "titlePlaceholder": "Ringkasan singkat",
+    "descLabel": "Deskripsi",
+    "descPlaceholder": "Jelaskan bug atau fitur yang Anda butuhkan…",
+    "contactLabel": "Kontak (opsional)",
+    "contactPlaceholder": "Email atau akun GitHub",
+    "submit": "Kirim",
+    "submitting": "Mengirim…",
+    "cancel": "Batal",
+    "successToast": "Terima kasih! Issue #{{number}} telah dibuat.",
+    "errorToast": "Gagal mengirim. Silakan coba lagi.",
+    "validationError": "Judul dan deskripsi wajib diisi."
   },
   "seo": {
     "title": "LazySheet | Penampil Excel & CSV Cepat dan Native",

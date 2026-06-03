@@ -14,6 +14,7 @@ import { Route as DownloadRouteImport } from './routes/download'
 import { Route as LocaleRouteImport } from './routes/$locale'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LocaleIndexRouteImport } from './routes/$locale/index'
+import { Route as LocaleGuideRouteImport } from './routes/$locale/guide'
 import { Route as LocaleDownloadRouteImport } from './routes/$locale/download'
 
 const GuideRoute = GuideRouteImport.update({
@@ -41,6 +42,11 @@ const LocaleIndexRoute = LocaleIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleGuideRoute = LocaleGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleDownloadRoute = LocaleDownloadRouteImport.update({
   id: '/download',
   path: '/download',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/$locale/download': typeof LocaleDownloadRoute
+  '/$locale/guide': typeof LocaleGuideRoute
   '/$locale/': typeof LocaleIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/$locale/download': typeof LocaleDownloadRoute
+  '/$locale/guide': typeof LocaleGuideRoute
   '/$locale': typeof LocaleIndexRoute
 }
 export interface FileRoutesById {
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/download': typeof DownloadRoute
   '/guide': typeof GuideRoute
   '/$locale/download': typeof LocaleDownloadRoute
+  '/$locale/guide': typeof LocaleGuideRoute
   '/$locale/': typeof LocaleIndexRoute
 }
 export interface FileRouteTypes {
@@ -79,9 +88,16 @@ export interface FileRouteTypes {
     | '/download'
     | '/guide'
     | '/$locale/download'
+    | '/$locale/guide'
     | '/$locale/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/download' | '/guide' | '/$locale/download' | '/$locale'
+  to:
+    | '/'
+    | '/download'
+    | '/guide'
+    | '/$locale/download'
+    | '/$locale/guide'
+    | '/$locale'
   id:
     | '__root__'
     | '/'
@@ -89,6 +105,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/guide'
     | '/$locale/download'
+    | '/$locale/guide'
     | '/$locale/'
   fileRoutesById: FileRoutesById
 }
@@ -136,6 +153,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleIndexRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/guide': {
+      id: '/$locale/guide'
+      path: '/guide'
+      fullPath: '/$locale/guide'
+      preLoaderRoute: typeof LocaleGuideRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/download': {
       id: '/$locale/download'
       path: '/download'
@@ -148,11 +172,13 @@ declare module '@tanstack/react-router' {
 
 interface LocaleRouteChildren {
   LocaleDownloadRoute: typeof LocaleDownloadRoute
+  LocaleGuideRoute: typeof LocaleGuideRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
 }
 
 const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleDownloadRoute: LocaleDownloadRoute,
+  LocaleGuideRoute: LocaleGuideRoute,
   LocaleIndexRoute: LocaleIndexRoute,
 }
 

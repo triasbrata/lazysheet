@@ -3,7 +3,9 @@
     "features": "Funciones",
     "download": "Descargar",
     "githubAria": "Repositorio de GitHub",
-    "logoAlt": "Logotipo de LazySheet"
+    "logoAlt": "Logotipo de LazySheet",
+    "feedbackAria": "Abrir formulario de comentarios",
+    "githubStarsAria": "{{count}} estrellas en GitHub"
   },
   "hero": {
     "iconAlt": "Icono de LazySheet",
@@ -101,6 +103,82 @@
     "viewAllReleases": "Ver todas las versiones en GitHub",
     "buttonGeneric": "Descargar",
     "buttonForOs": "Descargar para {{os}}"
+  },
+  "guide": {
+    "pageTitle": "Cómo usar LazySheet — Guía",
+    "pageDescription": "Aprende a abrir, explorar, filtrar y analizar hojas de cálculo con LazySheet en nueve pasos rápidos.",
+    "heading": "Cómo usar LazySheet",
+    "subtitle": "Abre un archivo y empieza a analizar en segundos: sin configuración ni fórmulas.",
+    "stepLabel": "Paso {{n}}",
+    "ctaDownload": "Descargar LazySheet",
+    "steps": {
+      "open": {
+        "title": "Abre cualquier archivo",
+        "body": "Pulsa ⌘O para abrir el selector de archivos, o simplemente arrastra y suelta un archivo en la ventana. LazySheet admite xlsx, xls, csv y tsv: sin conversión.",
+        "alt": "Selector de archivos nativo mostrando archivos CSV en la carpeta Descargas"
+      },
+      "browse": {
+        "title": "Explora al instante",
+        "body": "Tus datos se cargan en milisegundos. Desplázate por cientos de miles de filas sin retardo: cada columna visible de un vistazo, exactamente como aparece en el archivo de origen.",
+        "alt": "Cuadrícula de datos completa mostrando todas las columnas de un archivo CSV grande"
+      },
+      "setheader": {
+        "title": "Define la fila de encabezado",
+        "body": "Haz clic derecho en cualquier fila y elige \"Mark as header\" para convertirla en los encabezados de columna — ideal para exportaciones donde el encabezado real está unas filas más abajo. La cuadrícula se reetiqueta al instante.",
+        "alt": "Menú contextual de fila con la opción \"Mark as header\" abierta sobre la cuadrícula de datos"
+      },
+      "filter": {
+        "title": "Filtra columnas",
+        "body": "Haz clic en el icono de filtro de cualquier encabezado de columna para abrir el popover de filtro. Elige valores concretos de una lista con búsqueda, o define una condición como \"mayor que\" o \"contiene\" para acotar tus datos al instante.",
+        "alt": "Popover de filtro de columna con casillas de valores con búsqueda y opciones de condición"
+      },
+      "stats": {
+        "title": "Estadísticas al instante",
+        "body": "Selecciona cualquier rango de celdas y la barra de estado inferior muestra estadísticas agregadas en vivo — SUM, AVG, MIN, MAX y COUNT — sin escribir una sola fórmula.",
+        "alt": "Barra de estadísticas de selección mostrando SUM, AVG, MIN, MAX y COUNT de las celdas seleccionadas"
+      },
+      "groupby": {
+        "title": "Agrupar y agregar",
+        "body": "Abre \"Summarize selection\" para agregar una columna agrupada por otra: elige SUM, AVG, MIN, MAX o COUNT. Luego copia el resultado como Markdown o TSV para pegarlo directamente en tus notas, documentos o un mensaje.",
+        "alt": "Panel de resumen de agrupación con opciones de agregación y botones Copy Markdown / Copy TSV"
+      },
+      "copyformats": {
+        "title": "Copia en cualquier formato",
+        "body": "Selecciona un rango o un resumen y cópialo como Markdown, TSV o incluso Image. Pégalo directamente en tus documentos, un mensaje de chat o un formulario web — sin reformatear, sin diálogo de exportación.",
+        "alt": "Menú de copia abierto mostrando las opciones de formato Markdown, TSV e Image"
+      },
+      "dragout": {
+        "title": "Arrastra a cualquier app",
+        "body": "Arrastra el archivo abierto directamente desde LazySheet a una zona de carga del navegador, una ventana de chat o cualquier app que acepte archivos. Sin \"Guardar como\", sin archivos temporales — solo agarra y suelta.",
+        "alt": "Arrastrando el archivo de hoja de cálculo desde LazySheet a una zona de soltar de CloudConvert en el navegador"
+      },
+      "command": {
+        "title": "Paleta de comandos",
+        "body": "Pulsa ⌘P (o haz clic en la barra de búsqueda) para abrir la paleta de comandos. Salta rápidamente a una celda con Goto, ejecuta Summarize selection (⌘⇧Y), Copy file, Copy file path o abre un archivo nuevo: todo desde el teclado.",
+        "alt": "Paleta de comandos mostrando los comandos Goto, Summarize selection, Copy file, Copy file path y Open file"
+      }
+    }
+  },
+  "feedback": {
+    "trigger": "Comentarios",
+    "title": "Enviar comentarios",
+    "subtitle": "¿Encontraste un error o quieres una función? Abre un issue en GitHub.",
+    "typeLabel": "Tipo",
+    "typeBug": "Informe de error",
+    "typeFeature": "Solicitud de función",
+    "typeOther": "Otro",
+    "titleLabel": "Título",
+    "titlePlaceholder": "Resumen breve",
+    "descLabel": "Descripción",
+    "descPlaceholder": "Describe el error o la función que necesitas…",
+    "contactLabel": "Contacto (opcional)",
+    "contactPlaceholder": "Correo electrónico o usuario de GitHub",
+    "submit": "Enviar",
+    "submitting": "Enviando…",
+    "cancel": "Cancelar",
+    "successToast": "¡Gracias! Issue #{{number}} creado.",
+    "errorToast": "No se pudo enviar. Por favor, inténtalo de nuevo.",
+    "validationError": "El título y la descripción son obligatorios."
   },
   "seo": {
     "title": "LazySheet | Visor Nativo Rápido de Excel y CSV",

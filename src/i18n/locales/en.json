@@ -3,7 +3,9 @@
     "features": "Features",
     "download": "Download",
     "githubAria": "GitHub repository",
-    "logoAlt": "LazySheet logo"
+    "logoAlt": "LazySheet logo",
+    "feedbackAria": "Open feedback form",
+    "githubStarsAria": "{{count}} GitHub stars"
   },
   "hero": {
     "iconAlt": "LazySheet icon",
@@ -101,6 +103,82 @@
     "viewAllReleases": "View all releases on GitHub",
     "buttonGeneric": "Download",
     "buttonForOs": "Download for {{os}}"
+  },
+  "guide": {
+    "pageTitle": "How to use LazySheet — Guide",
+    "pageDescription": "Learn how to open, browse, filter, and analyze spreadsheets with LazySheet in nine quick steps.",
+    "heading": "How to use LazySheet",
+    "subtitle": "Open a file and start analyzing in seconds — no setup, no formulas required.",
+    "stepLabel": "Step {{n}}",
+    "ctaDownload": "Download LazySheet",
+    "steps": {
+      "open": {
+        "title": "Open any file",
+        "body": "Press ⌘O to open the file picker, or simply drag and drop a file onto the window. LazySheet supports xlsx, xls, csv, and tsv — no conversion needed.",
+        "alt": "Native file picker showing CSV files in Downloads folder"
+      },
+      "browse": {
+        "title": "Browse instantly",
+        "body": "Your data loads in milliseconds. Scroll through hundreds of thousands of rows with zero lag — every column visible at a glance, exactly as it appears in the source file.",
+        "alt": "Full data grid displaying all columns of a large CSV file"
+      },
+      "setheader": {
+        "title": "Set the header row",
+        "body": "Right-click any row and choose \"Mark as header\" to promote it to your column headers — perfect for exports where the real header sits a few rows down. The grid relabels instantly.",
+        "alt": "Row context menu with the \"Mark as header\" option open over the data grid"
+      },
+      "filter": {
+        "title": "Filter columns",
+        "body": "Click any column header's filter icon to open the filter popover. Pick specific values from a searchable list, or set a condition like \"greater than\" or \"contains\" to narrow down your data instantly.",
+        "alt": "Column filter popover with searchable value checkboxes and condition options"
+      },
+      "stats": {
+        "title": "Instant stats",
+        "body": "Select any range of cells and the status bar at the bottom shows live aggregate stats — SUM, AVG, MIN, MAX, and COUNT — without writing a single formula.",
+        "alt": "Selection stats bar showing SUM, AVG, MIN, MAX, and COUNT for selected cells"
+      },
+      "groupby": {
+        "title": "Group-by & aggregate",
+        "body": "Open \"Summarize selection\" to aggregate one column grouped by another — choose SUM, AVG, MIN, MAX, or COUNT. Then copy the result as Markdown or TSV to paste straight into your notes, docs, or a message.",
+        "alt": "Group-by summary panel with aggregate options and Copy Markdown / Copy TSV buttons"
+      },
+      "copyformats": {
+        "title": "Copy in any format",
+        "body": "Select a range or a summary and copy it as Markdown, TSV, or even an Image. Paste straight into your docs, a chat message, or a web form — no reformatting, no export dialog.",
+        "alt": "Copy menu open showing Markdown, TSV, and Image format options"
+      },
+      "dragout": {
+        "title": "Drag out to any app",
+        "body": "Drag the open file straight from LazySheet into a browser upload zone, a chat window, or any app that accepts file drops. No \"Save As\", no temp files — just grab and drop.",
+        "alt": "Dragging the spreadsheet file from LazySheet into a CloudConvert drop zone in the browser"
+      },
+      "command": {
+        "title": "Command palette",
+        "body": "Press ⌘P (or click the search bar) to open the command palette. Quickly jump to a cell with Goto, run Summarize selection (⌘⇧Y), Copy file, Copy file path, or Open a new file — all from the keyboard.",
+        "alt": "Command palette showing Goto, Summarize selection, Copy file, Copy file path, and Open file commands"
+      }
+    }
+  },
+  "feedback": {
+    "trigger": "Feedback",
+    "title": "Send feedback",
+    "subtitle": "Found a bug or want a feature? It opens a GitHub issue.",
+    "typeLabel": "Type",
+    "typeBug": "Bug report",
+    "typeFeature": "Feature request",
+    "typeOther": "Other",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Short summary",
+    "descLabel": "Description",
+    "descPlaceholder": "Describe the bug or feature you need…",
+    "contactLabel": "Contact (optional)",
+    "contactPlaceholder": "Email or GitHub handle",
+    "submit": "Send",
+    "submitting": "Sending…",
+    "cancel": "Cancel",
+    "successToast": "Thanks! Issue #{{number}} created.",
+    "errorToast": "Couldn't send. Please try again.",
+    "validationError": "Title and description are required."
   },
   "seo": {
     "title": "LazySheet | Fast, Native Excel & CSV Viewer",

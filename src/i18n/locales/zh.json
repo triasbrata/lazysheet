@@ -3,7 +3,9 @@
     "features": "功能",
     "download": "下载",
     "githubAria": "GitHub 仓库",
-    "logoAlt": "LazySheet 标志"
+    "logoAlt": "LazySheet 标志",
+    "feedbackAria": "打开反馈表单",
+    "githubStarsAria": "{{count}} 个 GitHub Star"
   },
   "hero": {
     "iconAlt": "LazySheet 图标",
@@ -101,6 +103,82 @@
     "viewAllReleases": "在 GitHub 上查看所有版本",
     "buttonGeneric": "下载",
     "buttonForOs": "下载 {{os}} 版本"
+  },
+  "guide": {
+    "pageTitle": "如何使用 LazySheet — 指南",
+    "pageDescription": "通过九个快速步骤，了解如何使用 LazySheet 打开、浏览、筛选和分析电子表格。",
+    "heading": "如何使用 LazySheet",
+    "subtitle": "打开文件，几秒内即可开始分析 — 无需设置，无需公式。",
+    "stepLabel": "第 {{n}} 步",
+    "ctaDownload": "下载 LazySheet",
+    "steps": {
+      "open": {
+        "title": "打开任意文件",
+        "body": "按 ⌘O 打开文件选择器，或直接将文件拖放到窗口中。LazySheet 支持 xlsx、xls、csv 和 tsv — 无需转换。",
+        "alt": "原生文件选择器显示 Downloads 文件夹中的 CSV 文件"
+      },
+      "browse": {
+        "title": "即时浏览",
+        "body": "数据在毫秒内加载完成。流畅滚动数十万行而毫无卡顿 — 每一列一目了然，与源文件完全一致。",
+        "alt": "完整数据网格显示大型 CSV 文件的所有列"
+      },
+      "setheader": {
+        "title": "设置表头行",
+        "body": "右键点击任意行并选择 \"Mark as header\"，即可将其提升为列标题 —— 非常适合真正表头位于下方几行的导出文件。表格会立即重新标注。",
+        "alt": "数据网格上方打开的行右键菜单，显示 \"Mark as header\" 选项"
+      },
+      "filter": {
+        "title": "筛选列",
+        "body": "点击任意列标题的筛选图标以打开筛选弹窗。从可搜索列表中选择特定值，或设置如\"大于\"或\"包含\"的条件，即可立即缩小数据范围。",
+        "alt": "列筛选弹窗，带可搜索的值复选框和条件选项"
+      },
+      "stats": {
+        "title": "即时统计",
+        "body": "选择任意单元格区域，底部状态栏即可显示实时聚合统计 — SUM、AVG、MIN、MAX 和 COUNT — 无需编写任何公式。",
+        "alt": "选区统计栏显示所选单元格的 SUM、AVG、MIN、MAX 和 COUNT"
+      },
+      "groupby": {
+        "title": "分组与聚合",
+        "body": "打开\"Summarize selection\"，按另一列分组聚合某一列 — 选择 SUM、AVG、MIN、MAX 或 COUNT。然后将结果复制为 Markdown 或 TSV，直接粘贴到笔记、文档或消息中。",
+        "alt": "分组汇总面板，带聚合选项和 Copy Markdown / Copy TSV 按钮"
+      },
+      "copyformats": {
+        "title": "以任意格式复制",
+        "body": "选择一个区域或汇总，然后以 Markdown、TSV 甚至 Image 格式复制。直接粘贴到文档、聊天消息或网页表单中 —— 无需重新排版，无需导出对话框。",
+        "alt": "打开的复制菜单，显示 Markdown、TSV 和 Image 格式选项"
+      },
+      "dragout": {
+        "title": "拖拽到任意应用",
+        "body": "将打开的文件直接从 LazySheet 拖入浏览器上传区、聊天窗口或任何接受文件拖放的应用。无需\"另存为\"，无需临时文件 —— 抓取即放下。",
+        "alt": "将电子表格文件从 LazySheet 拖入浏览器中的 CloudConvert 拖放区"
+      },
+      "command": {
+        "title": "命令面板",
+        "body": "按 ⌘P（或点击搜索栏）打开命令面板。使用 Goto 快速跳转到单元格，运行 Summarize selection (⌘⇧Y)、Copy file、Copy file path 或打开新文件 — 全部通过键盘完成。",
+        "alt": "命令面板显示 Goto、Summarize selection、Copy file、Copy file path 和 Open file 命令"
+      }
+    }
+  },
+  "feedback": {
+    "trigger": "反馈",
+    "title": "发送反馈",
+    "subtitle": "发现 bug 或想要新功能？这将打开一个 GitHub issue。",
+    "typeLabel": "类型",
+    "typeBug": "Bug 报告",
+    "typeFeature": "功能请求",
+    "typeOther": "其他",
+    "titleLabel": "标题",
+    "titlePlaceholder": "简短摘要",
+    "descLabel": "描述",
+    "descPlaceholder": "描述您遇到的 bug 或需要的功能……",
+    "contactLabel": "联系方式（可选）",
+    "contactPlaceholder": "电子邮件或 GitHub 账号",
+    "submit": "发送",
+    "submitting": "发送中……",
+    "cancel": "取消",
+    "successToast": "感谢！Issue #{{number}} 已创建。",
+    "errorToast": "发送失败，请重试。",
+    "validationError": "标题和描述为必填项。"
   },
   "seo": {
     "title": "LazySheet | 快速的原生 Excel 和 CSV 查看器",
