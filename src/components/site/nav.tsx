@@ -40,6 +40,12 @@ export function Nav({ overHero = false }: NavProps) {
             {t('nav.features')}
           </a>
           <Link
+            to="/guide"
+            className="font-display text-sm font-medium text-on-surface no-underline transition-colors hover:text-primary"
+          >
+            Guide
+          </Link>
+          <Link
             to="/$locale/download"
             params={{ locale }}
             className="font-display text-sm font-medium text-on-surface no-underline transition-colors hover:text-primary"
