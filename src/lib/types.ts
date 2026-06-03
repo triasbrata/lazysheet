@@ -78,3 +78,63 @@ function formatNumber(n: number): string {
   if (Number.isInteger(n)) return String(n);
   return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
+
+/**
+ * Parse numeric-looking text that xlsx exports often store as Text, including
+ * thousand separators and decimal commas/dots. Handles:
+ *   "98550" "98,550" "1,234,567" "1.234.567" "1,234.56" "1.234,56" "98 550"
+ * Returns null for currency symbols, letters, accounting parens, or anything
+ * that is not a clean number — those need explicit currency/locale config and
+ * are intentionally NOT coerced here.
+ *
+ * Ambiguity note: a single separator followed by exactly 3 digits (e.g.
+ * "12.345") is treated as a THOUSAND separator (-> 12345), not a 3-decimal
+ * value. Financial columns are separator-consistent, so this is the safe
+ * default; revisit if a currency/locale setting is added.
+ */
+function parseNumericText(raw: string): number | null {
+  let s = raw.trim();
+  if (s === "") return null;
+  s = s.replace(/\s/g, ""); // spaces as thousand separators ("98 550")
+  if (s === "") return null;
+
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+  let normalized = s;
+
+  if (hasComma && hasDot) {
+    // The later-occurring separator is the decimal point; the other is grouping.
+    const decSep = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
+    const thouSep = decSep === "," ? "." : ",";
+    normalized = s.split(thouSep).join("").replace(decSep, ".");
+  } else if (hasComma || hasDot) {
+    const sep = hasComma ? "," : ".";
+    const occurrences = s.split(sep).length - 1;
+    const digitsAfter = s.length - s.lastIndexOf(sep) - 1;
+    if (occurrences > 1 || digitsAfter === 3) {
+      normalized = s.split(sep).join(""); // grouping separator
+    } else {
+      normalized = s.replace(sep, "."); // decimal separator
+    }
+  }
+
+  if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) return null;
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Numeric value of a cell, coercing numeric-looking Text (e.g. xlsx exports
+ * that store "135000" or "98,550" as formatted text) into a real number.
+ * Returns null for empty/whitespace/non-numeric/non-finite cells — those are
+ * NOT counted.
+ */
+export function numericValue(v: CellValue): number | null {
+  if (v.t === "Number" || v.t === "Integer") {
+    return Number.isFinite(v.c) ? v.c : null;
+  }
+  if (v.t === "Text") {
+    return parseNumericText(v.c);
+  }
+  return null;
+}

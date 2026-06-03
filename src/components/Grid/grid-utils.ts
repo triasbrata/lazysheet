@@ -372,6 +372,26 @@ export const FUNNEL_ALLOWANCE_X = 22;
 // header row is at least tall enough to show the icon within vertical padding.
 export const FUNNEL_ICON_PX = 12;
 
+// Compute the absolute top/bottom pixel span for a row selection range.
+// measurements is virtual-position-indexed (not absolute-row-indexed), so
+// absolute row bounds must be translated through visiblePos before indexing.
+// Returns null when either bound is not in the visible row set or has no
+// measurement entry (caller should hide the selection frame in that case).
+export function selectionRowSpan(
+  r1: number,
+  r2: number,
+  visiblePos: Map<number, number>,
+  measurements: ReadonlyArray<{ index: number; start: number; end: number; size: number }>,
+): { top: number; bottom: number } | null {
+  const pos1 = visiblePos.get(r1);
+  const pos2 = visiblePos.get(r2);
+  if (pos1 === undefined || pos2 === undefined) return null;
+  const m1 = measurements[pos1];
+  const m2 = measurements[pos2];
+  if (!m1 || !m2) return null;
+  return { top: m1.start, bottom: m2.end };
+}
+
 export function parseA1(ref: string): { row: number; col: number } | null {
   const m = ref.trim().match(/^([A-Za-z]+)(\d+)$/);
   if (!m) return null;

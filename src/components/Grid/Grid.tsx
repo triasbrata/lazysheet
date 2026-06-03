@@ -13,6 +13,7 @@ import {
   type GridContextMenuTarget,
 } from "./GridContextMenu";
 import type { MarkdownFormat } from "@/lib/markdown-export";
+import type { QueryKind } from "@/lib/sql-copy";
 import {
   boundsInclude,
   buildMergeInfo,
@@ -41,6 +42,7 @@ import {
   selectionBounds,
   selectionColRange,
   selectionRowRange,
+  selectionRowSpan,
   type Bounds,
   type MergeInfo,
   type Selection,
@@ -111,6 +113,8 @@ interface GridProps {
   // rows/cols are exempt (see grid-filter). colAnchor (0-indexed) → ColumnFilter.
   filters?: SheetFilters;
   onColumnFilterChange?: (colAnchor: number, filter: ColumnFilter) => void;
+  canCopyQuery?: boolean;
+  onCopyQuery?: (kind: QueryKind) => void;
 }
 
 type DragMode = "cell" | "rowHeader" | "colHeader";
@@ -149,6 +153,8 @@ export function Grid({
   onOpenRowHeightDialog,
   filters,
   onColumnFilterChange,
+  canCopyQuery,
+  onCopyQuery,
 }: GridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalRows = sheet.rows.length;
@@ -413,16 +419,6 @@ export function Grid({
     }
     return arr;
   }, [widths]);
-
-  // Estimated cumulative row Y — used as fallback when virtualizer
-  // measurementsCache hasn't seen a row yet (range extends offscreen).
-  const cumRowY = useMemo(() => {
-    const arr = [0];
-    for (let i = 0; i < heights.length; i++) {
-      arr.push(arr[i] + heights[i]);
-    }
-    return arr;
-  }, [heights]);
 
   const totalContentWidth = cumColX[cumColX.length - 1] ?? 0;
   const bodyWidth = ROW_NUM_COL_WIDTH + totalContentWidth;
@@ -1146,7 +1142,7 @@ export function Grid({
     if (!scrollEl) return;
     for (const r of rows) {
       const el = scrollEl.querySelector(
-        `[data-index="${r}"]`,
+        `[data-abs-row="${r}"]`,
       ) as HTMLElement | null;
       if (el) {
         const actual = Math.round(el.getBoundingClientRect().height);
@@ -1445,7 +1441,8 @@ export function Grid({
             return (
               <div
                 key={vr.key}
-                data-index={rowIdx}
+                data-index={vr.index}
+                data-abs-row={rowIdx}
                 ref={rowVirtualizer.measureElement}
                 className="flex"
                 style={{
@@ -1575,7 +1572,7 @@ export function Grid({
             mode={selection?.mode ?? null}
             widths={widths}
             cumColX={cumColX}
-            cumRowY={cumRowY}
+            visiblePos={visiblePos}
             measurements={measurements}
             leftOffset={ROW_NUM_COL_WIDTH}
           />
@@ -1670,6 +1667,8 @@ export function Grid({
             onCopyFormula={() => {
               if (menuCtx?.type === "cell") copyFormulaAt(menuCtx.row, menuCtx.col);
             }}
+            canCopyQuery={canCopyQuery && canCopy}
+            onCopyQuery={onCopyQuery}
           />
         </ContextMenu>
       </div>
@@ -1682,7 +1681,7 @@ interface SelectionFrameProps {
   mode: Selection["mode"] | null;
   widths: number[];
   cumColX: number[];
-  cumRowY: number[];
+  visiblePos: Map<number, number>;
   measurements: ReadonlyArray<{
     index: number;
     start: number;
@@ -1697,19 +1696,16 @@ function SelectionFrame({
   mode,
   widths,
   cumColX,
-  cumRowY,
+  visiblePos,
   measurements,
   leftOffset,
 }: SelectionFrameProps) {
   if (!bounds || !mode) return null;
 
-  const rowStart = (r: number) => measurements[r]?.start ?? cumRowY[r] ?? 0;
-  const rowEnd = (r: number) =>
-    measurements[r]?.end ?? cumRowY[r + 1] ?? cumRowY[cumRowY.length - 1] ?? 0;
-
-  const top = rowStart(bounds.r1);
-  const bottom = rowEnd(bounds.r2);
-  const height = Math.max(0, bottom - top);
+  const span = selectionRowSpan(bounds.r1, bounds.r2, visiblePos, measurements);
+  if (!span) return null;
+  const top = span.top;
+  const height = Math.max(0, span.bottom - top);
 
   const left = leftOffset + (cumColX[bounds.c1] ?? 0);
   const width = widths

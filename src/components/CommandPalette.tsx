@@ -76,19 +76,21 @@ export function CommandPalette({
   const sections = useMemo<Section[]>(() => {
     const visibleRecents = recents.filter((r) => r.path !== currentPath);
 
+    const openFileItem: CommandItem | null = onPickFile
+      ? {
+          id: "open-file",
+          label: t("command.openFile"),
+          subtitle: t("command.openFileSub"),
+          hint: "⌘O",
+          icon: FolderOpen,
+          run: () => {
+            onOpenChange(false);
+            onPickFile();
+          },
+        }
+      : null;
+
     const fileItems: CommandItem[] = [];
-    if (onPickFile) {
-      fileItems.push({
-        id: "open-file",
-        label: t("command.openFile"),
-        subtitle: t("command.openFileSub"),
-        icon: FolderOpen,
-        run: () => {
-          onOpenChange(false);
-          onPickFile();
-        },
-      });
-    }
     for (const r of visibleRecents) {
       fileItems.push({
         id: "recent:" + r.path,
@@ -103,7 +105,7 @@ export function CommandPalette({
     }
 
     if (!hasFile) {
-      return [{ title: t("command.sectionRecent"), items: fileItems }];
+      return [{ title: t("command.sectionRecent"), items: [openFileItem, ...fileItems].filter(Boolean) as CommandItem[] }];
     }
 
     const cmdItems: CommandItem[] = [
@@ -172,8 +174,10 @@ export function CommandPalette({
         : []),
     ];
 
+    const commands = openFileItem ? [openFileItem, ...cmdItems] : cmdItems;
+
     return [
-      { title: t("command.sectionCommands"), items: cmdItems },
+      { title: t("command.sectionCommands"), items: commands },
       { title: t("command.sectionRecent"), items: fileItems },
     ];
   }, [

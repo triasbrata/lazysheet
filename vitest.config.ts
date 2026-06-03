@@ -7,8 +7,11 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     environment: "node",
     coverage: {
+      // istanbul (not v8) is required: scripts/e2e.ts merges this unit coverage
+      // with the e2e istanbul chunks via nyc. json -> coverage-final.json (nyc
+      // merge); json-summary -> coverage-summary.json (scripts/coverage-total.ts).
       provider: "istanbul",
-      reporter: ["json", "text-summary"],
+      reporter: ["json", "json-summary", "text-summary"],
       reportsDirectory: "coverage/unit",
       include: ["src/**"],
       exclude: [

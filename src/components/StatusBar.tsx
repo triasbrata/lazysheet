@@ -32,6 +32,20 @@ export function StatusBar({
   onOpenSummary,
 }: StatusBarProps) {
   const { t } = useTranslation();
+
+  // Hook must run unconditionally — keep above any early return (Rules of Hooks).
+  const stats = useMemo(() => {
+    if (!sheet || !selection) return null;
+    const base = selectionBounds(selection, sheet.rows.length, sheet.max_col);
+    const merges = buildMergeInfo(sheet.merges);
+    const bounds = expandBoundsForMerges(base, merges);
+    const single =
+      bounds.r1 === bounds.r2 &&
+      bounds.c1 === bounds.c2 &&
+      selection.mode === "cell";
+    return single ? null : computeSelectionStats(sheet, bounds);
+  }, [sheet, selection]);
+
   if (!sheet || !selection) {
     return (
       <div
@@ -74,11 +88,6 @@ export function StatusBar({
     const cols = bounds.c2 - bounds.c1 + 1;
     summary = t("statusbar.selectionSize", { rows, cols, count: rows * cols });
   }
-
-  const stats = useMemo(
-    () => (isSingle ? null : computeSelectionStats(sheet, bounds)),
-    [sheet, bounds.r1, bounds.r2, bounds.c1, bounds.c2, isSingle],
-  );
 
   const statsLabel = stats
     ? `SUM: ${formatStatNumber(stats.sum)} · AVG: ${formatStatNumber(stats.avg)} · MIN: ${formatStatNumber(stats.min)} · MAX: ${formatStatNumber(stats.max)} · COUNT: ${stats.count}`
