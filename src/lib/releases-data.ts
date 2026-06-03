@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { detectOSFromUA, type OS } from './os'
 import { parseRelease, GH_API_LATEST, type ReleaseData } from './releases'
+import { FALLBACK_RELEASE } from './fallback-release'
 
 export interface DownloadData {
   release: ReleaseData | null
@@ -78,9 +79,11 @@ async function fetchLatestCached(): Promise<ReleaseData | null> {
       )
     }
 
-    // On a failed/empty fetch, fall back to last-known-good (null if none).
-    return data ?? cached
+    // On a failed/empty fetch, fall back to last-known-good, then to the
+    // bundled snapshot. The page must always render direct download links so
+    // users are never bounced to the GitHub releases page.
+    return data ?? cached ?? FALLBACK_RELEASE
   } catch {
-    return cached
+    return cached ?? FALLBACK_RELEASE
   }
 }
