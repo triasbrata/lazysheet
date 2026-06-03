@@ -34,3 +34,4 @@ src-tauri/target/
 .rpi/
 .claude/
 .envrc
+coverage/
