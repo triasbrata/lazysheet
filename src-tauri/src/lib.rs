@@ -10,6 +10,13 @@ use tauri::{Emitter, Manager};
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
+    // E2E WebDriver automation server — only when built with `--features webdriver`,
+    // never in release. Powers native cross-platform e2e via tauri-webdriver.
+    #[cfg(feature = "webdriver")]
+    {
+        builder = builder.plugin(tauri_plugin_webdriver::init());
+    }
+
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {

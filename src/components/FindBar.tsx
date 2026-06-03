@@ -87,6 +87,7 @@ export function FindBar({
         aria-label={t("find.ariaFind")}
       />
       <span
+        data-testid="find-match-count"
         className={cn(
           "min-w-[4.5rem] text-right text-[11px] tabular-nums",
           counterText === t("find.noMatches")

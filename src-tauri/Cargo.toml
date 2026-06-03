@@ -30,8 +30,17 @@ anyhow = "1"
 thiserror = "1"
 tauri-plugin-drag = "2.1.1"
 tauri-plugin-clipboard = "2.1.11"
+# E2E WebDriver automation — optional, enabled by the `webdriver` feature for
+# e2e builds only (`cargo build --features webdriver`). Never enabled by
+# `tauri build` (release), so it never ships in production.
+tauri-plugin-webdriver = { version = "0.2", optional = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+
+[features]
+# Embeds a W3C WebDriver server in the app (native WKWebView/WebKitGTK/WebView2)
+# so tauri-webdriver can drive it cross-platform. e2e builds only.
+webdriver = ["dep:tauri-plugin-webdriver"]

@@ -1319,6 +1319,7 @@ export function Grid({
     <div className="relative flex-1 overflow-hidden bg-background">
       <div
         ref={scrollRef}
+        data-testid="grid-scroll-container"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         onScroll={handleScroll}

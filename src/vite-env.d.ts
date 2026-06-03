@@ -1,1 +1,22 @@
 /// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  /** Set to "true" only for e2e (WebDriver) builds. Enables the window.__E2E__ test hook. */
+  readonly VITE_E2E?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+interface Window {
+  /**
+   * E2E test hook — present ONLY in builds made with VITE_E2E=true (tree-shaken from prod).
+   * Drives the app's real open-by-path flow (real Rust backend) and exposes clipboard reads
+   * so WebdriverIO specs can assert without a native file dialog.
+   */
+  __E2E__?: {
+    open(path: string): Promise<void>;
+    readClipboard(): Promise<string>;
+  };
+}

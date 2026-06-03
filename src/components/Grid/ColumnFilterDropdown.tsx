@@ -119,6 +119,7 @@ export function ColumnFilterDropdown({
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
+        data-testid="filter-panel"
         className="w-72 p-0"
         align="start"
         sideOffset={4}
@@ -149,6 +150,7 @@ export function ColumnFilterDropdown({
             {/* Operand input — visible only for ops that need one */}
             {!NO_OPERAND_OPS.has(op) && (
               <input
+                data-testid="filter-operand-input"
                 type="text"
                 value={operand}
                 onChange={(e) => setOperand(e.target.value)}
@@ -251,6 +253,7 @@ export function ColumnFilterDropdown({
           {/* ── OK / Cancel ──────────────────────────────────────────────── */}
           <div className="px-3 py-2 flex items-center justify-end gap-2">
             <Button
+              data-testid="filter-cancel-btn"
               type="button"
               variant="outline"
               size="sm"
@@ -259,6 +262,7 @@ export function ColumnFilterDropdown({
               Cancel
             </Button>
             <Button
+              data-testid="filter-ok-btn"
               type="button"
               size="sm"
               onClick={handleOk}

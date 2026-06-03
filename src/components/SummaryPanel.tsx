@@ -606,6 +606,7 @@ export function SummaryPanel({
 
   return (
     <div
+      data-testid="summary-panel"
       className="flex shrink-0 flex-col border-t border-border bg-card/30"
       onKeyDown={handleKeyDown}
     >
@@ -760,6 +761,7 @@ export function SummaryPanel({
           <div className="flex items-center gap-2">
             <div className="inline-flex items-stretch overflow-hidden rounded-md border border-border">
               <Button
+                data-testid="summary-copy-btn"
                 type="button"
                 variant="ghost"
                 size="xs"
@@ -929,7 +931,7 @@ function FlatTable({ rows, catLabels, valueHeader }: FlatTableProps) {
   // the blank-out tracking.
   let prev: string[] = [];
   return (
-    <table className="w-full text-xs">
+    <table data-testid="summary-table" className="w-full text-xs">
       <thead className="sticky top-0 bg-muted/40 backdrop-blur-sm">
         <tr className="text-foreground/70">
           {catLabels.map((l, i) => (
@@ -1007,7 +1009,7 @@ function TreeTable({
   onToggle,
 }: TreeTableProps) {
   return (
-    <table className="w-full text-xs">
+    <table data-testid="summary-table" className="w-full text-xs">
       <thead className="sticky top-0 bg-muted/40 backdrop-blur-sm">
         <tr className="text-foreground/70">
           <th

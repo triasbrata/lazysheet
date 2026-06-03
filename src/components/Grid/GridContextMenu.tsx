@@ -98,7 +98,7 @@ export function GridContextMenuContent({
         ? `Autofit ${multiColCount} columns`
         : "Autofit column width";
     return (
-      <ContextMenuContent>
+      <ContextMenuContent data-testid="context-menu">
         {onAutofitCol && (
           <ContextMenuItem onSelect={() => onAutofitCol()}>
             {colLabel}

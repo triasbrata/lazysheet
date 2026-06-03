@@ -40,6 +40,7 @@ export function TitleBar({
   return (
     <div
       data-tauri-drag-region
+      data-testid="titlebar"
       className="relative flex h-10 shrink-0 items-center gap-2 border-b border-border bg-card/50 px-3 pl-20 backdrop-blur-sm"
     >
       <div
@@ -63,6 +64,7 @@ export function TitleBar({
 
         <span
           data-tauri-drag-region
+          data-testid="titlebar-filename"
           className="truncate font-medium text-foreground/90"
         >
           {fileName ?? t("common.appName")}

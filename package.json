@@ -11,7 +11,12 @@
     "tauri": "tauri",
     "run:dev": "tauri dev",
     "test": "vitest run",
-    "app:deploy": "deno run -A scripts/deploy.ts"
+    "test:coverage": "vitest run --coverage",
+    "app:deploy": "deno run -A scripts/deploy.ts",
+    "e2e:fixtures": "deno run -A e2e/fixtures/generate.ts",
+    "e2e:build-app": "VITE_E2E=true deno task build:web && cargo build --manifest-path src-tauri/Cargo.toml --features webdriver",
+    "e2e:run": "cd e2e && pnpm test",
+    "test:e2e": "deno run -A scripts/e2e.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -54,6 +59,9 @@
     "dotenv": "^17.4.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "xlsx": "^0.18.5",
+    "vite-plugin-istanbul": "^7.0.0",
+    "@vitest/coverage-istanbul": "^3.0.0"
   }
 }

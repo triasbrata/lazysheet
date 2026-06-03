@@ -10,6 +10,7 @@ export function SheetTabs({ sheets, activeName, onSwitch }: SheetTabsProps) {
   if (sheets.length <= 1) return null;
   return (
     <div
+      data-testid="sheet-tabs"
       data-tauri-drag-region
       className="flex h-9 shrink-0 items-center gap-0 overflow-x-auto border-t border-border bg-card/50 px-1.5"
     >
@@ -18,6 +19,8 @@ export function SheetTabs({ sheets, activeName, onSwitch }: SheetTabsProps) {
         return (
           <button
             key={s.index}
+            data-testid="sheet-tab"
+            data-sheet-name={s.name}
             onClick={() => onSwitch(s.name)}
             className={`relative shrink-0 cursor-pointer px-3 py-1.5 text-xs font-medium transition-colors ${
               active

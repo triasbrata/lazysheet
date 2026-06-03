@@ -28,6 +28,7 @@ export function Welcome({ onOpen, recents, dragOver }: WelcomeProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-8 select-none">
       <div
+        data-testid="welcome-dropzone"
         className={`flex w-full max-w-lg flex-col items-center rounded-2xl border-2 border-dashed p-12 transition-colors ${
           dragOver
             ? "border-primary bg-primary/5"
@@ -46,7 +47,7 @@ export function Welcome({ onOpen, recents, dragOver }: WelcomeProps) {
           <br />
           <span className="text-xs">{t("welcome.extensions")}</span>
         </p>
-        <Button onClick={handlePick} disabled={picking} size="sm">
+        <Button data-testid="welcome-open-btn" onClick={handlePick} disabled={picking} size="sm">
           <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
           {picking ? t("common.openingEllipsis") : t("welcome.openFile")}
         </Button>

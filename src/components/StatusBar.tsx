@@ -92,10 +92,12 @@ export function StatusBar({
   return (
     <div
       data-tauri-drag-region
+      data-testid="statusbar"
       className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-muted/30 px-3 text-[11px] text-muted-foreground"
     >
       <span
         data-tauri-drag-region
+        data-testid="statusbar-cell-ref"
         className="min-w-[3rem] font-mono font-medium tabular-nums text-foreground/80"
       >
         {ref}

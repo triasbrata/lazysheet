@@ -27,6 +27,7 @@ import { useWorkbook } from "@/hooks/useWorkbook";
 import { useFileEvents } from "@/hooks/useFileEvents";
 import { useFileState } from "@/hooks/useFileState";
 import { pickFile } from "@/lib/tauri-api";
+import { readText } from "tauri-plugin-clipboard-api";
 import { cellText } from "@/lib/types";
 import {
   copyFilePath,
@@ -219,6 +220,20 @@ function App() {
   }, [wb.activeSheet, wb.workbook, wb.switchSheet, fileState]);
 
   useFileEvents(open);
+
+  // E2E test hook — only compiled into builds made with VITE_E2E=true (tree-shaken
+  // from prod). Lets WebdriverIO open a file via the REAL backend (no native dialog)
+  // and read the clipboard for copy assertions. See e2e/ and .rpi/e2e-webdriver/.
+  useEffect(() => {
+    if (!import.meta.env.VITE_E2E) return;
+    window.__E2E__ = {
+      open: (path: string) => open(path),
+      readClipboard: () => readText(),
+    };
+    return () => {
+      delete window.__E2E__;
+    };
+  }, [open]);
 
   // Silent startup update check — shows nothing unless an update is available.
   useEffect(() => {
