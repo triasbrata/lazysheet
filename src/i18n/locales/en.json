@@ -1,0 +1,111 @@
+{
+  "nav": {
+    "features": "Features",
+    "download": "Download",
+    "githubAria": "GitHub repository",
+    "logoAlt": "LazySheet logo"
+  },
+  "hero": {
+    "iconAlt": "LazySheet icon",
+    "titleLine1": "Fast. Simple.",
+    "titleLine2": "Spreadsheet Viewer.",
+    "subtitle": "Stop waiting for heavy spreadsheet software. Open 100MB CSVs instantly and gain insights with zero latency.",
+    "otherDownloads": "Other downloads",
+    "licensePrefix": "By using LazySheet, you agree to the",
+    "license": "License",
+    "dashboardAlt": "LazySheet dashboard"
+  },
+  "formats": {
+    "heading": "Wide format support",
+    "bodyPrefix": "Open any data file with a simple",
+    "dragDrop": "Drag & Drop"
+  },
+  "features": {
+    "heading": "Engineered for Performance",
+    "subtitle": "The feature set you need to analyze data without the bloat."
+  },
+  "bento": {
+    "groupBy": {
+      "title": "Group-by Summary",
+      "description": "Summarize data by any column in seconds. Select a range, choose your category and value columns, and get instant roll-ups with SUM, AVG, MIN, MAX, and COUNT — no pivot-table setup.",
+      "bullet1": "Multi-level grouping across up to 6 columns",
+      "bullet2": "Instant SUM / AVG / MIN / MAX / COUNT on any range selection",
+      "mediaAlt": "Group-by summary"
+    },
+    "formats": {
+      "title": "Wide Format Support",
+      "description": "Open your spreadsheets directly — no conversion, no setup."
+    },
+    "multiSheet": {
+      "title": "Multi-sheet Navigation",
+      "description": "Switch between worksheet tabs in any workbook from the bottom tab bar."
+    },
+    "command": {
+      "title": "Command Palette",
+      "description": "Cmd+K to jump to any cell reference or run an action — keyboard-first navigation."
+    },
+    "virtualized": {
+      "title": "Virtualized Rendering",
+      "description": "LazySheet only renders the rows you can see. Scroll through massive sheets with smooth, lag-free movement regardless of hardware."
+    },
+    "filters": {
+      "title": "Column Filters",
+      "description": "Click the funnel on any header. 14 filter types plus an Excel-style value checklist."
+    },
+    "sticky": {
+      "title": "Sticky Header Row",
+      "description": "Mark any row as the header — it stays pinned while you scroll through the data."
+    },
+    "resize": {
+      "title": "Resizable Columns & Rows",
+      "description": "Drag to resize, double-click to autofit. Sizes are remembered per file."
+    },
+    "format": {
+      "title": "Rich Cell Formatting",
+      "description": "Fonts, colors, alignment, merged cells, and clickable hyperlinks preserved from .xlsx files."
+    },
+    "copy": {
+      "title": "Copy as Image",
+      "description": "Capture a group-by summary report as a PNG straight to your clipboard."
+    },
+    "find": {
+      "title": "Find in Sheet",
+      "description": "Full-text search with Cmd+F. Jump between matches highlighted across the sheet."
+    },
+    "native": {
+      "title": "Native macOS Integration",
+      "description": "Drag & drop, 'Open With', and Recent Files support built in."
+    }
+  },
+  "faq": {
+    "heading": "Having trouble opening the app?",
+    "subtitle": "Common questions about installing LazySheet.",
+    "unsignedQuestion": "macOS says LazySheet is \"damaged\" or from an \"unidentified developer\"",
+    "unsignedAnswerPre": "LazySheet isn't code-signed with an Apple Developer certificate yet, so macOS Gatekeeper quarantines it and blocks it from opening. The app is safe — you just need to remove the quarantine flag. Open the",
+    "terminal": "Terminal",
+    "unsignedAnswerPost": "After it finishes, open LazySheet normally from Applications. If you installed it elsewhere, change the path to match its location.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyAria": "Copy command"
+  },
+  "footer": {
+    "tagline": "© 2026 LazySheet. Built for speed."
+  },
+  "download": {
+    "pageTitle": "Download LazySheet — macOS, Windows & Linux",
+    "heading": "Download",
+    "noBuilds": "Builds aren't published yet — check the releases page for the latest downloads.",
+    "viewReleases": "View Releases on GitHub",
+    "licensePrefix": "By using LazySheet, you agree to the",
+    "license": "License",
+    "viewAllReleases": "View all releases on GitHub",
+    "buttonGeneric": "Download",
+    "buttonForOs": "Download for {{os}}"
+  },
+  "seo": {
+    "title": "LazySheet | Fast, Native Excel & CSV Viewer",
+    "description": "LazySheet is a fast, free and open-source desktop viewer for Excel, CSV and TSV files. Open huge sheets instantly with zero latency on macOS, Windows and Linux.",
+    "ogTitle": "LazySheet — Fast, Simple Spreadsheet Viewer",
+    "ogDescription": "Open Excel, CSV and TSV files instantly. Free and open source for macOS, Windows and Linux."
+  }
+}

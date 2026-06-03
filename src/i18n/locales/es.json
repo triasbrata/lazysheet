@@ -1,0 +1,111 @@
+{
+  "nav": {
+    "features": "Funciones",
+    "download": "Descargar",
+    "githubAria": "Repositorio de GitHub",
+    "logoAlt": "Logotipo de LazySheet"
+  },
+  "hero": {
+    "iconAlt": "Icono de LazySheet",
+    "titleLine1": "Rápido. Simple.",
+    "titleLine2": "Visor de Hojas de Cálculo.",
+    "subtitle": "Deja de esperar software pesado de hojas de cálculo. Abre archivos CSV de 100MB al instante y obtén información con cero latencia.",
+    "otherDownloads": "Otras descargas",
+    "licensePrefix": "Al usar LazySheet, aceptas la",
+    "license": "Licencia",
+    "dashboardAlt": "Panel de LazySheet"
+  },
+  "formats": {
+    "heading": "Soporte de formatos amplio",
+    "bodyPrefix": "Abre cualquier archivo de datos con un simple",
+    "dragDrop": "Arrastrar y Soltar"
+  },
+  "features": {
+    "heading": "Diseñado para el Rendimiento",
+    "subtitle": "El conjunto de funciones que necesitas para analizar datos sin el exceso."
+  },
+  "bento": {
+    "groupBy": {
+      "title": "Resumen por Agrupación",
+      "description": "Resume datos por cualquier columna en segundos. Selecciona un rango, elige tus columnas de categoría y valor, y obtén resúmenes instantáneos con SUM, AVG, MIN, MAX y COUNT — sin configuración de tablas dinámicas.",
+      "bullet1": "Agrupación multinivel en hasta 6 columnas",
+      "bullet2": "SUM / AVG / MIN / MAX / COUNT instantáneo en cualquier selección de rango",
+      "mediaAlt": "Resumen por agrupación"
+    },
+    "formats": {
+      "title": "Soporte de Formatos Amplio",
+      "description": "Abre tus hojas de cálculo directamente — sin conversión, sin configuración."
+    },
+    "multiSheet": {
+      "title": "Navegación Multihoja",
+      "description": "Cambia entre pestañas de hojas de cálculo en cualquier libro desde la barra de pestañas inferior."
+    },
+    "command": {
+      "title": "Paleta de Comandos",
+      "description": "Cmd+K para ir a cualquier referencia de celda o ejecutar una acción — navegación orientada al teclado."
+    },
+    "virtualized": {
+      "title": "Renderizado Virtualizado",
+      "description": "LazySheet solo renderiza las filas que puedes ver. Desplázate por hojas masivas con movimiento fluido y sin retrasos, sin importar el hardware."
+    },
+    "filters": {
+      "title": "Filtros de Columna",
+      "description": "Haz clic en el embudo de cualquier encabezado. 14 tipos de filtros más una lista de verificación de valores estilo Excel."
+    },
+    "sticky": {
+      "title": "Fila de Encabezado Fija",
+      "description": "Marca cualquier fila como encabezado — permanecerá anclada mientras te desplazas por los datos."
+    },
+    "resize": {
+      "title": "Columnas y Filas Redimensionables",
+      "description": "Arrastra para redimensionar, doble clic para ajustar automáticamente. Los tamaños se recuerdan por archivo."
+    },
+    "format": {
+      "title": "Formato de Celda Enriquecido",
+      "description": "Fuentes, colores, alineación, celdas combinadas e hipervínculos clicables preservados de archivos .xlsx."
+    },
+    "copy": {
+      "title": "Copiar como Imagen",
+      "description": "Captura un informe de resumen por agrupación como PNG directamente en tu portapapeles."
+    },
+    "find": {
+      "title": "Buscar en la Hoja",
+      "description": "Búsqueda de texto completo con Cmd+F. Salta entre coincidencias resaltadas en toda la hoja."
+    },
+    "native": {
+      "title": "Integración Nativa con macOS",
+      "description": "Arrastrar y soltar, 'Abrir con' y soporte de Archivos Recientes integrado."
+    }
+  },
+  "faq": {
+    "heading": "¿Tienes problemas para abrir la aplicación?",
+    "subtitle": "Preguntas frecuentes sobre la instalación de LazySheet.",
+    "unsignedQuestion": "macOS dice que LazySheet está \"dañado\" o es de un \"desarrollador no identificado\"",
+    "unsignedAnswerPre": "LazySheet aún no está firmado con un certificado de Apple Developer, por lo que macOS Gatekeeper lo pone en cuarentena y bloquea su apertura. La aplicación es segura — solo necesitas eliminar el indicador de cuarentena. Abre la aplicación",
+    "terminal": "Terminal",
+    "unsignedAnswerPost": "Cuando termine, abre LazySheet normalmente desde Aplicaciones. Si lo instalaste en otro lugar, cambia la ruta para que coincida con su ubicación.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyAria": "Copiar comando"
+  },
+  "footer": {
+    "tagline": "© 2026 LazySheet. Construido para la velocidad."
+  },
+  "download": {
+    "pageTitle": "Descargar LazySheet — macOS, Windows y Linux",
+    "heading": "Descargar",
+    "noBuilds": "Las compilaciones aún no están publicadas — consulta la página de versiones para las últimas descargas.",
+    "viewReleases": "Ver versiones en GitHub",
+    "licensePrefix": "Al usar LazySheet, aceptas la",
+    "license": "Licencia",
+    "viewAllReleases": "Ver todas las versiones en GitHub",
+    "buttonGeneric": "Descargar",
+    "buttonForOs": "Descargar para {{os}}"
+  },
+  "seo": {
+    "title": "LazySheet | Visor Nativo Rápido de Excel y CSV",
+    "description": "LazySheet es un visor de escritorio rápido, gratuito y de código abierto para archivos Excel, CSV y TSV. Abre hojas enormes al instante con cero latencia en macOS, Windows y Linux.",
+    "ogTitle": "LazySheet — Visor de Hojas de Cálculo Rápido y Simple",
+    "ogDescription": "Abre archivos Excel, CSV y TSV al instante. Gratuito y de código abierto para macOS, Windows y Linux."
+  }
+}

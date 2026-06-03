@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 
 import { CopyCommand } from '#/features/faq/copy-command'
+import { renderWithI18n } from '#/test/i18n'
 
 const CMD = 'xattr -dr com.apple.quarantine "/Applications/LazySheet.app"'
 
@@ -20,13 +22,13 @@ afterEach(cleanup)
 
 describe('CopyCommand — what the user sees', () => {
   it('shows the command and a Copy button', () => {
-    render(<CopyCommand command={CMD} />)
+    renderWithI18n(<CopyCommand command={CMD} />)
     expect(screen.getByText(CMD)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Copy command' })).toBeTruthy()
   })
 
   it('copies the command to the clipboard on click', async () => {
-    render(<CopyCommand command={CMD} />)
+    renderWithI18n(<CopyCommand command={CMD} />)
     fireEvent.click(screen.getByRole('button', { name: 'Copy command' }))
 
     expect(writeText).toHaveBeenCalledWith(CMD)

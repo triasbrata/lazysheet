@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CopyIcon, CheckIcon } from '#/components/site/icons'
 
 export function CopyCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { t } = useTranslation()
 
   useEffect(() => {
     return () => {
@@ -30,7 +32,7 @@ export function CopyCommand({ command }: { command: string }) {
       <button
         type="button"
         onClick={onCopy}
-        aria-label={copied ? 'Copied' : 'Copy command'}
+        aria-label={copied ? t('faq.copied') : t('faq.copyAria')}
         className="flex shrink-0 items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-xs font-medium text-white opacity-0 transition-all focus-visible:opacity-100 group-hover:opacity-100 hover:bg-white/20"
       >
         {copied ? (
@@ -38,7 +40,7 @@ export function CopyCommand({ command }: { command: string }) {
         ) : (
           <CopyIcon className="text-[14px]" />
         )}
-        {copied ? 'Copied' : 'Copy'}
+        {copied ? t('faq.copied') : t('faq.copy')}
       </button>
     </div>
   )

@@ -1,0 +1,111 @@
+{
+  "nav": {
+    "features": "功能",
+    "download": "下载",
+    "githubAria": "GitHub 仓库",
+    "logoAlt": "LazySheet 标志"
+  },
+  "hero": {
+    "iconAlt": "LazySheet 图标",
+    "titleLine1": "快速。简单。",
+    "titleLine2": "电子表格查看器。",
+    "subtitle": "告别臃肿的电子表格软件。即时打开 100MB 的 CSV 文件，零延迟获取洞察。",
+    "otherDownloads": "其他下载",
+    "licensePrefix": "使用 LazySheet 即表示您同意",
+    "license": "许可证",
+    "dashboardAlt": "LazySheet 仪表盘"
+  },
+  "formats": {
+    "heading": "广泛的格式支持",
+    "bodyPrefix": "通过简单的方式打开任何数据文件",
+    "dragDrop": "拖放"
+  },
+  "features": {
+    "heading": "为性能而生",
+    "subtitle": "您分析数据所需的功能集，无任何多余负担。"
+  },
+  "bento": {
+    "groupBy": {
+      "title": "分组汇总",
+      "description": "几秒钟内按任意列汇总数据。选择范围，选定分类列和数值列，即可获得含 SUM、AVG、MIN、MAX 和 COUNT 的即时汇总——无需配置数据透视表。",
+      "bullet1": "支持最多 6 列的多级分组",
+      "bullet2": "对任意范围选择即时计算 SUM / AVG / MIN / MAX / COUNT",
+      "mediaAlt": "分组汇总"
+    },
+    "formats": {
+      "title": "广泛的格式支持",
+      "description": "直接打开您的电子表格——无需转换，无需配置。"
+    },
+    "multiSheet": {
+      "title": "多工作表导航",
+      "description": "通过底部标签栏在任何工作簿的工作表之间切换。"
+    },
+    "command": {
+      "title": "命令面板",
+      "description": "Cmd+K 跳转到任意单元格引用或执行操作——以键盘为主的导航方式。"
+    },
+    "virtualized": {
+      "title": "虚拟化渲染",
+      "description": "LazySheet 仅渲染您可见的行。无论硬件如何，都能流畅地滚动浏览海量表格，无任何卡顿。"
+    },
+    "filters": {
+      "title": "列筛选",
+      "description": "点击任意表头上的漏斗图标。14 种筛选类型，加上 Excel 风格的值勾选列表。"
+    },
+    "sticky": {
+      "title": "固定表头行",
+      "description": "将任意行标记为表头——滚动数据时它将始终固定在顶部。"
+    },
+    "resize": {
+      "title": "可调整大小的列和行",
+      "description": "拖动调整大小，双击自动适应。每个文件的尺寸都会被记住。"
+    },
+    "format": {
+      "title": "丰富的单元格格式",
+      "description": "从 .xlsx 文件中保留的字体、颜色、对齐方式、合并单元格和可点击的超链接。"
+    },
+    "copy": {
+      "title": "复制为图片",
+      "description": "将分组汇总报告直接以 PNG 格式复制到剪贴板。"
+    },
+    "find": {
+      "title": "在表格中查找",
+      "description": "使用 Cmd+F 进行全文搜索。在整个工作表高亮显示的匹配项之间跳转。"
+    },
+    "native": {
+      "title": "原生 macOS 集成",
+      "description": "内置拖放、“打开方式”和最近文件支持。"
+    }
+  },
+  "faq": {
+    "heading": "打开应用时遇到问题？",
+    "subtitle": "关于安装 LazySheet 的常见问题。",
+    "unsignedQuestion": "macOS 提示 LazySheet 已\"损坏\"或来自\"身份不明的开发者\"",
+    "unsignedAnswerPre": "LazySheet 尚未使用 Apple 开发者证书进行代码签名，因此 macOS Gatekeeper 会将其隔离并阻止打开。此应用是安全的——您只需移除隔离标志。打开",
+    "terminal": "终端",
+    "unsignedAnswerPost": "完成后，从应用程序正常打开 LazySheet。如果您将其安装在其他位置，请修改路径以匹配其实际位置。",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyAria": "复制命令"
+  },
+  "footer": {
+    "tagline": "© 2026 LazySheet. 为速度而生。"
+  },
+  "download": {
+    "pageTitle": "下载 LazySheet — macOS、Windows 和 Linux",
+    "heading": "下载",
+    "noBuilds": "构建版本尚未发布——请查看发布页面以获取最新下载。",
+    "viewReleases": "在 GitHub 上查看发布",
+    "licensePrefix": "使用 LazySheet 即表示您同意",
+    "license": "许可证",
+    "viewAllReleases": "在 GitHub 上查看所有版本",
+    "buttonGeneric": "下载",
+    "buttonForOs": "下载 {{os}} 版本"
+  },
+  "seo": {
+    "title": "LazySheet | 快速的原生 Excel 和 CSV 查看器",
+    "description": "LazySheet 是一款快速、免费且开源的桌面查看器，支持 Excel、CSV 和 TSV 文件。在 macOS、Windows 和 Linux 上零延迟即时打开大型表格。",
+    "ogTitle": "LazySheet — 快速简洁的电子表格查看器",
+    "ogDescription": "即时打开 Excel、CSV 和 TSV 文件。适用于 macOS、Windows 和 Linux 的免费开源软件。"
+  }
+}
