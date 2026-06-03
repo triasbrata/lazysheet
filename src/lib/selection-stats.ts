@@ -1,4 +1,5 @@
 import type { SheetModel } from "@/lib/types";
+import { numericValue } from "@/lib/types";
 import type { Bounds } from "@/components/Grid/grid-utils";
 
 export interface SelectionStats {
@@ -30,14 +31,12 @@ export function computeSelectionStats(
     for (let c = bounds.c1; c <= bounds.c2; c++) {
       const cell = row[c];
       if (!cell) continue;
-      if (cell.v.t === "Number" || cell.v.t === "Integer") {
-        const n = cell.v.c;
-        if (!Number.isFinite(n)) continue;
-        count++;
-        sum += n;
-        if (n < min) min = n;
-        if (n > max) max = n;
-      }
+      const n = numericValue(cell.v);
+      if (n === null) continue;
+      count++;
+      sum += n;
+      if (n < min) min = n;
+      if (n > max) max = n;
     }
   }
 
