@@ -34,3 +34,6 @@ src-tauri/target/
 .rpi/
 .claude/
 .envrc
+
+# Test coverage output
+coverage/

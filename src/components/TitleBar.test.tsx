@@ -1,0 +1,168 @@
+import { describe, it, expect, vi } from "vitest";
+import { renderWithProviders, screen, userEvent } from "@/test/render";
+import { TitleBar } from "./TitleBar";
+
+const noop = vi.fn();
+
+describe("TitleBar — fileName display", () => {
+  it("shows the fileName when provided", () => {
+    renderWithProviders(
+      <TitleBar fileName="my-file.xlsx" onOpenCommand={noop} />
+    );
+    expect(screen.getByText("my-file.xlsx")).toBeInTheDocument();
+  });
+
+  it("shows the app name when fileName is null", () => {
+    renderWithProviders(
+      <TitleBar fileName={null} onOpenCommand={noop} />
+    );
+    // en locale: "LazySheet"
+    expect(screen.getByText("LazySheet")).toBeInTheDocument();
+  });
+});
+
+describe("TitleBar — filePath triggers drag button and dropdown", () => {
+  it("renders the drag (FileSpreadsheet) button when filePath is provided", () => {
+    renderWithProviders(
+      <TitleBar
+        fileName="test.xlsx"
+        onOpenCommand={noop}
+        filePath="/tmp/test.xlsx"
+        onDragOut={vi.fn()}
+      />
+    );
+    // The drag button has title from i18n: "Drag file out"
+    expect(screen.getByTitle("Drag file out")).toBeInTheDocument();
+  });
+
+  it("does not render drag button when filePath is null", () => {
+    renderWithProviders(
+      <TitleBar fileName="test.xlsx" onOpenCommand={noop} filePath={null} />
+    );
+    expect(screen.queryByTitle("Drag file out")).toBeNull();
+  });
+
+  it("renders file actions dropdown trigger when filePath is provided", () => {
+    renderWithProviders(
+      <TitleBar
+        fileName="test.xlsx"
+        onOpenCommand={noop}
+        filePath="/tmp/test.xlsx"
+      />
+    );
+    // The dropdown trigger button has title "File actions"
+    expect(screen.getByTitle("File actions")).toBeInTheDocument();
+  });
+
+  it("opens dropdown and shows Copy file / Copy file path items on trigger click", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TitleBar
+        fileName="test.xlsx"
+        onOpenCommand={noop}
+        filePath="/tmp/test.xlsx"
+        onCopyFile={vi.fn()}
+        onCopyFilePath={vi.fn()}
+      />
+    );
+    await user.click(screen.getByTitle("File actions"));
+    expect(await screen.findByText("Copy file")).toBeInTheDocument();
+    expect(screen.getByText("Copy file path")).toBeInTheDocument();
+  });
+
+  it("calls onCopyFile when Copy file menu item is clicked", async () => {
+    const onCopyFile = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TitleBar
+        fileName="test.xlsx"
+        onOpenCommand={noop}
+        filePath="/tmp/test.xlsx"
+        onCopyFile={onCopyFile}
+        onCopyFilePath={vi.fn()}
+      />
+    );
+    await user.click(screen.getByTitle("File actions"));
+    await user.click(await screen.findByText("Copy file"));
+    expect(onCopyFile).toHaveBeenCalledOnce();
+  });
+
+  it("calls onCopyFilePath when Copy file path menu item is clicked", async () => {
+    const onCopyFilePath = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TitleBar
+        fileName="test.xlsx"
+        onOpenCommand={noop}
+        filePath="/tmp/test.xlsx"
+        onCopyFile={vi.fn()}
+        onCopyFilePath={onCopyFilePath}
+      />
+    );
+    await user.click(screen.getByTitle("File actions"));
+    await user.click(await screen.findByText("Copy file path"));
+    expect(onCopyFilePath).toHaveBeenCalledOnce();
+  });
+});
+
+describe("TitleBar — close button", () => {
+  it("renders close button when fileName and onClose are both provided", () => {
+    renderWithProviders(
+      <TitleBar
+        fileName="file.xlsx"
+        onOpenCommand={noop}
+        onClose={vi.fn()}
+      />
+    );
+    expect(screen.getByTitle("Close file")).toBeInTheDocument();
+  });
+
+  it("does not render close button when fileName is null", () => {
+    renderWithProviders(
+      <TitleBar fileName={null} onOpenCommand={noop} onClose={vi.fn()} />
+    );
+    expect(screen.queryByTitle("Close file")).toBeNull();
+  });
+
+  it("does not render close button when onClose is not provided", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
+    );
+    expect(screen.queryByTitle("Close file")).toBeNull();
+  });
+
+  it("calls onClose when close button is clicked", async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TitleBar
+        fileName="file.xlsx"
+        onOpenCommand={noop}
+        onClose={onClose}
+      />
+    );
+    await user.click(screen.getByTitle("Close file"));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("TitleBar — command search bar", () => {
+  it("renders the search command bar", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
+    );
+    expect(screen.getByText("Search commands…")).toBeInTheDocument();
+  });
+
+  it("calls onOpenCommand when the search bar is clicked", async () => {
+    const onOpenCommand = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={onOpenCommand} />
+    );
+    // Click the search bar button
+    const searchBar = screen.getByTitle(/Open command center/i);
+    await user.click(searchBar);
+    expect(onOpenCommand).toHaveBeenCalledOnce();
+  });
+});
