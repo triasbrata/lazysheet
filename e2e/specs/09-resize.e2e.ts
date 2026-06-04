@@ -6,7 +6,7 @@
  * asserts that the column header element's rendered width is approximately 200px.
  */
 
-import { T, FIX, tid, prepareApp, openFixture } from "../helpers/app.js";
+import { T, FIX, tid, cell, prepareApp, openFixture, openContextMenuAt, selectCell } from "../helpers/app.js";
 
 /** Allowed pixel tolerance when comparing widths. */
 const WIDTH_TOLERANCE = 10;
@@ -20,21 +20,20 @@ describe("resize", () => {
     // Open the CSV fixture.
     await openFixture(FIX.csv);
 
-    // Locate the first column header (column index 0).
-    const colHeader = await $('[data-col-header="0"]');
-    await colHeader.waitForDisplayed({ timeout: 10000 });
-
-    // Right-click the column header to open the context menu.
-    await colHeader.click({ button: "right" });
+    // The column-header context menu is suppressed in v1; re-route through the cell menu.
+    // Select cell(0,0) and open context menu there via synthetic contextmenu dispatch.
+    await selectCell(0, 0);
+    await openContextMenuAt('[data-r="0"][data-c="0"]');
+    await browser.pause(200);
 
     // Wait for the context menu.
     const ctxMenu = tid(T.contextMenu);
     await ctxMenu.waitForDisplayed({ timeout: 8000 });
 
-    // Click the "Column width…" menu item.
-    const widthItem = await ctxMenu.$('[role="menuitem"]=Column width…');
-    await widthItem.waitForDisplayed({ timeout: 5000 });
-    await widthItem.click();
+    // Open the Resize submenu via testid, then click "Column width…" item.
+    await tid("ctx-resize").click();
+    await browser.pause(150);
+    await tid("ctx-col-width").click();
 
     // Wait for the resize dialog to appear.
     const resizeDialog = tid(T.resizeDialog);

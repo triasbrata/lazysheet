@@ -130,6 +130,7 @@ export function StatusBar({
       {statsLabel && (
         <span
           data-tauri-drag-region
+          data-testid="statusbar-stats"
           className="font-mono tabular-nums text-foreground/70"
           title={statsLabel}
         >
@@ -141,6 +142,7 @@ export function StatusBar({
           type="button"
           onClick={onOpenSummary}
           className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+          data-testid="statusbar-analyze"
           title={t("statusbar.summaryTitle", { shortcut: "⌘⇧Y" })}
         >
           <Sigma className="h-3 w-3" />

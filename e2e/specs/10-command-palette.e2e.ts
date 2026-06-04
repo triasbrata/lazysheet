@@ -49,8 +49,7 @@ describe("command-palette", () => {
     // Assert at least one command-palette-item is visible after filtering.
     await browser.waitUntil(
       async () => {
-        const items = await $$(`[data-testid="${T.commandPaletteItem}"]`);
-        return items.length >= 1;
+        return (await $$(`[data-testid="${T.commandPaletteItem}"]`).length) >= 1;
       },
       { timeout: 5000, timeoutMsg: "No command-palette-item visible after typing 'cop'" }
     );

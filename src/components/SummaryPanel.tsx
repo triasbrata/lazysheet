@@ -680,6 +680,7 @@ export function SummaryPanel({
               onClick={addCategoryCol}
               className="self-start text-muted-foreground"
               title={`Add sub-category (up to ${MAX_CATEGORY_FIELDS - 1})`}
+              data-testid="summary-add-category"
             >
               <Plus className="h-3 w-3" />
               <span>Add sub-category</span>
@@ -700,6 +701,7 @@ export function SummaryPanel({
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
                 title="Collapsible tree view"
+                data-testid="summary-view-tree"
               >
                 Tree
               </button>
@@ -712,6 +714,7 @@ export function SummaryPanel({
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
                 title="Hierarchical flat view (Excel-style indent)"
+                data-testid="summary-view-flat"
               >
                 Flat
               </button>
@@ -727,6 +730,7 @@ export function SummaryPanel({
                 onChange={(e) => setIncludeSubtotals(e.target.checked)}
                 disabled={categoryCols.length < 2}
                 className="h-3 w-3 accent-primary"
+                data-testid="summary-subtotals"
               />
               Subtotals
             </label>
@@ -803,6 +807,7 @@ export function SummaryPanel({
                     className="rounded-none border-0 border-l border-border"
                     title="Choose copy format"
                     aria-label="Choose copy format"
+                    data-testid="summary-copy-caret"
                   >
                     <ChevronDown className="h-3 w-3" />
                   </Button>
@@ -818,16 +823,18 @@ export function SummaryPanel({
                     <DropdownMenuRadioItem
                       value="markdown"
                       className="text-xs"
+                      data-testid="summary-copy-opt-markdown"
                     >
                       <Copy className="size-3" /> Markdown
                     </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="tsv" className="text-xs">
+                    <DropdownMenuRadioItem value="tsv" className="text-xs" data-testid="summary-copy-opt-tsv">
                       <Copy className="size-3" /> TSV
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value="image"
                       disabled={result.tooLarge}
                       className="text-xs"
+                      data-testid="summary-copy-opt-image"
                     >
                       <ImageDown className="size-3" /> Image
                     </DropdownMenuRadioItem>
@@ -842,6 +849,7 @@ export function SummaryPanel({
               onClick={onClose}
               title="Close (Esc)"
               aria-label="Close summary panel"
+              data-testid="summary-close"
             >
               <X className="h-3 w-3" />
             </Button>

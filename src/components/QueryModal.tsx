@@ -161,6 +161,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
       <DialogContent
+        data-testid="query-modal"
         className="sm:max-w-md border-0 bg-transparent p-0 shadow-none ring-0"
         showCloseButton={false}
         onInteractOutside={handleInteractOutside}
@@ -220,6 +221,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
                 <input
                   ref={inputRef}
                   type="text"
+                  data-testid="query-modal-table"
                   value={tableName}
                   onChange={(e) => setTableName(e.target.value)}
                   onKeyDown={(e) => {
@@ -244,7 +246,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
                   value={dialect}
                   onValueChange={(v) => setDialect(v as SqlDialect)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="query-modal-dialect">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -309,10 +311,11 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
             </div>
 
             <DialogFooter className="flex-row justify-end [&>*]:w-auto">
-              <Button variant="outline" onClick={onCancel}>
+              <Button variant="outline" data-testid="query-modal-cancel" onClick={onCancel}>
                 Cancel
               </Button>
               <Button
+                data-testid="query-modal-confirm"
                 onClick={submit}
                 disabled={generating || (needsKey && nonKeyCount === 0)}
               >
