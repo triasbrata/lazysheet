@@ -1,4 +1,4 @@
-import { T, FIX, tid, cell, prepareApp, openFixture } from '../helpers/app.js';
+import { T, FIX, tid, cell, prepareApp, openFixture, selectCell } from '../helpers/app.js';
 
 describe('keyboard shortcuts', () => {
   before(async () => {
@@ -7,10 +7,9 @@ describe('keyboard shortcuts', () => {
   });
 
   it('ArrowDown moves selection down (statusbar cell-ref changes row)', async () => {
-    // Click on cell(0,0) to ensure it is selected first
-    const c00 = cell(0, 0);
-    await c00.waitForDisplayed({ timeout: 10000 });
-    await c00.click();
+    // Use selectCell to click and explicitly focus the grid container so arrow keys work.
+    await selectCell(0, 0);
+    await browser.pause(150);
 
     const statusRef = tid(T.statusbarCellRef);
     await statusRef.waitForDisplayed({ timeout: 5000 });

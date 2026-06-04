@@ -1,4 +1,4 @@
-import { T, tid, prepareApp } from '../helpers/app.js';
+import { T, tid, prepareApp, openDropdownItem } from '../helpers/app.js';
 
 describe('i18n (language switching)', () => {
   before(async () => {
@@ -19,21 +19,15 @@ describe('i18n (language switching)', () => {
     await openBtn.waitForDisplayed({ timeout: 5000 });
     const englishText = await openBtn.getText();
 
-    // Open the language picker
-    const langToggle = tid(T.langToggleBtn);
-    await langToggle.waitForDisplayed({ timeout: 10000 });
-    await langToggle.click();
-
-    // Click the "Bahasa Indonesia" option (native label in the menu)
-    const idItem = await $('[role="menuitem"]=Bahasa Indonesia');
-    await idItem.waitForDisplayed({ timeout: 5000 });
-    await idItem.click();
+    // Use synthPointerClick-backed openDropdownItem — Radix DropdownMenuTrigger
+    // does not open on a normal WDIO .click() under macOS WebKit.
+    await openDropdownItem(T.langToggleBtn, "lang-item-id");
 
     // Wait for the UI to re-render with the new locale
     await browser.waitUntil(
       async () => {
         const lang = await browser.execute(
-          () => localStorage.getItem('lazysheet-language')
+          () => localStorage.getItem('lazysheet:language')
         );
         return lang === 'id';
       },
@@ -42,7 +36,7 @@ describe('i18n (language switching)', () => {
 
     // Verify localStorage stores 'id'
     const storedLang = await browser.execute(
-      () => localStorage.getItem('lazysheet-language')
+      () => localStorage.getItem('lazysheet:language')
     );
     expect(storedLang).toBe('id');
 
@@ -66,21 +60,14 @@ describe('i18n (language switching)', () => {
     await openBtn.waitForDisplayed({ timeout: 5000 });
     const idText = await openBtn.getText();
 
-    // Open the language picker again
-    const langToggle = tid(T.langToggleBtn);
-    await langToggle.waitForDisplayed({ timeout: 10000 });
-    await langToggle.click();
-
-    // Click the "English" option
-    const enItem = await $('[role="menuitem"]=English');
-    await enItem.waitForDisplayed({ timeout: 5000 });
-    await enItem.click();
+    // Use synthPointerClick-backed openDropdownItem to switch back to English.
+    await openDropdownItem(T.langToggleBtn, "lang-item-en");
 
     // Wait for localStorage to update
     await browser.waitUntil(
       async () => {
         const lang = await browser.execute(
-          () => localStorage.getItem('lazysheet-language')
+          () => localStorage.getItem('lazysheet:language')
         );
         return lang === 'en';
       },

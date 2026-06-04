@@ -135,12 +135,12 @@ export function ColumnFilterDropdown({
 
             {/* Condition selector */}
             <Select value={op} onValueChange={(v) => setOp(v as ConditionOp)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" data-testid="filter-condition-trigger">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="item-aligned">
                 {CONDITION_OPTIONS.map(({ op: o, label }) => (
-                  <SelectItem key={o} value={o}>
+                  <SelectItem key={o} value={o} data-testid={`filter-condition-${o}`}>
                     {label}
                   </SelectItem>
                 ))}

@@ -22,7 +22,7 @@ export function LanguageToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {SUPPORTED_LANGUAGES.map(({ code, nativeLabel }) => (
-          <DropdownMenuItem key={code} onClick={() => i18n.changeLanguage(code)}>
+          <DropdownMenuItem key={code} data-testid={`lang-item-${code}`} onClick={() => i18n.changeLanguage(code)}>
             {nativeLabel}
           </DropdownMenuItem>
         ))}

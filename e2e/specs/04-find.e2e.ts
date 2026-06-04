@@ -51,7 +51,7 @@ describe("find", () => {
     // Extract any number from the string — should be at least 1
     const numbers = countText.match(/\d+/g);
     expect(numbers).not.toBeNull();
-    expect(parseInt(numbers[0], 10)).toBeGreaterThanOrEqual(1);
+    expect(parseInt(numbers![0], 10)).toBeGreaterThanOrEqual(1);
   });
 
   it("pressing Enter advances to the next match without closing the find bar", async () => {

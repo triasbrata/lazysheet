@@ -216,6 +216,10 @@ export function Cell({
             alignItems: "center",
             alignSelf: "center",
             marginLeft: "auto",
+            // Reserve a small gap so the funnel never abuts/overlaps the header
+            // text — guarantees clear separation even at narrow column widths and
+            // during the brief autofit reflow after a header is marked.
+            paddingLeft: 4,
             flexShrink: 0,
           }}
         >

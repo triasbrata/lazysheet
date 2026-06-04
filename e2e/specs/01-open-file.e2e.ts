@@ -35,7 +35,9 @@ describe("open-file", () => {
     // Call the hook directly with a bogus path. The app should either show an error
     // toast or leave the grid hidden (no new grid rendered). We assert leniently:
     // either a sonner toast element appears OR the grid is NOT freshly displayed.
-    await browser.execute((p) => window.__E2E__.open(p), "/no/such/file.csv");
+    await browser.executeAsync((p, done) => {
+      window.__E2E__.open(p).then(() => done(null)).catch(() => done(null));
+    }, "/no/such/file.csv");
 
     // Give the app a moment to react
     await browser.pause(1500);

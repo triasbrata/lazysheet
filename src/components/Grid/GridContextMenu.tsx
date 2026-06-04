@@ -150,6 +150,7 @@ export function GridContextMenuContent({
     return (
       <ContextMenuItem
         key={fmt}
+        data-testid={`ctx-copy-${fmt}`}
         title="Click to copy · ⌘/Ctrl-click or star to set default"
         onPointerDown={(e) => {
           modRef.current = e.metaKey || e.ctrlKey;
@@ -202,9 +203,10 @@ export function GridContextMenuContent({
   }
 
   return (
-    <ContextMenuContent>
+    <ContextMenuContent data-testid="context-menu">
       {isRow && (
         <ContextMenuItem
+          data-testid="ctx-mark-header"
           onSelect={() => onMarkHeader(isHeader ? null : ctx.row)}
         >
           {isHeader ? "Unmark as header" : "Mark as header"}
@@ -230,7 +232,7 @@ export function GridContextMenuContent({
       )}
       {canCopy && (
         <ContextMenuSub>
-          <ContextMenuSubTrigger>Copy</ContextMenuSubTrigger>
+          <ContextMenuSubTrigger data-testid="ctx-copy">Copy</ContextMenuSubTrigger>
           <ContextMenuSubContent
             // Capture-phase reset: runs before any item's bubble-phase
             // onPointerDown, so a stale star press (released off-item) can never
@@ -240,7 +242,7 @@ export function GridContextMenuContent({
             }}
           >
             <ContextMenuSub>
-              <ContextMenuSubTrigger>Markdown</ContextMenuSubTrigger>
+              <ContextMenuSubTrigger data-testid="ctx-copy-markdown">Markdown</ContextMenuSubTrigger>
               <ContextMenuSubContent
                 onPointerDownCapture={() => {
                   starRef.current = false;
@@ -277,7 +279,7 @@ export function GridContextMenuContent({
           <>
             <ContextMenuSeparator />
             <ContextMenuSub>
-              <ContextMenuSubTrigger>Resize</ContextMenuSubTrigger>
+              <ContextMenuSubTrigger data-testid="ctx-resize">Resize</ContextMenuSubTrigger>
               <ContextMenuSubContent>
                 {onAutofitCol && (
                   <ContextMenuItem onSelect={() => onAutofitCol()}>
@@ -294,7 +296,7 @@ export function GridContextMenuContent({
                     <ContextMenuSeparator />
                   )}
                 {onOpenColWidthDialog && (
-                  <ContextMenuItem onSelect={() => onOpenColWidthDialog()}>
+                  <ContextMenuItem data-testid="ctx-col-width" onSelect={() => onOpenColWidthDialog()}>
                     Column width…
                   </ContextMenuItem>
                 )}

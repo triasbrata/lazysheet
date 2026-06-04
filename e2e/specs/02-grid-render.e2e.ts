@@ -54,8 +54,7 @@ describe("grid-render", () => {
     // After scroll, wait a moment for virtualisation to catch up
     await browser.waitUntil(
       async () => {
-        const rows = await $$("[data-r]");
-        return rows.length > 0;
+        return (await $$("[data-r]").length) > 0;
       },
       { timeout: 10000, timeoutMsg: "No [data-r] rows found after scroll" }
     );

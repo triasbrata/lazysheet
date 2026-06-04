@@ -98,9 +98,9 @@ try {
 log("Running e2e specs (wdio + tauri-webdriver)");
 try {
   if (IS_LINUX) {
-    await $`xvfb-run -a pnpm test`.cwd(E2E);
+    await $`xvfb-run -a pnpm test`.cwd(E2E).env({ E2E_COVERAGE: "true" });
   } else {
-    await $`pnpm test`.cwd(E2E);
+    await $`pnpm test`.cwd(E2E).env({ E2E_COVERAGE: "true" });
   }
 } catch {
   die("E2E specs failed.");

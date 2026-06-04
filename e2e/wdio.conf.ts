@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,30 +17,50 @@ function resolveAppBinary() {
     ? path.resolve(process.env.CARGO_TARGET_DIR)
     : path.resolve(__dirname, "../src-tauri/target");
   const realPath = path.join(targetDir, "debug", "lazysheet");
-  console.log({ realPath });
   return realPath;
 }
 
 /** Handle to the spawned tauri-webdriver intermediary process. */
-let driverProc;
+let driverProc: ChildProcess | undefined;
 
-export const config = {
+export const config: WebdriverIO.Config = {
   hostname: "127.0.0.1",
   port: 4444,
-  specs: ["./specs/**/*.e2e.js"],
+  specs: ["./specs/**/*.e2e.ts"],
   maxInstances: 1,
   capabilities: [
+    // `tauri:options` is a vendor (tauri-webdriver) extension capability not in
+    // the standard WebdriverIO capability type — cast to satisfy the config type.
     {
       "tauri:options": {
         application: resolveAppBinary(),
       },
-    },
+    } as WebdriverIO.Capabilities,
   ],
   reporters: ["spec"],
   framework: "mocha",
   mochaOpts: {
     ui: "bdd",
     timeout: 120000,
+  },
+
+  // Slow-mo (review mode): when E2E_SLOWMO is set, pause after each *action*
+  // command so the app window can be watched step-by-step. Skips read/poll
+  // commands (getText, isDisplayed, findElement…) so it stays watchable, not glacial.
+  async afterCommand(commandName: string) {
+    if (!process.env.E2E_SLOWMO) return;
+    const watch = new Set<string>([
+      "elementClick",
+      "performActions",
+      "elementSendKeys",
+      "executeScript",
+      "executeAsyncScript",
+      "navigateTo",
+    ]);
+    if (watch.has(commandName)) {
+      const ms = Number(process.env.E2E_SLOWMO) || 3000;
+      await new Promise((r) => setTimeout(r, ms));
+    }
   },
 
   onPrepare() {
