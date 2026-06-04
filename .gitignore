@@ -15,3 +15,5 @@ todos.json
 .claude/scheduled_tasks.lock
 
 .rpi/
+
+coverage

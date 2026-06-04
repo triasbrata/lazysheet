@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>0/37</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/21</span>
+                <span class='fraction'>0/29</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/24</span>
+                <span class='fraction'>0/35</span>
             </div>
         
             
@@ -151,7 +151,31 @@
 <a name='L86'></a><a href='#L86'>86</a>
 <a name='L87'></a><a href='#L87'>87</a>
 <a name='L88'></a><a href='#L88'>88</a>
-<a name='L89'></a><a href='#L89'>89</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -169,17 +193,39 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -249,6 +295,7 @@ export interface CreateIssueInput {
   description: string
   contact?: string
   company?: string // honeypot — must be empty
+  turnstileToken?: string
 }
 &nbsp;
 export interface CreateIssueResult {
@@ -257,6 +304,7 @@ export interface CreateIssueResult {
 }
 &nbsp;
 const REPO = <span class="cstat-no" title="statement not covered" >'triasbrata/lazysheet'</span>
+const TURNSTILE_VERIFY = <span class="cstat-no" title="statement not covered" >'https://challenges.cloudflare.com/turnstile/v0/siteverify'</span>
 &nbsp;
 function <span class="fstat-no" title="function not covered" >labelFor(t</span>ype: FeedbackType): string {
 <span class="cstat-no" title="statement not covered" >  if (type === 'bug') <span class="cstat-no" title="statement not covered" >return 'bug'</span></span>
@@ -272,7 +320,28 @@ export const <span class="cstat-no" title="statement not covered" >createIssue =
 <span class="cstat-no" title="statement not covered" >      return { url: '', number: 0 }</span>
     }
 &nbsp;
-    // 2. Trim and validate inputs
+    // 2. Verify Turnstile token
+    const secret =
+      (<span class="cstat-no" title="statement not covered" >globalThis as { process?: { env?: Record&lt;string, string | undefined&gt; } }).process?.env</span>
+        ?.TURNSTILE_SECRET_KEY
+<span class="cstat-no" title="statement not covered" >    if (!secret) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('server_misconfigured')</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (!data.turnstileToken) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('captcha_failed')</span>
+    }
+    const form = <span class="cstat-no" title="statement not covered" >new URLSearchParams({ secret, response: data.turnstileToken })</span>
+    const vres = <span class="cstat-no" title="statement not covered" >await fetch(TURNSTILE_VERIFY, {</span>
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form,
+    })
+    const vjson = (<span class="cstat-no" title="statement not covered" >await vres.json()) as { success: boolean }</span>
+<span class="cstat-no" title="statement not covered" >    if (!vres.ok || !vjson.success) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error('captcha_failed')</span>
+    }
+&nbsp;
+    // 3. Trim and validate inputs
     const title = <span class="cstat-no" title="statement not covered" >data.title.trim()</span>
     const description = <span class="cstat-no" title="statement not covered" >data.description.trim()</span>
 &nbsp;
@@ -287,7 +356,7 @@ export const <span class="cstat-no" title="statement not covered" >createIssue =
 <span class="cstat-no" title="statement not covered" >      throw new Error('invalid_input')</span>
     }
 &nbsp;
-    // 3. Read token via the same cast pattern as releases-data.ts
+    // 4. Read token via the same cast pattern as releases-data.ts
     const token =
       (<span class="cstat-no" title="statement not covered" >globalThis as { process?: { env?: Record&lt;string, string | undefined&gt; } }).process?.env</span>
         ?.GITHUB_TOKEN
@@ -295,10 +364,10 @@ export const <span class="cstat-no" title="statement not covered" >createIssue =
 <span class="cstat-no" title="statement not covered" >      throw new Error('server_misconfigured')</span>
     }
 &nbsp;
-    // 4. Build labels
+    // 5. Build labels
     const labels = <span class="cstat-no" title="statement not covered" >['feedback', labelFor(data.type)]</span>
 &nbsp;
-    // 5. Compose markdown body
+    // 6. Compose markdown body
     const contact = <span class="cstat-no" title="statement not covered" >data.contact?.trim()</span>
     const body =
 <span class="cstat-no" title="statement not covered" >      `**Type:** ${data.type}\n\n` +</span>
@@ -306,7 +375,7 @@ export const <span class="cstat-no" title="statement not covered" >createIssue =
       (contact ? `\n\n**Contact:** ${contact}` : '') +
       '\n\n---\n_Submitted via lazysheet.brata.cloud feedback form_'
 &nbsp;
-    // 6. POST to GitHub Issues API
+    // 7. POST to GitHub Issues API
     const res = <span class="cstat-no" title="statement not covered" >await fetch(`https://api.github.com/repos/${REPO}/issues`, {</span>
       method: 'POST',
       headers: {
@@ -318,12 +387,12 @@ export const <span class="cstat-no" title="statement not covered" >createIssue =
       body: JSON.stringify({ title, body, labels }),
     })
 &nbsp;
-    // 7. Handle non-OK responses
+    // 8. Handle non-OK responses
 <span class="cstat-no" title="statement not covered" >    if (!res.ok) {</span>
 <span class="cstat-no" title="statement not covered" >      throw new Error(`github_${res.status}`)</span>
     }
 &nbsp;
-    // 8. Return the created issue data
+    // 9. Return the created issue data
     const json = (<span class="cstat-no" title="statement not covered" >await res.json()) as { html_url: string; number: number }</span>
 <span class="cstat-no" title="statement not covered" >    return { url: json.html_url, number: json.number }</span>
   })
@@ -334,7 +403,7 @@ export const <span class="cstat-no" title="statement not covered" >createIssue =
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-03T16:18:37.563Z
+                at 2026-06-04T21:17:08.632Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
