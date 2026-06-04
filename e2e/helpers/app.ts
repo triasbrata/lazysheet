@@ -54,8 +54,26 @@ export const T = {
   contextMenu: "context-menu",
   statusbar: "statusbar",
   statusbarCellRef: "statusbar-cell-ref",
+  statusbarStats: "statusbar-stats",
+  statusbarAnalyze: "statusbar-analyze",
   titlebar: "titlebar",
   titlebarFilename: "titlebar-filename",
+  summaryCopyCaret: "summary-copy-caret",
+  summaryCopyOptMd: "summary-copy-opt-markdown",
+  summaryCopyOptTsv: "summary-copy-opt-tsv",
+  summaryCopyOptImg: "summary-copy-opt-image",
+  summaryClose: "summary-close",
+  summaryViewTree: "summary-view-tree",
+  summaryViewFlat: "summary-view-flat",
+  summarySubtotals: "summary-subtotals",
+  summaryAddCategory: "summary-add-category",
+  ctxSummarize: "ctx-summarize",
+  ctxCopyQuery: "ctx-copy-query",
+  queryModal: "query-modal",
+  queryModalTable: "query-modal-table",
+  queryModalDialect: "query-modal-dialect",
+  queryModalConfirm: "query-modal-confirm",
+  queryModalCancel: "query-modal-cancel",
 } as const;
 
 /**
@@ -66,6 +84,7 @@ export const FIX = {
   tsv: path.resolve(__dirname, "../fixtures", "data.tsv"),
   xlsx: path.resolve(__dirname, "../fixtures", "multi.xlsx"),
   xls: path.resolve(__dirname, "../fixtures", "legacy.xls"),
+  groups: path.resolve(__dirname, "../fixtures", "groups.csv"),
 } as const;
 
 /** Returns a WebdriverIO element for a data-testid attribute (use T constants). */
@@ -113,6 +132,14 @@ export async function prepareApp(): Promise<void> {
     localStorage.setItem("lazysheet:language", "en");
     localStorage.removeItem("lazysheet:recent");
     localStorage.removeItem("lazysheet:file-state");
+    localStorage.removeItem("summary-panel:copy-format");
+    localStorage.removeItem("lazysheet:default-copy-format");
+    localStorage.removeItem("lazysheet:sql-dialect");
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("lazysheet:sql-table:")) {
+        localStorage.removeItem(key);
+      }
+    }
   });
   try {
     await dumpCoverage();
@@ -327,6 +354,99 @@ export async function openDropdownItem(
 }
 
 /**
+ * Opens a Radix Select by dispatching ONLY pointerdown on its trigger, then
+ * clicks an option by testid.
+ *
+ * Unlike DropdownMenu, Radix Select treats pointerdown→pointerup at the same
+ * point as open-then-commit-and-close: the trailing pointerup lands on the
+ * trigger position (item-aligned anchors the selected item there), commits that
+ * item and closes the listbox — also tearing down the parent Popover on WebKit.
+ * So we omit pointerup on open and let the Select stay open.
+ *
+ * Two robustness steps follow the open:
+ *  1. Wait on the listbox container ([data-slot="select-content"]) — not the
+ *     target item — to confirm the Select actually opened. This gives the retry
+ *     a correct signal and disambiguates an open-flake from a clipped item.
+ *  2. item-aligned listboxes clip to ~5 items in an overflow:hidden viewport, so
+ *     an option past the fold (e.g. isExactly, index 7 of 14) is in the DOM but
+ *     not "displayed". scrollIntoView pulls it into the viewport before we assert
+ *     visibility and click.
+ * @param toggleTestid - data-testid of the SelectTrigger.
+ * @param itemTestid   - data-testid of the SelectItem to choose.
+ */
+export async function openSelectItem(
+  toggleTestid: string,
+  itemTestid: string,
+): Promise<void> {
+  const trigger = `[data-testid="${toggleTestid}"]`;
+  const item = tid(itemTestid);
+  const content = $('[data-slot="select-content"]');
+
+  const probe = (label: string) =>
+    browser.execute(
+      (trigSel: string, lab: string) => {
+        const trig = document.querySelector(trigSel);
+        const c = document.querySelector('[data-slot="select-content"]');
+        const panel = document.querySelector('[data-testid="filter-panel"]');
+        return (
+          lab +
+          " trig=" + !!trig +
+          " trigState=" + (trig?.getAttribute("data-state") ?? "?") +
+          " panel=" + !!panel +
+          " content=" + !!c
+        );
+      },
+      trigger,
+      label,
+    );
+  const before = await probe("BEFORE");
+  await tid(toggleTestid).click();
+  await browser.pause(500);
+  const after = await probe("AFTER");
+  throw new Error("DIAG | " + before + " || " + after);
+  try {
+    await content.waitForDisplayed({ timeout: 3000 });
+  } catch {
+    await synthPointerDown(trigger);
+    await content.waitForDisplayed({ timeout: 3000 });
+  }
+
+  // The item exists in the DOM once the listbox mounts (Radix renders all
+  // options); pull it into the clipped viewport before asserting visibility.
+  await item.waitForExist({ timeout: 3000 });
+  await browser.execute((sel: string) => {
+    document.querySelector(sel)?.scrollIntoView({ block: "center" });
+  }, `[data-testid="${itemTestid}"]`);
+
+  await item.waitForDisplayed({ timeout: 3000 });
+  await item.click();
+}
+
+/**
+ * Dispatches ONLY a synthetic pointerdown at the element's center. Radix Select
+ * opens on pointerdown; a trailing pointerup would commit+close it (see
+ * openSelectItem).
+ */
+export async function synthPointerDown(selector: string): Promise<void> {
+  await browser.execute((s: string) => {
+    const el = document.querySelector(s);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const o = {
+      bubbles: true,
+      cancelable: true,
+      clientX: r.left + r.width / 2,
+      clientY: r.top + r.height / 2,
+      button: 0,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+    };
+    el.dispatchEvent(new PointerEvent("pointerdown", o));
+  }, selector);
+}
+
+/**
  * Installs a clipboard-write interceptor. The app copies via
  * navigator.clipboard.writeText, but the e2e Tauri readText() reads a different
  * clipboard under the WebKit driver, so reads come back empty. This records the
@@ -399,4 +519,50 @@ export async function openContextMenuAt(selector: string): Promise<void> {
       }),
     );
   }, selector);
+}
+
+/**
+ * Marks the given row as a header row via the row-header context menu. Idempotent:
+ * returns early if a filter-column button is already displayed (header already set).
+ * @param row - Zero-based row index to mark as header (defaults to 0).
+ */
+export async function markHeader(row = 0): Promise<void> {
+  const filterBtns = await $$('[aria-label="Filter column"]');
+  for (const btn of filterBtns) {
+    if (await btn.isDisplayed()) return;
+  }
+  const rh = $(`[data-row-header="${row}"]`);
+  await rh.waitForDisplayed({ timeout: 10000 });
+  await openContextMenuAt(`[data-row-header="${row}"]`);
+  await tid(T.contextMenu).waitForDisplayed({ timeout: 5000 });
+  await synthClickItem("ctx-mark-header");
+  await tid(T.contextMenu).waitForDisplayed({ timeout: 3000, reverse: true });
+}
+
+/**
+ * Opens the summary panel over a rectangular range starting at (r, c) and
+ * extending by the given number of additional rows and columns.
+ * @param r    - Zero-based starting row index.
+ * @param c    - Zero-based starting column index.
+ * @param rows - Number of additional rows to include in the selection.
+ * @param cols - Number of additional columns to include in the selection.
+ */
+export async function openSummary(
+  r: number,
+  c: number,
+  rows: number,
+  cols: number,
+): Promise<void> {
+  await selectCell(r, c);
+  await extendSelection(rows, cols);
+  // Ctrl+Shift+Y TOGGLES the panel. Specs reuse one loaded file across multiple
+  // `it`s (openFixture does not reload), so a panel left open by a prior test
+  // would be closed by a blind toggle. Only fire the shortcut when it's closed.
+  const alreadyOpen = await tid(T.summaryPanel)
+    .isDisplayed()
+    .catch(() => false);
+  if (!alreadyOpen) {
+    await gridKey("y", { ctrl: true, shift: true });
+  }
+  await tid(T.summaryPanel).waitForDisplayed({ timeout: 10000 });
 }

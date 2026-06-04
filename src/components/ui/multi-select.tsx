@@ -51,6 +51,7 @@ export function MultiSelect({
         <Button
           variant="outline"
           data-slot="multi-select-trigger"
+          data-testid="multi-select-trigger"
           className={cn(
             "w-full justify-between h-auto min-h-8 py-1.5 px-2 font-normal",
             className,
