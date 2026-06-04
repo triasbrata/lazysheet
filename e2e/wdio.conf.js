@@ -6,6 +6,21 @@ import { dumpCoverage } from "./helpers/app.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Resolve the debug app binary. Honors CARGO_TARGET_DIR (cargo builds there
+ * instead of src-tauri/target when it's set), falling back to the in-crate
+ * target dir. LAZYSHEET_E2E_BIN overrides everything.
+ */
+function resolveAppBinary() {
+  if (process.env.LAZYSHEET_E2E_BIN) return process.env.LAZYSHEET_E2E_BIN;
+  const targetDir = process.env.CARGO_TARGET_DIR
+    ? path.resolve(process.env.CARGO_TARGET_DIR)
+    : path.resolve(__dirname, "../src-tauri/target");
+  const realPath = path.join(targetDir, "debug", "lazysheet");
+  console.log({ realPath });
+  return realPath;
+}
+
 /** Handle to the spawned tauri-webdriver intermediary process. */
 let driverProc;
 
@@ -17,9 +32,7 @@ export const config = {
   capabilities: [
     {
       "tauri:options": {
-        application:
-          process.env.LAZYSHEET_E2E_BIN ||
-          path.resolve(__dirname, "../src-tauri/target/debug/lazysheet"),
+        application: resolveAppBinary(),
       },
     },
   ],
@@ -56,7 +69,7 @@ export const config = {
     driverProc = spawn(
       process.env.TAURI_WEBDRIVER || "tauri-webdriver",
       ["--port", "4444", "--native-port", "4445"],
-      { stdio: ["inherit", process.stdout, process.stderr] }
+      { stdio: ["inherit", process.stdout, process.stderr] },
     );
   },
 

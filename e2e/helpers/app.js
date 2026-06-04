@@ -110,7 +110,12 @@ export async function prepareApp() {
  * @param {string} absPath - Absolute path to the fixture file.
  */
 export async function openFixture(absPath) {
-  await browser.execute((p) => window.__E2E__.open(p), absPath);
+  // __E2E__.open returns a Promise; execute/sync would try to serialize it and
+  // WebKit rejects that ("unsupported type"). Await it via executeAsync instead.
+  const err = await browser.executeAsync((p, done) => {
+    window.__E2E__.open(p).then(() => done(null)).catch((e) => done(String(e)));
+  }, absPath);
+  if (err) throw new Error(`__E2E__.open failed: ${err}`);
   await tid("grid-scroll-container").waitForDisplayed({ timeout: 20000 });
 }
 
@@ -119,5 +124,9 @@ export async function openFixture(absPath) {
  * @returns {Promise<string>}
  */
 export async function readClipboard() {
-  return browser.execute(() => window.__E2E__.readClipboard());
+  // readClipboard returns a Promise<string>; await it browser-side so a plain
+  // string crosses the WebDriver boundary (execute/sync can't serialize a Promise).
+  return browser.executeAsync((done) => {
+    window.__E2E__.readClipboard().then((t) => done(t)).catch(() => done(""));
+  });
 }

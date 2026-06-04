@@ -43,4 +43,7 @@ tauri-plugin-process = "2"
 [features]
 # Embeds a W3C WebDriver server in the app (native WKWebView/WebKitGTK/WebView2)
 # so tauri-webdriver can drive it cross-platform. e2e builds only.
-webdriver = ["dep:tauri-plugin-webdriver"]
+# `tauri/custom-protocol` forces Tauri to serve the embedded frontendDist
+# (../dist) instead of the dev server URL (localhost:1420). Without it a plain
+# `cargo build` is a `dev` build that loads devUrl → blank window in e2e.
+webdriver = ["dep:tauri-plugin-webdriver", "tauri/custom-protocol"]
