@@ -86,6 +86,9 @@
     "unsignedAnswerPre": "LazySheet aún no está firmado con un certificado de Apple Developer, por lo que macOS Gatekeeper lo pone en cuarentena y bloquea su apertura. La aplicación es segura — solo necesitas eliminar el indicador de cuarentena. Abre la aplicación",
     "terminal": "Terminal",
     "unsignedAnswerPost": "Cuando termine, abre LazySheet normalmente desde Aplicaciones. Si lo instalaste en otro lugar, cambia la ruta para que coincida con su ubicación.",
+    "debQuestion": "La instalación del .deb en Linux falla por dependencias faltantes",
+    "debAnswerPre": "LazySheet necesita las bibliotecas de ejecución WebKitGTK y libsoup para funcionar en Linux. Si apt informa dependencias no satisfechas al instalar el .deb, instálalas primero ejecutando:",
+    "debAnswerPost": "Luego vuelve a instalar el paquete .deb. En distribuciones basadas en Debian/Ubuntu esto resuelve las bibliotecas de ejecución de WebKit que faltan.",
     "copy": "Copiar",
     "copied": "Copiado",
     "copyAria": "Copiar comando"

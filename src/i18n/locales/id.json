@@ -86,6 +86,9 @@
     "unsignedAnswerPre": "LazySheet belum ditandatangani secara kode dengan sertifikat Apple Developer, sehingga macOS Gatekeeper mengkarantinanya dan memblokir pembukaannya. Aplikasi ini aman — Anda hanya perlu menghapus tanda karantina. Buka aplikasi",
     "terminal": "Terminal",
     "unsignedAnswerPost": "Setelah selesai, buka LazySheet secara normal dari Aplikasi. Jika Anda menginstalnya di tempat lain, ubah path agar sesuai dengan lokasinya.",
+    "debQuestion": "Memasang .deb di Linux gagal karena dependensi yang hilang",
+    "debAnswerPre": "LazySheet membutuhkan pustaka runtime WebKitGTK dan libsoup untuk berjalan di Linux. Jika apt melaporkan dependensi yang belum terpenuhi saat memasang .deb, pasang dulu dengan menjalankan:",
+    "debAnswerPost": "Lalu pasang ulang paket .deb. Pada distro berbasis Debian/Ubuntu, ini mengatasi pustaka runtime WebKit yang hilang.",
     "copy": "Salin",
     "copied": "Disalin",
     "copyAria": "Salin perintah"

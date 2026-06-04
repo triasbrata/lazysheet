@@ -86,6 +86,9 @@
     "unsignedAnswerPre": "LazySheet isn't code-signed with an Apple Developer certificate yet, so macOS Gatekeeper quarantines it and blocks it from opening. The app is safe — you just need to remove the quarantine flag. Open the",
     "terminal": "Terminal",
     "unsignedAnswerPost": "After it finishes, open LazySheet normally from Applications. If you installed it elsewhere, change the path to match its location.",
+    "debQuestion": "Installing the .deb on Linux fails with missing dependencies",
+    "debAnswerPre": "LazySheet needs the WebKitGTK and libsoup runtime libraries to run on Linux. If apt reports unmet dependencies while installing the .deb, install them first by running:",
+    "debAnswerPost": "Then reinstall the .deb package. On Debian/Ubuntu-based distros this resolves the missing WebKit runtime libraries.",
     "copy": "Copy",
     "copied": "Copied",
     "copyAria": "Copy command"

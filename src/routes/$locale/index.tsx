@@ -8,6 +8,7 @@ import {
   TsvIcon,
   LockIcon,
   TerminalIcon,
+  LinuxMark,
 } from '#/components/site/icons'
 import { getDownloadData, type DownloadData } from '#/lib/releases-data'
 import { DownloadButton } from '#/features/download/download-button'
@@ -195,6 +196,30 @@ export function Faq() {
 
               <p className="mt-4 text-sm text-on-surface-variant">
                 {t('faq.unsignedAnswerPost')}
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="deb-deps" className="border-t border-surface-container-high">
+            <AccordionTrigger className="py-6 text-base">
+              <span className="flex items-center gap-3">
+                <span className="inline-flex shrink-0 rounded-lg bg-secondary-container p-2 text-[var(--st-secondary)]">
+                  <LinuxMark className="text-[16px]" />
+                </span>
+                <span className="font-display font-semibold text-on-surface">
+                  {t('faq.debQuestion')}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6">
+              <p className="mb-4 text-on-surface-variant">
+                {t('faq.debAnswerPre')}
+              </p>
+
+              <CopyCommand command={'sudo apt install -y libjavascriptcoregtk-4.1-0 libsoup-3.0-0 libsoup-3.0-common libwebkit2gtk-4.1-0'} />
+
+              <p className="mt-4 text-sm text-on-surface-variant">
+                {t('faq.debAnswerPost')}
               </p>
             </AccordionContent>
           </AccordionItem>

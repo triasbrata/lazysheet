@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, fireEvent } from "@testing-library/react";
 import { screen } from "@testing-library/react";
 
 // Hero renders a TanStack <Link>, which normally needs a RouterProvider.
@@ -125,5 +125,20 @@ describe("Faq section — what the user sees", () => {
   it("reveals the fix command (open by default)", () => {
     renderWithI18n(<Faq />);
     expect(screen.getByText(/xattr -dr com\.apple\.quarantine/i)).toBeTruthy();
+  });
+
+  it("shows the Linux .deb dependency question as an accordion trigger", () => {
+    renderWithI18n(<Faq />);
+    expect(screen.getByText(/missing dependencies/i)).toBeTruthy();
+  });
+
+  it("reveals the apt install command after opening the .deb item", () => {
+    renderWithI18n(<Faq />);
+    fireEvent.click(screen.getByText(/missing dependencies/i));
+    expect(
+      screen.getByText(
+        /sudo apt install -y libjavascriptcoregtk-4\.1-0 libsoup-3\.0-0 libsoup-3\.0-common libwebkit2gtk-4\.1-0/i,
+      ),
+    ).toBeTruthy();
   });
 });

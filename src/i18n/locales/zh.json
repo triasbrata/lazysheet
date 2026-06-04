@@ -86,6 +86,9 @@
     "unsignedAnswerPre": "LazySheet 尚未使用 Apple 开发者证书进行代码签名，因此 macOS Gatekeeper 会将其隔离并阻止打开。此应用是安全的——您只需移除隔离标志。打开",
     "terminal": "终端",
     "unsignedAnswerPost": "完成后，从应用程序正常打开 LazySheet。如果您将其安装在其他位置，请修改路径以匹配其实际位置。",
+    "debQuestion": "在 Linux 上安装 .deb 时因缺少依赖而失败",
+    "debAnswerPre": "LazySheet 在 Linux 上运行需要 WebKitGTK 和 libsoup 运行时库。如果安装 .deb 时 apt 报告依赖未满足，请先运行以下命令安装它们：",
+    "debAnswerPost": "然后重新安装 .deb 包。在基于 Debian/Ubuntu 的发行版上，这可解决缺失的 WebKit 运行时库。",
     "copy": "复制",
     "copied": "已复制",
     "copyAria": "复制命令"
