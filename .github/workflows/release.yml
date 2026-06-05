@@ -137,6 +137,88 @@ jobs:
         with:
           args: ${{ matrix.args }}
 
+      # Bundled libwayland-*/libEGL* from the ubuntu-22.04 runner clash with the
+      # host Mesa stack on Fedora/Arch, producing "Could not create default EGL
+      # display: EGL_BAD_PARAMETER" and a blank window. Strip those libs so the
+      # host's own Mesa/Wayland stack is used — exactly how the deb/rpm behaves.
+      # See: tauri-apps/tauri#11988
+      - name: Fix AppImage bundled graphics libs
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          cd src-tauri/target/release/bundle/appimage
+
+          # Locate the single *.AppImage produced by tauri-action
+          APPIMAGE=$(ls *.AppImage 2>/dev/null | grep -v '\.tar\.gz' | head -n 1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "::error::No *.AppImage found in bundle/appimage — aborting strip step."
+            exit 1
+          fi
+          echo "Patching AppImage: $APPIMAGE"
+
+          # Record whether updater artifacts existed before repack
+          HAVE_TARGZ=false
+          HAVE_SIG=false
+          [ -f "${APPIMAGE}.tar.gz" ] && HAVE_TARGZ=true
+          [ -f "${APPIMAGE}.sig" ]    && HAVE_SIG=true
+
+          # Extract (no FUSE required)
+          ./"$APPIMAGE" --appimage-extract
+
+          # Strip bundled Wayland/EGL libs that clash with host Mesa
+          rm -f \
+            squashfs-root/usr/lib/libwayland-*.so* \
+            squashfs-root/usr/lib/libEGL*.so* \
+            squashfs-root/lib/libwayland-*.so* \
+            squashfs-root/lib/libEGL*.so*
+
+          # Audit log — confirm removal (informational; empty output = all stripped)
+          echo "=== Remaining graphics-related libs after strip ==="
+          find squashfs-root \( -name 'lib*wayland*' -o -name 'libEGL*' -o -name 'libGL*' \) | sort || true
+
+          # Download appimagetool (pinned continuous release, x86_64)
+          curl -fsSL --retry 3 \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" \
+            -o appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+          # Repack, overwriting the original AppImage in place
+          # --appimage-extract-and-run avoids FUSE requirement on CI containers
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage --appimage-extract-and-run \
+            squashfs-root "$APPIMAGE"
+          echo "Repacked: $APPIMAGE"
+
+          # Re-create updater artifacts if they existed before repack
+          if $HAVE_TARGZ; then
+            echo "Recreating ${APPIMAGE}.tar.gz"
+            tar czf "${APPIMAGE}.tar.gz" "$APPIMAGE"
+            if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+              echo "Re-signing ${APPIMAGE}.tar.gz"
+              bun x @tauri-apps/cli signer sign "${APPIMAGE}.tar.gz"
+            else
+              echo "TAURI_SIGNING_PRIVATE_KEY not set — skipping tar.gz re-sign."
+            fi
+          else
+            echo "No ${APPIMAGE}.tar.gz existed before repack — skipping."
+          fi
+
+          if $HAVE_SIG; then
+            if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+              echo "Re-signing ${APPIMAGE}"
+              bun x @tauri-apps/cli signer sign "$APPIMAGE"
+            else
+              echo "TAURI_SIGNING_PRIVATE_KEY not set — skipping AppImage re-sign."
+            fi
+          else
+            echo "No ${APPIMAGE}.sig existed before repack — skipping."
+          fi
+
+          # Cleanup temporary extraction artifacts
+          rm -rf squashfs-root appimagetool-x86_64.AppImage
+
       - name: Upload macOS artifact
         if: matrix.platform == 'macos-latest'
         uses: actions/upload-artifact@v4
@@ -155,6 +237,7 @@ jobs:
           name: artifact-linux
           path: |
             src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
             src-tauri/target/release/bundle/appimage/*.AppImage
             src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
             src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
@@ -314,6 +397,18 @@ jobs:
             echo '```bash'
             echo 'xattr -dr com.apple.quarantine "/Applications/LazySheet.app"'
             echo '```'
+            echo
+            echo "---"
+            echo
+            echo "### Linux — which file?"
+            echo
+            echo "| Package | Distro |"
+            echo "|---------|--------|"
+            echo "| \`.rpm\` | Fedora / openSUSE / RHEL |"
+            echo "| \`.deb\` | Ubuntu / Debian / Mint |"
+            echo "| \`.AppImage\` | Portable — any distro |"
+            echo
+            echo "> **Blank window on Fedora/Arch with AppImage?**  Prefer the \`.rpm\` package instead. The AppImage EGL clash is fixed in releases after v0.4.0; if you're on an older version see the README troubleshooting section."
           } > /tmp/release-notes.md
           # download-artifact preserves the bundle/ subdir layout, so artifacts/
           # holds files (dmg) alongside dirs (deb, appimage, msi, nsis). gh only

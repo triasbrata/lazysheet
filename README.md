@@ -44,6 +44,33 @@ xattr -dr com.apple.quarantine "/Applications/LazySheet.app"
 (Point the path at wherever the `.app` lives if you haven't moved it to
 `/Applications`.) Then open it normally.
 
+### Linux — troubleshooting
+
+#### Blank window / EGL crash on Fedora or Arch (AppImage ≤ 0.4.0)
+
+**Symptom:** the app opens to a blank white window, the terminal prints something like
+
+```
+Could not create default EGL display: EGL_BAD_PARAMETER
+WebKitWebProcess crashed
+```
+
+**Cause:** AppImage releases up to v0.4.0 bundle `libwayland-*` and `libEGL*` from the build runner. These conflict with the system Mesa stack on Fedora/Arch. The `.deb` and `.rpm` packages are not affected — they rely on the host libraries from the start.
+
+**Remedies (pick one):**
+
+1. **Prefer the native package** — download the `.rpm` (Fedora / openSUSE / RHEL) or `.deb` (Ubuntu / Debian / Mint) instead of the AppImage. Native packages use host graphics libs and do not have this issue.
+
+2. **Workaround for the affected AppImage** — extract, strip the bundled libs, and run `AppRun` directly:
+
+   ```bash
+   ./LazySheet_0.4.0_amd64.AppImage --appimage-extract
+   rm -f squashfs-root/usr/lib/libwayland-*.so* squashfs-root/usr/lib/libEGL*.so*
+   ./squashfs-root/AppRun
+   ```
+
+3. **Fixed in releases after v0.4.0** — the bundled conflicting libs are stripped at build time. Download the latest release to get the fixed AppImage.
+
 ## Build from source
 
 #### macOS
