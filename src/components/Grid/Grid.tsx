@@ -35,6 +35,7 @@ import {
   nextVisibleRow,
   headerBandStuck,
   FUNNEL_ALLOWANCE_X,
+  FUNNEL_ICON_PX,
   FUNNEL_ROW_MIN_HEIGHT,
   resolveActiveCoords,
   ROW_NUM_COL_WIDTH,
@@ -1343,6 +1344,12 @@ export function Grid({
     return null;
   };
 
+  // Funnel icon box (FUNNEL_ICON_PX logical) scaled by the grid zoom var.
+  const funnelIconStyle = {
+    width: `calc(${FUNNEL_ICON_PX}px * var(--grid-zoom, 1))`,
+    height: `calc(${FUNNEL_ICON_PX}px * var(--grid-zoom, 1))`,
+  } as const;
+
   // Shared helper — renders a funnel button + ColumnFilterDropdown for column i
   // triggered from the given source ("band" or "ruler").
   const renderFilterControl = (i: number, source: FilterSource, iconColor?: string) => {
@@ -1365,8 +1372,13 @@ export function Grid({
           aria-label="Filter column"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setOpenFilter({ col: i, source }); }}
-          className="inline-flex items-center justify-center rounded p-0.5 transition-opacity hover:opacity-60"
-          style={iconColor ? { color: iconColor } : undefined}
+          className="inline-flex items-center justify-center rounded transition-opacity hover:opacity-60"
+          // Icon box + padding scale with zoom so the funnel matches the
+          // FUNNEL_ALLOWANCE_X autofit reservation (logical px × zoom).
+          style={{
+            padding: "calc(2px * var(--grid-zoom, 1))",
+            ...(iconColor ? { color: iconColor } : undefined),
+          }}
         >
           {filterIsActive ? (
             <motion.span
@@ -1374,10 +1386,10 @@ export function Grid({
               animate={{ scale: [1, 1.18, 1], opacity: [1, 0.55, 1] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             >
-              <Filter className="size-3" fill="currentColor" />
+              <Filter style={funnelIconStyle} fill="currentColor" />
             </motion.span>
           ) : (
-            <Filter className="size-3" fill="currentColor" />
+            <Filter style={funnelIconStyle} fill="currentColor" />
           )}
         </button>
       </ColumnFilterDropdown>
