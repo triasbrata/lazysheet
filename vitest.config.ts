@@ -4,24 +4,29 @@ import path from "node:path";
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   test: {
-    include: ["src/**/*.test.ts"],
-    environment: "node",
+    environment: "jsdom",
+    globals: false,
+    setupFiles: ["src/test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
       // istanbul (not v8) is required: scripts/e2e.ts merges this unit coverage
       // with the e2e istanbul chunks via nyc. json -> coverage-final.json (nyc
       // merge); json-summary -> coverage-summary.json (scripts/coverage-total.ts).
       provider: "istanbul",
-      reporter: ["json", "json-summary", "text-summary"],
+      reporter: ["text", "json", "json-summary"],
       reportsDirectory: "coverage/unit",
-      include: ["src/**"],
+      include: ["src/**/*.{ts,tsx}"],
       exclude: [
-        "**/*.test.ts",
-        "**/*.d.ts",
         "src/main.tsx",
+        "src/vite-env.d.ts",
+        "src/lib/copy-as-image.ts",
+        "src/test/**",
+        "src/**/*.test.{ts,tsx}",
+        "src/**/*.d.ts",
         "e2e/**",
         "node_modules/**",
       ],
-      all: false,
+      thresholds: { lines: 95 },
     },
   },
 });
