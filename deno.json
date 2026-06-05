@@ -1,5 +1,0 @@
-{
-  "tasks": {
-    "test": "node_modules/.bin/vitest run --coverage && deno run --allow-read scripts/coverage-total.ts"
-  }
-}

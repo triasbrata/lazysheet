@@ -4,9 +4,9 @@
   "version": "0.5.0",
   "identifier": "id.edot.lazysheet",
   "build": {
-    "beforeDevCommand": "deno run dev",
+    "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "deno run build:web",
+    "beforeBuildCommand": "bun run build:web",
     "frontendDist": "../dist"
   },
   "app": {

@@ -90,10 +90,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          deno-version: v2.x
+          bun-version: latest
 
       - name: Install Linux build dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -121,10 +121,10 @@ jobs:
           workspaces: src-tauri -> target
 
       - name: Install frontend dependencies
-        run: deno install
+        run: bun install
 
       - name: Run tests
-        run: deno task test
+        run: bun run test
 
       - name: Build application
         uses: tauri-apps/tauri-action@v0

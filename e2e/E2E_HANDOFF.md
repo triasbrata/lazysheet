@@ -24,13 +24,13 @@ State as of 2026-06-04. E2E suite now runs end-to-end on macOS (was 100% failing
 ```sh
 cd /Users/triasbratayudhana/dev/lazysheet
 # build once (frontend instrumented + debug app w/ webdriver+custom-protocol):
-VITE_E2E=true deno task build:web
+VITE_E2E=true bun run build:web
 cargo build --manifest-path src-tauri/Cargo.toml --features webdriver
 # run specs (kill stray drivers first):
 pkill -f tauri-webdriver; pkill -f 'tauri-cache/debug/lazysheet'
-deno task e2e:run
+bun run e2e:run
 ```
-Full gate (build+specs+coverage 95%): `deno task test:e2e`.
+Full gate (build+specs+coverage 95%): `bun run test:e2e`.
 
 ## Current score: 4 passed, 10 failed (14 total)
 

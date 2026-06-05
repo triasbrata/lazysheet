@@ -1,4 +1,4 @@
-import * as XLSX from "npm:xlsx@^0.18.5";
+import * as XLSX from "xlsx";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run -A
+#!/usr/bin/env bun
 /**
  * Local deploy script.
  *
@@ -10,26 +10,26 @@
  * cross-platform artifacts and publishes the release.
  *
  * Usage:
- *   deno task app:deploy            # interactive, asks for confirmation
- *   deno task app:deploy --yes      # skip confirmation
- *   deno task app:deploy --dry-run  # print the plan, no git writes / push
- *   deno task app:deploy --skip-e2e # bypass the e2e gate (emergency escape hatch)
+ *   bun run app:deploy            # interactive, asks for confirmation
+ *   bun run app:deploy --yes      # skip confirmation
+ *   bun run app:deploy --dry-run  # print the plan, no git writes / push
+ *   bun run app:deploy --skip-e2e # bypass the e2e gate (emergency escape hatch)
  */
 
-import { $ } from "jsr:@david/dax@^0.43.0";
-import dotenv from "npm:dotenv@^17.4.2";
+import { $ } from "bun";
+import dotenv from "dotenv";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname!, "..");
-const args = new Set(Deno.args);
+const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has("--dry-run");
 const SKIP_CONFIRM = args.has("--yes") || args.has("-y");
 const SKIP_E2E = args.has("--skip-e2e");
 
 function die(msg: string): never {
   console.error(`\n✖ ${msg}\n`);
-  Deno.exit(1);
+  process.exit(1);
 }
 
 function log(msg: string) {
@@ -120,7 +120,7 @@ async function decideBump(
   currentVersion: string,
   commits: { subject: string }[],
 ): Promise<{ bump: Bump; version: string }> {
-  if (!Deno.env.get("CLAUDE_CODE_OAUTH_TOKEN") && !Deno.env.get("ANTHROPIC_API_KEY")) {
+  if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
     die(
       "no CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY in env — check .env",
     );
@@ -288,7 +288,7 @@ async function main() {
   if (!SKIP_E2E && !DRY_RUN) {
     log("Running e2e gate (native tauri-webdriver)…");
     try {
-      await $`deno run -A scripts/e2e.ts`.cwd(ROOT);
+      await $`bun run scripts/e2e.ts`.cwd(ROOT);
     } catch {
       die("E2E gate failed — release aborted (no git writes made). Fix tests, or re-run with --skip-e2e to override.");
     }

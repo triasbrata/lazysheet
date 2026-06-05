@@ -1,12 +1,13 @@
 // Prints one bottom-line total coverage % from vitest's json-summary report.
+import { readFileSync } from "node:fs";
 const SUMMARY = "coverage/unit/coverage-summary.json";
 
 let raw: string;
 try {
-  raw = await Deno.readTextFile(SUMMARY);
+  raw = readFileSync(SUMMARY, "utf8");
 } catch {
   console.error(`No coverage summary at ${SUMMARY}. Run vitest with --coverage first.`);
-  Deno.exit(1);
+  process.exit(1);
 }
 
 const { total } = JSON.parse(raw) as {

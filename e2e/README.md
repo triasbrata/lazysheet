@@ -8,9 +8,8 @@ End-to-end tests using [WebdriverIO](https://webdriver.io/) driving the **real T
 
 ## Prerequisites
 
-- Deno 2.x (`brew install deno` or [deno.com](https://deno.com))
+- Bun 1.x (https://bun.sh)
 - Rust stable + `cargo` (to build the app and install the driver)
-- Node 22+ and pnpm (via `corepack enable`)
 - The intermediary driver, installed once:
 
   ```sh
@@ -26,29 +25,29 @@ End-to-end tests using [WebdriverIO](https://webdriver.io/) driving the **real T
 ### One command (recommended)
 
 ```sh
-deno task test:e2e
+bun run test:e2e
 ```
 
-Cross-platform. This runs the full native flow: fixtures → instrumented frontend build (`VITE_E2E=true`) → debug app build → `pnpm install` → wdio specs (auto-wrapped in `xvfb-run` on Linux) → unit coverage → **95% frontend line-coverage gate** → backend coverage report. Exits non-zero if any spec fails or coverage is below 95%.
+Cross-platform. This runs the full native flow: fixtures → instrumented frontend build (`VITE_E2E=true`) → debug app build → `bun install` → wdio specs (auto-wrapped in `xvfb-run` on Linux) → unit coverage → **95% frontend line-coverage gate** → backend coverage report. Exits non-zero if any spec fails or coverage is below 95%.
 
 ### Manual / iterating on specs
 
 ```sh
 # 1. Generate fixture files (only needed once)
-deno task e2e:fixtures
+bun run e2e:fixtures
 
 # 2. Build the app with the E2E hook + instrumentation enabled
-deno task e2e:build-app        # VITE_E2E=true build:web && cargo build (debug)
+bun run e2e:build-app        # VITE_E2E=true build:web && cargo build (debug)
 
 # 3. Run the specs (driver is spawned automatically by wdio.conf.js)
-deno task e2e:run              # cd e2e && pnpm test
+bun run e2e:run              # cd e2e && bun run test
 ```
 
 On Linux, prefix step 3 with `xvfb-run -a`.
 
 ### Deploy gate (local only)
 
-E2E is **not** wired into GitHub Actions. It runs locally as a gate inside `pnpm app:deploy`: `scripts/deploy.ts` calls `deno task test:e2e` after the version-bump confirmation and **aborts the release (no git writes) if any spec fails or coverage is below 95%**. Bypass in an emergency with `pnpm app:deploy --skip-e2e`.
+E2E is **not** wired into GitHub Actions. It runs locally as a gate inside `bun run app:deploy`: `scripts/deploy.ts` calls `bun run test:e2e` after the version-bump confirmation and **aborts the release (no git writes) if any spec fails or coverage is below 95%**. Bypass in an emergency with `bun run app:deploy --skip-e2e`.
 
 ---
 
@@ -81,7 +80,7 @@ Fixtures live in `e2e/fixtures/`:
 Regenerate binary fixtures:
 
 ```sh
-deno task e2e:fixtures
+bun run e2e:fixtures
 ```
 
 ---
@@ -119,17 +118,17 @@ Or point at it explicitly: `TAURI_WEBDRIVER=/path/to/tauri-webdriver`.
 **`__E2E__` hook missing**
 The app wasn't built with `VITE_E2E=true`. Rebuild:
 ```sh
-deno task e2e:build-app
+bun run e2e:build-app
 ```
 
 **WebDriver server not reachable on `:4445`**
-The app was built without the plugin. Confirm you built with the feature: `cargo build --features webdriver` (or `deno task e2e:build-app`). Cargo does **not** support gating deps by `cfg(debug_assertions)`, which is why the plugin is a `webdriver` feature instead.
+The app was built without the plugin. Confirm you built with the feature: `cargo build --features webdriver` (or `bun run e2e:build-app`). Cargo does **not** support gating deps by `cfg(debug_assertions)`, which is why the plugin is a `webdriver` feature instead.
 
 **Locale / language selector failures**
 Tests force `lazysheet-language=en` via `prepareApp()`. If specs still see non-English text, ensure the app was opened freshly after `prepareApp()` and that no other test left stale localStorage state.
 
 **Linux: `xvfb-run: command not found` or no display**
-Install `xvfb` (`sudo apt-get install -y xvfb`). `deno task test:e2e` wraps wdio in `xvfb-run` automatically on Linux.
+Install `xvfb` (`sudo apt-get install -y xvfb`). `bun run test:e2e` wraps wdio in `xvfb-run` automatically on Linux.
 
 ---
 
@@ -146,7 +145,7 @@ Frontend coverage is the **merge of two istanbul sources**:
 After the specs finish, `scripts/e2e.ts` runs:
 
 ```sh
-cd e2e && pnpm run coverage
+cd e2e && bun run coverage
 ```
 
 Which expands to:

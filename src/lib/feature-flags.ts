@@ -11,7 +11,7 @@
 //
 // Setting flags:
 //   - In a .env file:       VITE_FF_AUTO_UPDATE=false
-//   - Inline at build time: VITE_FF_AUTO_UPDATE=false deno task build:web
+//   - Inline at build time: VITE_FF_AUTO_UPDATE=false bun run build:web
 //
 // IMPORTANT — static member access only:
 //   Vite replaces `import.meta.env.VITE_FF_X` at build time ONLY when the key is a

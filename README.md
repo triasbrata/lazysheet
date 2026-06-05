@@ -51,8 +51,8 @@ xattr -dr com.apple.quarantine "/Applications/LazySheet.app"
 ```bash
 git clone https://github.com/triasbrata/lazysheet.git
 cd lazysheet
-deno install
-deno task tauri build
+bun install
+bun run tauri build
 ```
 
 The `.app` / `.dmg` lands in `src-tauri/target/release/bundle/`.
@@ -62,8 +62,8 @@ The `.app` / `.dmg` lands in `src-tauri/target/release/bundle/`.
 ```bash
 git clone https://github.com/triasbrata/lazysheet.git
 cd lazysheet
-deno install
-deno task tauri build
+bun install
+bun run tauri build
 ```
 
 The installer (`.msi` / `.exe`) lands in `src-tauri/target/release/bundle/`.
@@ -73,13 +73,13 @@ The installer (`.msi` / `.exe`) lands in `src-tauri/target/release/bundle/`.
 ```bash
 git clone https://github.com/triasbrata/lazysheet.git
 cd lazysheet
-deno install
-deno task tauri build
+bun install
+bun run tauri build
 ```
 
 The `.deb` / `.AppImage` lands in `src-tauri/target/release/bundle/`.
 
-> Requires [Deno](https://deno.com) and the [Rust toolchain](https://rustup.rs) with [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
+> Requires [Bun 1.x](https://bun.sh) and the [Rust toolchain](https://rustup.rs) with [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
 ## Auto-Update (OTA)
 
@@ -90,7 +90,7 @@ Updates are verified with a [minisign](https://jedisct1.github.io/minisign/) sig
 ### Generate the signing key (one time)
 
 ```bash
-deno task tauri signer generate -w ~/.tauri/lazysheet.key
+bun run tauri signer generate -w ~/.tauri/lazysheet.key
 ```
 
 This prints two things:
@@ -135,8 +135,8 @@ On the next tagged release the workflow builds signed updater bundles plus a `la
 ## Develop
 
 ```bash
-deno install
-deno task tauri dev
+bun install
+bun run tauri dev
 ```
 
 ## Project Layout

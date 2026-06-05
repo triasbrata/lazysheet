@@ -122,7 +122,7 @@ export function cell(r: number, c: number) {
  */
 export async function dumpCoverage(): Promise<void> {
   // Only pull coverage when explicitly collecting (the e2e gate run sets
-  // E2E_COVERAGE). Skipped during ad-hoc `pnpm test` debugging: serializing the
+  // E2E_COVERAGE). Skipped during ad-hoc `bun run test` debugging: serializing the
   // whole window.__coverage__ object makes tauri-webdriver dump it to stdout,
   // flooding the spec output with hash/inputSourceMap noise.
   if (!process.env.E2E_COVERAGE) return;
