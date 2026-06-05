@@ -371,6 +371,10 @@ export const FUNNEL_ALLOWANCE_X = 22;
 // Funnel icon box height (size-3 = 12px). Autofit ensures a funnel-bearing
 // header row is at least tall enough to show the icon within vertical padding.
 export const FUNNEL_ICON_PX = 12;
+// Minimum height for a header row that bears filter funnels: icon box (12) plus
+// 2× cell vertical padding (6px each). Single source for the autofit floor and
+// the virtualizer estimate, so a cache-clear never collapses the header row.
+export const FUNNEL_ROW_MIN_HEIGHT = FUNNEL_ICON_PX + 12;
 
 // Compute the absolute top/bottom pixel span for a row selection range.
 // measurements is virtual-position-indexed (not absolute-row-indexed), so

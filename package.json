@@ -16,7 +16,10 @@
     "app:deploy": "deno run -A scripts/deploy.ts",
     "e2e:fixtures": "deno run -A e2e/fixtures/generate.ts",
     "e2e:build-app": "VITE_E2E=true deno task build:web && cargo build --manifest-path src-tauri/Cargo.toml --features webdriver",
+    "e2e:dev:vite": "VITE_E2E=true vite",
+    "e2e:dev:build-app": "cargo build --manifest-path src-tauri/Cargo.toml --features webdriver-dev",
     "e2e:run": "cd e2e && pnpm test",
+    "e2e:full:run": "deno task e2e:build-app && deno task e2e:run",
     "test:e2e": "deno run -A scripts/e2e.ts"
   },
   "dependencies": {

@@ -12,7 +12,7 @@ pub fn run() {
 
     // E2E WebDriver automation server — only when built with `--features webdriver`,
     // never in release. Powers native cross-platform e2e via tauri-webdriver.
-    #[cfg(feature = "webdriver")]
+    #[cfg(any(feature = "webdriver", feature = "webdriver-dev"))]
     {
         builder = builder.plugin(tauri_plugin_webdriver::init());
     }

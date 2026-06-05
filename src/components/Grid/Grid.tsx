@@ -35,7 +35,7 @@ import {
   nextVisibleRow,
   headerBandStuck,
   FUNNEL_ALLOWANCE_X,
-  FUNNEL_ICON_PX,
+  FUNNEL_ROW_MIN_HEIGHT,
   resolveActiveCoords,
   ROW_NUM_COL_WIDTH,
   sampleRowIndices,
@@ -308,7 +308,7 @@ export function Grid({
       // The header row carries inline funnels; keep it tall enough for the icon
       // (icon box + 2× cell vertical padding of 6px).
       if (rowIdx === headerRow && groupByAnchor.size > 0) {
-        return Math.max(measured, FUNNEL_ICON_PX + 12);
+        return Math.max(measured, FUNNEL_ROW_MIN_HEIGHT);
       }
       return measured;
     },
@@ -1086,7 +1086,20 @@ export function Grid({
   const rowVirtualizer = useVirtualizer({
     count: visibleRowIndices.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (i) => { const r = visibleRowIndices[i]; return heights[r] ?? DEFAULT_ROW_HEIGHT; },
+    estimateSize: (i) => {
+      const r = visibleRowIndices[i];
+      const h = heights[r] ?? DEFAULT_ROW_HEIGHT;
+      // Floor the funnel-bearing header row at FUNNEL_ROW_MIN_HEIGHT so a
+      // measure() cache-clear (file re-open / font-ready) never collapses it to
+      // the native estimate and then async re-grows — that gap is a visible
+      // height shift. Skip while this row is mid drag-resize (heights[r] is the
+      // live preview): flooring then would block shrinking the header below 24.
+      const previewing = rowPreview?.idx === r;
+      if (r === headerRow && groupByAnchor.size > 0 && !previewing) {
+        return Math.max(h, FUNNEL_ROW_MIN_HEIGHT);
+      }
+      return h;
+    },
     getItemKey: (i) => visibleRowIndices[i] ?? i,
     overscan: 8,
     measureElement: (el) =>
@@ -1115,6 +1128,18 @@ export function Grid({
       prevSheetRef.current = sheet;
       prevRowOverridesRef.current = rowOverrides;
       rowVirtualizer.measure();
+      // measure() wipes the size cache. On (re)open the row DOM nodes are reused
+      // (stable row-index keys), so measureElement/ResizeObserver won't re-fire to
+      // reseed the cache — a funnel header would stay at the estimate (collapsed,
+      // funnel overlapping text). Queue the currently-rendered rows for the
+      // real-DOM remeasure below (useLayoutEffect runs pre-paint, before the user
+      // sees the collapsed frame).
+      for (const vr of virtualRows) {
+        const r = visibleRowIndices[vr.index];
+        if (r !== undefined && r >= 0 && r < totalRows) {
+          pendingMeasureRowsRef.current.add(r);
+        }
+      }
       return;
     }
     const changed = changedRowIndices(prevRowOverridesRef.current, rowOverrides);
@@ -1127,6 +1152,22 @@ export function Grid({
     }
     prevRowOverridesRef.current = rowOverrides;
   }, [rowOverrides, sheet, totalRows, rowVirtualizer, visiblePos]);
+
+  // One-shot remeasure once the real Geist glyphs load. The first measure runs
+  // with the fallback font (shorter line box), so rows whose content has no
+  // height override settle to a too-small box and—because measureElement only
+  // fires on a DOM size change—stay squished after the font swaps in. Forcing a
+  // measure() when document.fonts.ready resolves discards the stale cache so
+  // measureElement re-reads each row at its real glyph height.
+  useEffect(() => {
+    let cancelled = false;
+    void awaitFontsReady().then(() => {
+      if (!cancelled) rowVirtualizer.measure();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rowVirtualizer]);
 
   // After each render, measure actual DOM height for recently-resized rows and
   // correct the virtualizer. Needed because overflow:visible cells keep the row

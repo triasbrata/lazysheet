@@ -47,3 +47,7 @@ tauri-plugin-process = "2"
 # (../dist) instead of the dev server URL (localhost:1420). Without it a plain
 # `cargo build` is a `dev` build that loads devUrl → blank window in e2e.
 webdriver = ["dep:tauri-plugin-webdriver", "tauri/custom-protocol"]
+# Same WebDriver server, but NO custom-protocol → the binary is a `dev` build
+# that loads devUrl (localhost:1420). Run `VITE_E2E=true deno task dev` alongside
+# it to drive specs against the live Vite server (HMR, no dist rebuild per change).
+webdriver-dev = ["dep:tauri-plugin-webdriver"]
