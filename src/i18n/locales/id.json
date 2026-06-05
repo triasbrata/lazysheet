@@ -92,6 +92,9 @@
     "debQuestion": "Memasang .deb di Linux gagal karena dependensi yang hilang",
     "debAnswerPre": "LazySheet membutuhkan pustaka runtime WebKitGTK dan libsoup untuk berjalan di Linux. Jika apt melaporkan dependensi yang belum terpenuhi saat memasang .deb, pasang dulu dengan menjalankan:",
     "debAnswerPost": "Lalu pasang ulang paket .deb. Pada distro berbasis Debian/Ubuntu, ini mengatasi pustaka runtime WebKit yang hilang.",
+    "appimageQuestion": "AppImage menampilkan jendela kosong di Fedora atau Arch?",
+    "appimageAnswerPre": "AppImage hingga v0.4.0 menyertakan pustaka grafis (libwayland/libEGL) yang bertentangan dengan driver Mesa sistem, sehingga WebKit crash saat startup. Di Fedora, solusi termudah adalah memasang paket .rpm sebagai gantinya. Untuk tetap menggunakan AppImage yang terpengaruh, ekstrak dan hapus pustaka yang bertentangan:",
+    "appimageAnswerPost": "Masalah ini telah diperbaiki pada rilis setelah v0.4.0 — mengunduh AppImage terbaru juga menyelesaikannya.",
     "copy": "Salin",
     "copied": "Disalin",
     "copyAria": "Salin perintah"

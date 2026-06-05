@@ -92,6 +92,9 @@
     "debQuestion": "在 Linux 上安装 .deb 时因缺少依赖而失败",
     "debAnswerPre": "LazySheet 在 Linux 上运行需要 WebKitGTK 和 libsoup 运行时库。如果安装 .deb 时 apt 报告依赖未满足，请先运行以下命令安装它们：",
     "debAnswerPost": "然后重新安装 .deb 包。在基于 Debian/Ubuntu 的发行版上，这可解决缺失的 WebKit 运行时库。",
+    "appimageQuestion": "AppImage 在 Fedora 或 Arch 上显示空白窗口？",
+    "appimageAnswerPre": "v0.4.0 及更早版本的 AppImage 捆绑了图形库（libwayland/libEGL），与系统的 Mesa 驱动冲突，导致 WebKit 在启动时崩溃。在 Fedora 上，最简单的解决方法是改为安装 .rpm 包。如需继续使用受影响的 AppImage，可将其解包并删除冲突库：",
+    "appimageAnswerPost": "此问题已在 v0.4.0 之后的版本中修复——下载最新的 AppImage 同样可以解决该问题。",
     "copy": "复制",
     "copied": "已复制",
     "copyAria": "复制命令"

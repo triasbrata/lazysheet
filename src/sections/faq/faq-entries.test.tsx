@@ -25,9 +25,9 @@ function Probe({ tag }: { tag: string }) {
 
 describe('useFaqEntries — version filtering', () => {
   describe('activeTag v0.4.0 (exact match)', () => {
-    it('returns 2 entries', () => {
+    it('returns 3 entries', () => {
       renderWithI18n(<Probe tag="v0.4.0" />)
-      expect(screen.getByTestId('count').textContent).toBe('2')
+      expect(screen.getByTestId('count').textContent).toBe('3')
     })
 
     it('unsigned question text is visible', () => {
@@ -46,6 +46,13 @@ describe('useFaqEntries — version filtering', () => {
       ).toBeTruthy()
     })
 
+    it('appimage-egl question text is visible', () => {
+      renderWithI18n(<Probe tag="v0.4.0" />)
+      expect(
+        screen.getByText('AppImage shows a blank window on Fedora or Arch?'),
+      ).toBeTruthy()
+    })
+
     it('xattr command appears in the unsigned answer body', () => {
       renderWithI18n(<Probe tag="v0.4.0" />)
       expect(
@@ -61,15 +68,30 @@ describe('useFaqEntries — version filtering', () => {
         ),
       ).toBeTruthy()
     })
-  })
 
-  describe('activeTag v9.9.9 (far future — both entries <= active)', () => {
-    it('returns 2 entries', () => {
-      renderWithI18n(<Probe tag="v9.9.9" />)
-      expect(screen.getByTestId('count').textContent).toBe('2')
+    it('appimage extract+prune command appears in the appimage-egl answer body', () => {
+      renderWithI18n(<Probe tag="v0.4.0" />)
+      expect(
+        screen.getByText(
+          './LazySheet_0.4.0_amd64.AppImage --appimage-extract && rm -f squashfs-root/usr/lib/libwayland-*.so* squashfs-root/usr/lib/libEGL*.so* && ./squashfs-root/AppRun',
+        ),
+      ).toBeTruthy()
     })
 
-    it('both question texts are visible', () => {
+    it('appimage-egl entry has version v0.4.0', () => {
+      renderWithI18n(<Probe tag="v0.4.0" />)
+      // entry is rendered, confirming it is included at this version
+      expect(screen.getByTestId('question-appimage-egl')).toBeTruthy()
+    })
+  })
+
+  describe('activeTag v9.9.9 (far future — all entries <= active)', () => {
+    it('returns 3 entries', () => {
+      renderWithI18n(<Probe tag="v9.9.9" />)
+      expect(screen.getByTestId('count').textContent).toBe('3')
+    })
+
+    it('all three question texts are visible', () => {
       renderWithI18n(<Probe tag="v9.9.9" />)
       expect(
         screen.getByText(
@@ -79,10 +101,13 @@ describe('useFaqEntries — version filtering', () => {
       expect(
         screen.getByText('Installing the .deb on Linux fails with missing dependencies'),
       ).toBeTruthy()
+      expect(
+        screen.getByText('AppImage shows a blank window on Fedora or Arch?'),
+      ).toBeTruthy()
     })
   })
 
-  describe('activeTag v0.0.1 (below all entry versions — cumulative filter excludes both)', () => {
+  describe('activeTag v0.0.1 (below all entry versions — cumulative filter excludes all)', () => {
     it('returns 0 entries', () => {
       renderWithI18n(<Probe tag="v0.0.1" />)
       expect(screen.getByTestId('count').textContent).toBe('0')
@@ -101,6 +126,13 @@ describe('useFaqEntries — version filtering', () => {
       renderWithI18n(<Probe tag="v0.0.1" />)
       expect(
         screen.queryByText('Installing the .deb on Linux fails with missing dependencies'),
+      ).toBeNull()
+    })
+
+    it('appimage-egl question text is NOT in the document', () => {
+      renderWithI18n(<Probe tag="v0.0.1" />)
+      expect(
+        screen.queryByText('AppImage shows a blank window on Fedora or Arch?'),
       ).toBeNull()
     })
   })

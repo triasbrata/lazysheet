@@ -61,6 +61,25 @@ export function useFaqEntries(activeTag: string): FaqEntry[] {
         </>
       ),
     },
+    {
+      id: 'appimage-egl',
+      version: 'v0.4.0',
+      icon: LinuxMark,
+      question: t('faq.appimageQuestion'),
+      body: (
+        <>
+          <p className="mb-4 text-on-surface-variant">
+            {t('faq.appimageAnswerPre')}
+          </p>
+
+          <CopyCommand command={'./LazySheet_0.4.0_amd64.AppImage --appimage-extract && rm -f squashfs-root/usr/lib/libwayland-*.so* squashfs-root/usr/lib/libEGL*.so* && ./squashfs-root/AppRun'} />
+
+          <p className="mt-4 text-sm text-on-surface-variant">
+            {t('faq.appimageAnswerPost')}
+          </p>
+        </>
+      ),
+    },
   ]
 
   return all.filter((e) => compareVersions(e.version, activeTag) <= 0)

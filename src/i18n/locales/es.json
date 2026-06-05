@@ -92,6 +92,9 @@
     "debQuestion": "La instalación del .deb en Linux falla por dependencias faltantes",
     "debAnswerPre": "LazySheet necesita las bibliotecas de ejecución WebKitGTK y libsoup para funcionar en Linux. Si apt informa dependencias no satisfechas al instalar el .deb, instálalas primero ejecutando:",
     "debAnswerPost": "Luego vuelve a instalar el paquete .deb. En distribuciones basadas en Debian/Ubuntu esto resuelve las bibliotecas de ejecución de WebKit que faltan.",
+    "appimageQuestion": "¿El AppImage muestra una ventana en blanco en Fedora o Arch?",
+    "appimageAnswerPre": "El AppImage hasta v0.4.0 incluía bibliotecas gráficas (libwayland/libEGL) que entran en conflicto con los controladores Mesa del sistema, por lo que WebKit falla al iniciar. En Fedora, la solución más sencilla es instalar el paquete .rpm en su lugar. Para seguir usando el AppImage afectado, extráelo y elimina las bibliotecas en conflicto:",
+    "appimageAnswerPost": "Esto se corrigió en las versiones posteriores a v0.4.0 — descargar el AppImage más reciente también lo resuelve.",
     "copy": "Copiar",
     "copied": "Copiado",
     "copyAria": "Copiar comando"
