@@ -9,6 +9,7 @@ interface ImportMetaEnv {
    * value = enabled; 'false' | '0' | 'off' = disabled. Declare each flag here
    * as `readonly VITE_FF_<NAME>?: string;`. See src/lib/feature-flags.ts.
    */
+  readonly VITE_FF_MULTI_LANG?: string;
 }
 
 interface ImportMeta {

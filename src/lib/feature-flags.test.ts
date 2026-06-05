@@ -65,7 +65,8 @@ describe("flags", () => {
     expect(flags).not.toBeNull();
   });
 
-  it("is empty today (no flags registered yet)", () => {
-    expect(Object.keys(flags)).toHaveLength(0);
+  it("flags.multiLang is true by default (env var absent)", () => {
+    // In test env VITE_FF_MULTI_LANG is not set → parseFlag(undefined) → true
+    expect(flags.multiLang).toBe(true);
   });
 });

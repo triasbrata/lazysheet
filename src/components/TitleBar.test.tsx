@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderWithProviders, screen, userEvent } from "@/test/render";
 import { TitleBar } from "./TitleBar";
 
@@ -164,5 +164,32 @@ describe("TitleBar — command search bar", () => {
     const searchBar = screen.getByTitle(/Open command center/i);
     await user.click(searchBar);
     expect(onOpenCommand).toHaveBeenCalledOnce();
+  });
+});
+
+describe("TitleBar — VITE_FF_MULTI_LANG feature flag", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("shows lang-toggle-btn when flag is ON (default env)", () => {
+    // Default: VITE_FF_MULTI_LANG not set → flags.multiLang = true
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
+    );
+    expect(screen.getByTestId("lang-toggle-btn")).toBeInTheDocument();
+  });
+
+  it("hides lang-toggle-btn when VITE_FF_MULTI_LANG=false", async () => {
+    vi.stubEnv("VITE_FF_MULTI_LANG", "false");
+    vi.resetModules();
+
+    // Re-import TitleBar after module reset so it picks up the new flags value
+    const { TitleBar: TitleBarOff } = await import("./TitleBar");
+    const { renderWithProviders: rwp, screen: s } = await import("@/test/render");
+
+    rwp(<TitleBarOff fileName="file.xlsx" onOpenCommand={vi.fn()} />);
+    expect(s.queryByTestId("lang-toggle-btn")).toBeNull();
   });
 });

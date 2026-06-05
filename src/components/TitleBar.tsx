@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { flags } from "@/lib/feature-flags";
 
 const isMac =
   typeof navigator !== "undefined" &&
@@ -107,7 +108,7 @@ export function TitleBar({
       </button>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <LanguageToggle />
+        {flags.multiLang && <LanguageToggle />}
         <ModeToggle />
 
         {fileName && onClose && (

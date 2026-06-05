@@ -52,4 +52,6 @@ export function parseFlag(raw: string | undefined): boolean {
  * Each entry is evaluated once at module load (build-time constant after Vite
  * replacement). Consumers read e.g. `flags.autoUpdate`.
  */
-export const flags = {} as const satisfies Readonly<Record<string, boolean>>;
+export const flags = {
+  multiLang: parseFlag(import.meta.env.VITE_FF_MULTI_LANG),
+} as const satisfies Readonly<Record<string, boolean>>;
