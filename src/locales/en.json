@@ -1,7 +1,7 @@
 {
   "common": { "appName": "LazySheet", "openingEllipsis": "Opening…", "ok": "OK", "cancel": "Cancel", "truncatedSuffix": " (truncated)" },
   "welcome": { "title": "Open a spreadsheet", "dropHint": "Drop a file here, or browse to open", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "Open File", "recent": "Recent" },
-  "titlebar": { "dragFileOut": "Drag file out", "fileActions": "File actions", "fileActionsLabel": "File Actions", "copyFile": "Copy file", "copyFilePath": "Copy file path", "searchCommands": "Search commands…", "openCommandCenter": "Open command center ({{shortcut}})" },
+  "titlebar": { "dragFileOut": "Drag file out", "fileActions": "File actions", "fileActionsLabel": "File Actions", "copyFile": "Copy file", "copyFilePath": "Copy file path", "searchCommands": "Search commands…", "openCommandCenter": "Open command center ({{shortcut}})", "minimize": "Minimize", "maximize": "Maximize", "restore": "Restore", "closeWindow": "Close" },
   "theme": { "toggle": "Toggle theme", "light": "Light", "dark": "Dark", "system": "System" },
   "language": { "toggle": "Change language" },
   "statusbar": { "selectionSize_one": "{{rows}}R × {{cols}}C · {{count}} cell", "selectionSize_other": "{{rows}}R × {{cols}}C · {{count}} cells", "activeCell": "Active cell", "analyze": "Analyze", "summaryTitle": "Group-by summary ({{shortcut}})", "zoomIn": "Zoom in", "zoomOut": "Zoom out", "zoomReset": "Reset zoom to 100%" },

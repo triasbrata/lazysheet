@@ -2,6 +2,22 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderWithProviders, screen, userEvent } from "@/test/render";
 import { TitleBar } from "./TitleBar";
 
+// ---------------------------------------------------------------------------
+// Mock @/lib/platform — default to "macos" so all existing tests pass unchanged
+// ---------------------------------------------------------------------------
+vi.mock("@/lib/platform", () => ({
+  getPlatform: vi.fn(() => "macos" as const),
+}));
+
+// ---------------------------------------------------------------------------
+// Mock @/components/WindowControls — stub to avoid Tauri API calls in effects
+// ---------------------------------------------------------------------------
+vi.mock("@/components/WindowControls", () => ({
+  WindowControls: ({ platform }: { platform: string }) => (
+    <div data-testid="window-controls" data-platform={platform} />
+  ),
+}));
+
 const noop = vi.fn();
 
 describe("TitleBar — fileName display", () => {
@@ -191,5 +207,46 @@ describe("TitleBar — VITE_FF_MULTI_LANG feature flag", () => {
 
     rwp(<TitleBarOff fileName="file.xlsx" onOpenCommand={vi.fn()} />);
     expect(s.queryByTestId("lang-toggle-btn")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Platform-conditional padding + WindowControls
+// ---------------------------------------------------------------------------
+describe("TitleBar — platform-conditional layout", () => {
+  it("macOS: root titlebar has pl-20 class and no window-controls", async () => {
+    const { getPlatform } = await import("@/lib/platform");
+    vi.mocked(getPlatform).mockReturnValue("macos");
+
+    renderWithProviders(<TitleBar fileName="file.xlsx" onOpenCommand={noop} />);
+
+    const titlebar = screen.getByTestId("titlebar");
+    expect(titlebar.className).toContain("pl-20");
+    expect(titlebar.className).not.toContain("pl-3");
+    expect(screen.queryByTestId("window-controls")).toBeNull();
+  });
+
+  it("windows: root titlebar has pl-3 (not pl-20) and window-controls is present", async () => {
+    const { getPlatform } = await import("@/lib/platform");
+    vi.mocked(getPlatform).mockReturnValue("windows");
+
+    renderWithProviders(<TitleBar fileName="file.xlsx" onOpenCommand={noop} />);
+
+    const titlebar = screen.getByTestId("titlebar");
+    expect(titlebar.className).toContain("pl-3");
+    expect(titlebar.className).not.toContain("pl-20");
+    expect(screen.getByTestId("window-controls")).toBeInTheDocument();
+  });
+
+  it("linux: root titlebar has pl-3 (not pl-20) and window-controls is present", async () => {
+    const { getPlatform } = await import("@/lib/platform");
+    vi.mocked(getPlatform).mockReturnValue("linux");
+
+    renderWithProviders(<TitleBar fileName="file.xlsx" onOpenCommand={noop} />);
+
+    const titlebar = screen.getByTestId("titlebar");
+    expect(titlebar.className).toContain("pl-3");
+    expect(titlebar.className).not.toContain("pl-20");
+    expect(screen.getByTestId("window-controls")).toBeInTheDocument();
   });
 });

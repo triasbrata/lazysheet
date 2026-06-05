@@ -49,12 +49,12 @@ describe("useFileEvents", () => {
     );
   });
 
-  it("calls takePendingFiles on mount", async () => {
+  it("drains pending files twice on mount (drain#1 before listeners, drain#2 after)", async () => {
     const onOpen = vi.fn();
     await act(async () => {
       renderHook(() => useFileEvents(onOpen));
     });
-    expect(mockTakePendingFiles).toHaveBeenCalledTimes(1);
+    expect(mockTakePendingFiles).toHaveBeenCalledTimes(2);
   });
 
   it("calls onOpen with first supported pending file on mount", async () => {
@@ -195,14 +195,19 @@ describe("useFileEvents", () => {
     expect(unlistenDrop).toHaveBeenCalledTimes(1);
   });
 
-  it("does not call onOpen after unmount (cancelled flag)", async () => {
-    // Slow takePendingFiles that resolves after unmount
-    let resolvePending: (v: string[]) => void;
-    mockTakePendingFiles.mockReturnValue(
-      new Promise<string[]>((res) => {
-        resolvePending = res;
-      }),
-    );
+  it("drain resolving after unmount still delivers path (destructive drain must never discard)", async () => {
+    // The Rust-side drain is destructive: once consumed the path is gone. If we
+    // discarded drained paths after cleanup we would silently lose files. The
+    // cancelled-guard was removed intentionally to prevent that data-loss bug.
+    let resolveDrain1: (v: string[]) => void;
+    mockTakePendingFiles
+      .mockReturnValueOnce(
+        new Promise<string[]>((res) => {
+          resolveDrain1 = res;
+        }),
+      )
+      .mockResolvedValueOnce([]);
+
     mockIsSupportedFile.mockReturnValue(true);
 
     const onOpen = vi.fn();
@@ -212,17 +217,19 @@ describe("useFileEvents", () => {
       unmount = result.unmount;
     });
 
-    // Unmount before the pending promise resolves
+    // Unmount before drain#1 resolves
     act(() => {
       unmount();
     });
 
-    // Now resolve with a supported file — onOpen must NOT be called
+    // Resolve drain#1 after unmount — path MUST still be delivered because the
+    // drain already consumed it from the Rust side; discarding it would lose it.
     await act(async () => {
-      resolvePending!(["/tmp/late.xlsx"]);
+      resolveDrain1!(["/tmp/late.xlsx"]);
     });
 
-    expect(onOpen).not.toHaveBeenCalled();
+    expect(onOpen).toHaveBeenCalledWith("/tmp/late.xlsx");
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
   it("isSupportedFile filter applied to files-opened paths", async () => {
@@ -241,5 +248,140 @@ describe("useFileEvents", () => {
 
     expect(onOpen).toHaveBeenCalledWith("/tmp/file.xlsx");
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("drained path survives remount (path from first mount's drain#1 delivered after remount)", async () => {
+    // Mount, unmount BEFORE drain#1 resolves, remount, then resolve drain#1.
+    // The path must still be delivered exactly once because the drain already
+    // consumed it from the Rust side on the first mount.
+    let resolveDrain1First: (v: string[]) => void;
+
+    // First mount: drain#1 is slow, drain#2 returns []
+    mockTakePendingFiles
+      .mockReturnValueOnce(
+        new Promise<string[]>((res) => {
+          resolveDrain1First = res;
+        }),
+      )
+      .mockResolvedValueOnce([]) // first mount drain#2
+      .mockResolvedValueOnce([]) // second mount drain#1
+      .mockResolvedValueOnce([]); // second mount drain#2
+
+    mockIsSupportedFile.mockImplementation((p: string) => p.endsWith(".xlsx"));
+
+    const onOpen = vi.fn();
+
+    // First mount
+    let unmount: () => void;
+    act(() => {
+      const result = renderHook(() => useFileEvents(onOpen));
+      unmount = result.unmount;
+    });
+
+    // Unmount before drain#1 resolves
+    act(() => {
+      unmount();
+    });
+
+    // Second mount
+    await act(async () => {
+      renderHook(() => useFileEvents(onOpen));
+    });
+
+    // Resolve drain#1 from first mount — must deliver exactly once
+    await act(async () => {
+      resolveDrain1First!(["/tmp/b.xlsx"]);
+    });
+
+    expect(onOpen).toHaveBeenCalledWith("/tmp/b.xlsx");
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("drain#2 catches path queued during listener-registration gap", async () => {
+    // drain#1 returns [], but a file arrives in the gap between drain#1 and
+    // listener registration. drain#2 should pick it up.
+    mockTakePendingFiles
+      .mockResolvedValueOnce([]) // drain#1: empty
+      .mockResolvedValueOnce(["/tmp/d.xlsx"]); // drain#2: catches the race
+
+    mockIsSupportedFile.mockImplementation((p: string) => p.endsWith(".xlsx"));
+
+    const onOpen = vi.fn();
+    await act(async () => {
+      renderHook(() => useFileEvents(onOpen));
+    });
+
+    expect(onOpen).toHaveBeenCalledWith("/tmp/d.xlsx");
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("drain#2 dedupes path already delivered by event before drain#2 resolves", async () => {
+    // drain#1 returns [], the event fires ["/tmp/e.xlsx"] (listener already
+    // registered), then drain#2 also returns ["/tmp/e.xlsx"].
+    // The delivered-set must prevent a second call to onOpen.
+    let resolveDrain2: (v: string[]) => void;
+
+    mockTakePendingFiles
+      .mockResolvedValueOnce([]) // drain#1: empty
+      .mockReturnValueOnce(
+        new Promise<string[]>((res) => {
+          resolveDrain2 = res;
+        }),
+      ); // drain#2: deferred so event fires first
+
+    mockIsSupportedFile.mockImplementation((p: string) => p.endsWith(".xlsx"));
+
+    const onOpen = vi.fn();
+
+    // Mount and let drain#1 + listener registration complete, but drain#2 is
+    // still pending.
+    act(() => {
+      renderHook(() => useFileEvents(onOpen));
+    });
+    // Flush microtasks so drain#1 and listener registration resolve
+    await act(async () => {});
+
+    // Event fires while drain#2 is still pending
+    await act(async () => {
+      filesOpenedCb?.(["/tmp/e.xlsx"]);
+    });
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+
+    // drain#2 resolves with the same path — delivered-set should suppress it
+    await act(async () => {
+      resolveDrain2!(["/tmp/e.xlsx"]);
+    });
+
+    expect(onOpen).toHaveBeenCalledTimes(1); // still only once
+  });
+
+  it("event re-delivers same path later (warm reopen not blocked by delivered set)", async () => {
+    // drain#1 delivers "/tmp/f.xlsx". Later the user opens the same file again
+    // via the event. The event path is NOT blocked by the delivered-set (only
+    // drain deliveries are deduplicated), so onOpen must be called twice total.
+    mockTakePendingFiles
+      .mockResolvedValueOnce(["/tmp/f.xlsx"]) // drain#1
+      .mockResolvedValueOnce([]); // drain#2
+
+    mockIsSupportedFile.mockImplementation((p: string) => p.endsWith(".xlsx"));
+
+    const onOpen = vi.fn();
+    await act(async () => {
+      renderHook(() => useFileEvents(onOpen));
+    });
+
+    // First delivery via drain#1
+    expect(onOpen).toHaveBeenCalledWith("/tmp/f.xlsx");
+    expect(onOpen).toHaveBeenCalledTimes(1);
+
+    // User re-opens the same file via the event (warm reopen)
+    await act(async () => {
+      filesOpenedCb?.(["/tmp/f.xlsx"]);
+    });
+
+    // Must be called again — event deliveries bypass the delivered-set
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    expect(onOpen).toHaveBeenNthCalledWith(2, "/tmp/f.xlsx");
   });
 });

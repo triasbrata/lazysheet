@@ -37,6 +37,10 @@ export const config: WebdriverIO.Config = {
       },
     } as WebdriverIO.Capabilities,
   ],
+  // Keep wdio's own logging quiet (webdriver DEBUG/INFO command spam) — the
+  // spec reporter still prints per-test results and failure stacks.
+  // Override with WDIO_LOG_LEVEL=debug when debugging the driver itself.
+  logLevel: (process.env.WDIO_LOG_LEVEL as WebdriverIO.Config["logLevel"]) || "error",
   reporters: ["spec"],
   framework: "mocha",
   mochaOpts: {

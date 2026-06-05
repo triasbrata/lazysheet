@@ -1,7 +1,7 @@
 {
   "common": { "appName": "LazySheet", "openingEllipsis": "Abriendo…", "ok": "OK", "cancel": "Cancelar", "truncatedSuffix": " (truncado)" },
   "welcome": { "title": "Abrir una hoja de cálculo", "dropHint": "Suelta un archivo aquí o explora para abrir", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "Abrir archivo", "recent": "Recientes" },
-  "titlebar": { "dragFileOut": "Arrastrar archivo fuera", "fileActions": "Acciones de archivo", "fileActionsLabel": "Acciones de archivo", "copyFile": "Copiar archivo", "copyFilePath": "Copiar ruta del archivo", "searchCommands": "Buscar comandos…", "openCommandCenter": "Abrir centro de comandos ({{shortcut}})" },
+  "titlebar": { "dragFileOut": "Arrastrar archivo fuera", "fileActions": "Acciones de archivo", "fileActionsLabel": "Acciones de archivo", "copyFile": "Copiar archivo", "copyFilePath": "Copiar ruta del archivo", "searchCommands": "Buscar comandos…", "openCommandCenter": "Abrir centro de comandos ({{shortcut}})", "minimize": "Minimizar", "maximize": "Maximizar", "restore": "Restaurar", "closeWindow": "Cerrar" },
   "theme": { "toggle": "Cambiar tema", "light": "Claro", "dark": "Oscuro", "system": "Sistema" },
   "language": { "toggle": "Cambiar idioma" },
   "statusbar": { "selectionSize_one": "{{rows}}F × {{cols}}C · {{count}} celda", "selectionSize_other": "{{rows}}F × {{cols}}C · {{count}} celdas", "activeCell": "Celda activa", "analyze": "Analizar", "summaryTitle": "Resumen por grupos ({{shortcut}})", "zoomIn": "Acercar", "zoomOut": "Alejar", "zoomReset": "Restablecer zoom al 100%" },

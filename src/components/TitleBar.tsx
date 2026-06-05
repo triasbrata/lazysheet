@@ -12,11 +12,9 @@ import {
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { flags } from "@/lib/feature-flags";
-
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const cmdShortcut = isMac ? "⌘P" : "Ctrl P";
+import { getPlatform } from "@/lib/platform";
+import { WindowControls } from "@/components/WindowControls";
+import { cn } from "@/lib/utils";
 
 interface TitleBarProps {
   fileName: string | null;
@@ -38,11 +36,16 @@ export function TitleBar({
   onDragOut,
 }: TitleBarProps) {
   const { t } = useTranslation();
+  const platform = getPlatform();
+  const cmdShortcut = platform === "macos" ? "⌘P" : "Ctrl P";
   return (
     <div
       data-tauri-drag-region
       data-testid="titlebar"
-      className="relative flex h-10 shrink-0 items-center gap-2 border-b border-border bg-card/50 px-3 pl-20 backdrop-blur-sm"
+      className={cn(
+        "relative flex h-10 shrink-0 items-center gap-2 border-b border-border bg-card/50 px-3 backdrop-blur-sm",
+        platform === "macos" ? "pl-20" : "pl-3",
+      )}
     >
       <div
         data-tauri-drag-region
@@ -123,6 +126,12 @@ export function TitleBar({
           </Button>
         )}
       </div>
+
+      {platform !== "macos" && (
+        <div className="-mr-3 flex self-stretch">
+          <WindowControls platform={platform} />
+        </div>
+      )}
     </div>
   );
 }

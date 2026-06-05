@@ -3,6 +3,7 @@ mod model;
 mod parser;
 mod state;
 
+use std::path::Path;
 use state::{OpenFile, PendingFiles};
 use tauri::{Emitter, Manager};
 
@@ -19,14 +20,9 @@ pub fn run() {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
             // Windows/Linux: second launch w/ file path passes via argv
-            let paths: Vec<String> = args
-                .iter()
-                .skip(1)
-                .filter(|a| std::path::Path::new(a).exists())
-                .cloned()
-                .collect();
+            let paths = existing_file_args(&args, Some(Path::new(&cwd)));
             if !paths.is_empty() {
                 if let Some(state) = app.try_state::<PendingFiles>() {
                     state.0.lock().unwrap().extend(paths.clone());
@@ -48,6 +44,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_os::init())
         .manage(PendingFiles::default())
         .manage(OpenFile::default())
         .setup(|app| {
@@ -61,6 +58,20 @@ pub fn run() {
                     let _ = window.center();
                 }
             }
+
+            // Windows/Linux first launch passes the double-clicked file via argv.
+            // Harmless no-op on macOS (macOS delivers via RunEvent::Opened; the file
+            // path is not in argv). We seed PendingFiles here so the frontend can
+            // drain them via take_pending_files once the webview has mounted.
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            {
+                let argv: Vec<String> = std::env::args().collect();
+                let paths = existing_file_args(&argv, None);
+                if !paths.is_empty() {
+                    app.state::<PendingFiles>().0.lock().unwrap().extend(paths);
+                }
+            }
+
             #[cfg(not(any(feature = "webdriver", feature = "webdriver-dev")))]
             let _ = app;
             Ok(())
@@ -92,4 +103,61 @@ pub fn run() {
             #[cfg(not(target_os = "macos"))]
             let _ = (app, event);
         });
+}
+
+/// Returns the subset of `args` that refer to existing filesystem paths.
+///
+/// Skips the first element (the executable path). For each remaining arg, if
+/// the path is relative and `cwd` is `Some`, the candidate is resolved as
+/// `cwd.join(arg)`; otherwise the arg is used as-is. Only candidates whose
+/// resolved path exists on disk are returned.
+fn existing_file_args(args: &[String], cwd: Option<&Path>) -> Vec<String> {
+    args.iter()
+        .skip(1)
+        .filter_map(|arg| {
+            let candidate = {
+                let p = Path::new(arg);
+                if p.is_relative() {
+                    if let Some(base) = cwd {
+                        base.join(p)
+                    } else {
+                        p.to_path_buf()
+                    }
+                } else {
+                    p.to_path_buf()
+                }
+            };
+            if candidate.exists() {
+                Some(candidate.to_string_lossy().into_owned())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn existing_file_args_filters_nonexistent() {
+        let cargo_toml = format!("{}/Cargo.toml", env!("CARGO_MANIFEST_DIR"));
+        let args = vec![
+            "exe".to_string(),
+            cargo_toml.clone(),
+            "/nonexistent/x.xlsx".to_string(),
+        ];
+        let result = existing_file_args(&args, None);
+        assert_eq!(result, vec![cargo_toml]);
+    }
+
+    #[test]
+    fn existing_file_args_resolves_relative_against_cwd() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let args = vec!["exe".to_string(), "Cargo.toml".to_string()];
+        let result = existing_file_args(&args, Some(Path::new(manifest_dir)));
+        let expected = format!("{}/Cargo.toml", manifest_dir);
+        assert_eq!(result, vec![expected]);
+    }
 }

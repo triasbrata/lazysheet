@@ -1,7 +1,7 @@
 {
   "common": { "appName": "LazySheet", "openingEllipsis": "Membuka…", "ok": "OK", "cancel": "Batal", "truncatedSuffix": " (dipotong)" },
   "welcome": { "title": "Buka lembar kerja", "dropHint": "Letakkan berkas di sini, atau telusuri untuk membuka", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "Buka Berkas", "recent": "Terbaru" },
-  "titlebar": { "dragFileOut": "Seret berkas keluar", "fileActions": "Tindakan berkas", "fileActionsLabel": "Tindakan Berkas", "copyFile": "Salin berkas", "copyFilePath": "Salin jalur berkas", "searchCommands": "Cari perintah…", "openCommandCenter": "Buka pusat perintah ({{shortcut}})" },
+  "titlebar": { "dragFileOut": "Seret berkas keluar", "fileActions": "Tindakan berkas", "fileActionsLabel": "Tindakan Berkas", "copyFile": "Salin berkas", "copyFilePath": "Salin jalur berkas", "searchCommands": "Cari perintah…", "openCommandCenter": "Buka pusat perintah ({{shortcut}})", "minimize": "Perkecil", "maximize": "Perbesar", "restore": "Pulihkan", "closeWindow": "Tutup" },
   "theme": { "toggle": "Ganti tema", "light": "Terang", "dark": "Gelap", "system": "Sistem" },
   "language": { "toggle": "Ganti bahasa" },
   "statusbar": { "selectionSize_one": "{{rows}}B × {{cols}}K · {{count}} sel", "selectionSize_other": "{{rows}}B × {{cols}}K · {{count}} sel", "activeCell": "Sel aktif", "analyze": "Analisis", "summaryTitle": "Ringkasan kelompokkan ({{shortcut}})", "zoomIn": "Perbesar", "zoomOut": "Perkecil", "zoomReset": "Reset zoom ke 100%" },

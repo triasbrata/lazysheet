@@ -46,6 +46,16 @@ xattr -dr com.apple.quarantine "/Applications/LazySheet.app"
 
 ### Linux — troubleshooting
 
+#### Missing WebKitGTK runtime on Ubuntu / Debian
+
+**Symptom:** the app fails to launch with a missing-library error about `libwebkit2gtk-4.1.so`.
+
+**Cause:** minimal or older Ubuntu/Debian installs do not include the WebKitGTK runtime. Install it once ([reported in #3](https://github.com/triasbrata/lazysheet/issues/3)):
+
+```bash
+sudo apt install libwebkit2gtk-4.1-0
+```
+
 #### Blank window / EGL crash on Fedora or Arch (AppImage ≤ 0.4.0)
 
 **Symptom:** the app opens to a blank white window, the terminal prints something like

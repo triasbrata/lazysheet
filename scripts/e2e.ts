@@ -25,7 +25,7 @@
  */
 import { $ } from "bun";
 import { resolve } from "node:path";
-import { copyFileSync, existsSync } from "node:fs";
+import { copyFileSync, existsSync, writeFileSync } from "node:fs";
 
 const ROOT = resolve(import.meta.dirname!, "..");
 const E2E = resolve(ROOT, "e2e");
@@ -56,6 +56,25 @@ function parseExports(text: string): Record<string, string> {
     env[m[1]] = val;
   }
   return env;
+}
+
+/**
+ * Reduce raw wdio output to the spec-reporter report: per-test results,
+ * failure messages/stacks, and the final "Spec Files:" summary. Drops
+ * webdriver DEBUG/INFO command spam and per-worker log lines.
+ */
+function extractWdioReport(out: string): string {
+  const start = out.indexOf('"spec" Reporter:');
+  if (start !== -1) return out.slice(start).trimEnd();
+  // Fallback (reporter section missing — e.g. crash before specs ran):
+  // filter known noise lines and show the tail.
+  const lines = out.split("\n").filter(
+    (l) =>
+      !/^\s*\[\d+-\d+\]\s+(DEBUG|INFO|WARN)\b/.test(l) &&
+      !/^(DEBUG|INFO)\b/.test(l) &&
+      !/webdriver: (COMMAND|DATA|RESULT|BIDI)/.test(l),
+  );
+  return lines.slice(-100).join("\n").trimEnd();
 }
 
 // Backend coverage instrumentation (report-only — never gates the build).
@@ -96,14 +115,27 @@ try {
 }
 
 log("Running e2e specs (wdio + tauri-webdriver)");
+// Capture wdio output instead of streaming: deploy output stays clean, and on
+// failure we print only the spec report (what failed + why). Full raw log is
+// always written to e2e/wdio.log.
+const wdioLogPath = resolve(E2E, "wdio.log");
+const wdioEnv = { ...process.env, E2E_COVERAGE: "true" };
+let wdioOut = "";
+let wdioFailed = false;
 try {
-  if (IS_LINUX) {
-    await $`xvfb-run -a bun run test`.cwd(E2E).env({ ...process.env, E2E_COVERAGE: "true" });
-  } else {
-    await $`bun run test`.cwd(E2E).env({ ...process.env, E2E_COVERAGE: "true" });
-  }
-} catch {
-  die("E2E specs failed.");
+  const res = IS_LINUX
+    ? await $`xvfb-run -a bun run test`.cwd(E2E).env(wdioEnv).quiet()
+    : await $`bun run test`.cwd(E2E).env(wdioEnv).quiet();
+  wdioOut = res.stdout.toString() + res.stderr.toString();
+} catch (err) {
+  wdioFailed = true;
+  const e = err as { stdout?: Buffer; stderr?: Buffer };
+  wdioOut = (e.stdout?.toString() ?? "") + (e.stderr?.toString() ?? "");
+}
+writeFileSync(wdioLogPath, wdioOut);
+console.log(extractWdioReport(wdioOut));
+if (wdioFailed) {
+  die(`E2E specs failed — see report above; full wdio output: ${wdioLogPath}`);
 }
 
 log("Collecting unit coverage (vitest)");

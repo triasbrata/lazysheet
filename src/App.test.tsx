@@ -14,6 +14,11 @@ vi.mock("@tauri-apps/api/webview", () => ({
   }),
 }));
 
+// ─── Mock: @/lib/platform ────────────────────────────────────────────────────
+vi.mock("@/lib/platform", () => ({
+  getPlatform: vi.fn(() => "macos" as const),
+}));
+
 // ─── Mock: @/hooks/useFileEvents ─────────────────────────────────────────────
 vi.mock("@/hooks/useFileEvents", () => ({
   useFileEvents: vi.fn(),

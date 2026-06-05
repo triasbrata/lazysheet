@@ -1,7 +1,7 @@
 {
   "common": { "appName": "LazySheet", "openingEllipsis": "正在打开…", "ok": "确定", "cancel": "取消", "truncatedSuffix": "（已截断）" },
   "welcome": { "title": "打开电子表格", "dropHint": "将文件拖放到此处，或浏览打开", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "打开文件", "recent": "最近" },
-  "titlebar": { "dragFileOut": "将文件拖出", "fileActions": "文件操作", "fileActionsLabel": "文件操作", "copyFile": "复制文件", "copyFilePath": "复制文件路径", "searchCommands": "搜索命令…", "openCommandCenter": "打开命令中心（{{shortcut}}）" },
+  "titlebar": { "dragFileOut": "将文件拖出", "fileActions": "文件操作", "fileActionsLabel": "文件操作", "copyFile": "复制文件", "copyFilePath": "复制文件路径", "searchCommands": "搜索命令…", "openCommandCenter": "打开命令中心（{{shortcut}}）", "minimize": "最小化", "maximize": "最大化", "restore": "还原", "closeWindow": "关闭" },
   "theme": { "toggle": "切换主题", "light": "浅色", "dark": "深色", "system": "跟随系统" },
   "language": { "toggle": "切换语言" },
   "statusbar": { "selectionSize_other": "{{rows}}行 × {{cols}}列 · {{count}} 个单元格", "activeCell": "活动单元格", "analyze": "分析", "summaryTitle": "分组汇总（{{shortcut}}）", "zoomIn": "放大", "zoomOut": "缩小", "zoomReset": "将缩放重置为 100%" },

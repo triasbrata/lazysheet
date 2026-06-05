@@ -125,6 +125,24 @@ function buildChangelog(
   return sections.join("\n\n");
 }
 
+/**
+ * Run claude headless with the release config: Opus model, max effort,
+ * and thinking mode enabled (MAX_THINKING_TOKENS for headless runs).
+ * Returns the result text from the JSON wrapper, or raw stdout on parse failure.
+ */
+async function runClaude(prompt: string): Promise<string> {
+  const out = await $`claude -p ${prompt} --model opus --effort max --output-format json`
+    .env({ ...process.env, MAX_THINKING_TOKENS: "32000" })
+    .quiet()
+    .text();
+  try {
+    const wrapper = JSON.parse(out);
+    return typeof wrapper.result === "string" ? wrapper.result : out;
+  } catch {
+    return out;
+  }
+}
+
 /** Ask Claude Code to decide the semver bump from the commit list. */
 async function decideBump(
   currentVersion: string,
@@ -150,15 +168,7 @@ async function decideBump(
   ].join("\n");
 
   async function run(): Promise<{ bump: Bump; version: string } | null> {
-    const out =
-      await $`claude -p ${prompt} --output-format json`.quiet().text();
-    let resultText: string;
-    try {
-      const wrapper = JSON.parse(out);
-      resultText = typeof wrapper.result === "string" ? wrapper.result : out;
-    } catch {
-      resultText = out;
-    }
+    const resultText = await runClaude(prompt);
     const jsonMatch = resultText.match(/\{[^{}]*"bump"[^{}]*\}/);
     if (!jsonMatch) return null;
     try {
@@ -185,6 +195,44 @@ async function decideBump(
     decision.version = bumpVersion(currentVersion, decision.bump);
   }
   return decision;
+}
+
+/**
+ * Ask Claude Code (opus, max effort, thinking) to write the release notes
+ * used as the annotated tag message — CI publishes it as the GitHub release
+ * body. Falls back to the mechanical changelog if Claude's output is unusable.
+ */
+async function generateReleaseNotes(
+  version: string,
+  commits: { subject: string; hash: string }[],
+): Promise<string> {
+  const subjects = commits
+    .filter((c) => !isNoiseCommit(c.subject))
+    .map((c) => `- ${c.subject}`)
+    .join("\n");
+  const prompt = [
+    `Write GitHub release notes for lazysheet v${version} (a Tauri spreadsheet app).`,
+    ``,
+    `Commits since the last release:`,
+    subjects,
+    ``,
+    `Rules:`,
+    `- Markdown only, no code fence around the whole output, no preamble or closing remarks.`,
+    `- Group changes under "### Features", "### Fixes", and other conventional headings as relevant.`,
+    `- Rewrite commit subjects into clear, user-facing sentences; merge related commits into one bullet.`,
+    `- Do not include commit hashes, PR numbers, or a version heading.`,
+    `- Skip internal-only noise (CI tweaks, release chores) unless user-relevant.`,
+  ].join("\n");
+
+  try {
+    const notes = (await runClaude(prompt)).trim();
+    // Sanity check: must be non-empty markdown with at least one bullet/heading.
+    if (notes && /(^|\n)(###|-)\s/.test(notes)) return notes;
+    log("⚠ Claude release notes looked malformed — falling back to mechanical changelog.");
+  } catch {
+    log("⚠ Claude release notes generation failed — falling back to mechanical changelog.");
+  }
+  return buildChangelog(commits, { withHash: false });
 }
 
 function bumpVersionFiles(newVersion: string) {
@@ -384,8 +432,11 @@ async function main() {
     await $`git commit -m ${`chore: release v${baseVersion}`}`.cwd(ROOT);
   }
 
-  // 11. annotated RC tag — clean summary: no commit hashes, no merge/release noise
-  const tagMessage = buildChangelog(commits, { withHash: false });
+  // 11. annotated RC tag — release notes written by Claude (opus, max effort,
+  //     thinking); falls back to the mechanical changelog on failure.
+  log("Generating release notes with Claude...");
+  const tagMessage = await generateReleaseNotes(baseVersion, commits);
+  log(`\n${tagMessage}\n`);
   await $`git tag -a ${rcTag} -m ${tagMessage}`.cwd(ROOT);
 
   // 12. push commit (harmless no-op if HEAD is already up to date) + rc tag
