@@ -72,7 +72,11 @@ jobs:
           fi
           git add -f changelog-app.log
           git commit -m "chore: update changelog for ${FINAL_TAG}"
-          git push lazysheet "HEAD:${DEFAULT_BRANCH}"
+          # checkout's persist-credentials writes GITHUB_TOKEN into
+          # http.<github>.extraheader, which overrides the token embedded in the
+          # remote URL and 403s on the foreign repo. Clear it for this push.
+          git -c http.https://github.com/.extraheader= \
+            push lazysheet "HEAD:${DEFAULT_BRANCH}"
 
   build:
     strategy:
@@ -334,7 +338,11 @@ jobs:
         run: |
           git remote add lazysheet \
             "https://x-access-token:${{ secrets.LAZYSHEET_APP_TOKEN }}@github.com/triasbrata/lazysheet.git"
-          git push lazysheet "${FINAL_TAG}"
+          # checkout's persist-credentials writes GITHUB_TOKEN into
+          # http.<github>.extraheader, which overrides the token embedded in the
+          # remote URL and 403s on the foreign repo. Clear it for this push.
+          git -c http.https://github.com/.extraheader= \
+            push lazysheet "${FINAL_TAG}"
 
       - name: Generate latest.json
         shell: bash
