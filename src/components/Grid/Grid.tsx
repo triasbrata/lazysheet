@@ -57,7 +57,7 @@ import {
   type MeasureOptions,
 } from "@/lib/measure";
 import { getCellFormula, copyFormula } from "@/lib/formula-copy";
-import { zoomFromWheel } from "@/lib/zoom";
+import { zoomFromWheel, zoomScaledPx } from "@/lib/zoom";
 import { Filter } from "lucide-react";
 import { motion } from "motion/react";
 import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
@@ -1346,8 +1346,8 @@ export function Grid({
 
   // Funnel icon box (FUNNEL_ICON_PX logical) scaled by the grid zoom var.
   const funnelIconStyle = {
-    width: `calc(${FUNNEL_ICON_PX}px * var(--grid-zoom, 1))`,
-    height: `calc(${FUNNEL_ICON_PX}px * var(--grid-zoom, 1))`,
+    width: zoomScaledPx(FUNNEL_ICON_PX),
+    height: zoomScaledPx(FUNNEL_ICON_PX),
   } as const;
 
   // Shared helper — renders a funnel button + ColumnFilterDropdown for column i
@@ -1376,7 +1376,7 @@ export function Grid({
           // Icon box + padding scale with zoom so the funnel matches the
           // FUNNEL_ALLOWANCE_X autofit reservation (logical px × zoom).
           style={{
-            padding: "calc(2px * var(--grid-zoom, 1))",
+            padding: zoomScaledPx(2),
             ...(iconColor ? { color: iconColor } : undefined),
           }}
         >

@@ -8,6 +8,7 @@ import {
   zoomFromWheel,
   stepZoom,
   formatZoomPercent,
+  zoomScaledPx,
 } from "./zoom";
 
 // ── constants ────────────────────────────────────────────────────────────────
@@ -147,5 +148,21 @@ describe("formatZoomPercent", () => {
 
   it('formats 0.75 as "75%"', () => {
     expect(formatZoomPercent(0.75)).toBe("75%");
+  });
+});
+
+// ── zoomScaledPx ─────────────────────────────────────────────────────────────
+
+describe("zoomScaledPx", () => {
+  it("wraps a logical px value in a calc() against --grid-zoom", () => {
+    expect(zoomScaledPx(12)).toBe("calc(12px * var(--grid-zoom, 1))");
+  });
+
+  it("handles small padding values", () => {
+    expect(zoomScaledPx(2)).toBe("calc(2px * var(--grid-zoom, 1))");
+  });
+
+  it("defaults the zoom var to 1 so unzoomed contexts render at logical size", () => {
+    expect(zoomScaledPx(12)).toContain("var(--grid-zoom, 1)");
   });
 });

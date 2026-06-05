@@ -44,3 +44,12 @@ export function stepZoom(current: number, direction: 1 | -1): number {
 export function formatZoomPercent(z: number): string {
   return `${Math.round(z * 100)}%`;
 }
+
+/**
+ * CSS length that scales a logical px value by the grid zoom CSS var,
+ * e.g. 12 → "calc(12px * var(--grid-zoom, 1))". Keeps render in sync with
+ * measurement math, which stays in logical px.
+ */
+export function zoomScaledPx(px: number): string {
+  return `calc(${px}px * var(--grid-zoom, 1))`;
+}
