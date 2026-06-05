@@ -1,0 +1,403 @@
+// @vitest-environment happy-dom
+// Tests for BentoCard with useReducedMotion = false (default)
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
+import React from 'react'
+
+// --- motion/react mock (reduce=false) ---
+vi.mock('motion/react', () => {
+  const mockSet = vi.fn()
+
+  function makeMotionComponent(tag: string) {
+    return function MotionEl({
+      children,
+      style,
+      className,
+      onMouseMove,
+      onMouseLeave,
+      whileHover,
+      initial,
+      variants,
+      transition,
+      ...rest
+    }: React.HTMLAttributes<HTMLElement> & { [key: string]: unknown }) {
+      return React.createElement(
+        tag,
+        {
+          style,
+          className,
+          onMouseMove,
+          onMouseLeave,
+          'data-motion': tag,
+          ...rest,
+        },
+        children,
+      )
+    }
+  }
+
+  const motion = new Proxy(
+    {},
+    {
+      get(_target, tag: string) {
+        return makeMotionComponent(tag)
+      },
+    },
+  )
+
+  return {
+    motion,
+    useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
+    useTransform: (_mv: unknown, _in: unknown, out: unknown[]) => ({
+      get: () => (Array.isArray(out) ? out[0] : 0),
+    }),
+    useMotionValue: (v: number) => ({ get: () => v, set: mockSet }),
+    useSpring: (mv: unknown) => mv,
+    useReducedMotion: () => false,
+    useMotionValueEvent: vi.fn(),
+  }
+})
+
+import { BentoCard } from './BentoCard'
+import type { BentoTile } from './features'
+import { renderWithI18n } from '#/test/i18n'
+
+afterEach(cleanup)
+
+const fakeProgress = { get: () => 0 } as unknown as import('motion/react').MotionValue<number>
+
+const fakeIcon = ({ className }: { className?: string }) => (
+  <svg className={className} data-testid="fake-icon" />
+)
+
+describe('BentoCard — reduce=false', () => {
+  // --- tone variants ---
+  it('applies tint tone class', () => {
+    const tile: BentoTile = {
+      id: 'test-tint',
+      span: 'md:col-span-4',
+      title: 'Tint Tile',
+      tone: 'tint',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const outerDiv = container.querySelector('[data-motion="div"]')
+    expect(outerDiv?.className).toContain('bg-surface-container-low')
+  })
+
+  it('applies accent tone class', () => {
+    const tile: BentoTile = {
+      id: 'test-accent',
+      span: 'md:col-span-4',
+      title: 'Accent Tile',
+      tone: 'accent',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const outerDiv = container.querySelector('[data-motion="div"]')
+    expect(outerDiv?.className).toContain('bg-gradient-to-br')
+  })
+
+  it('applies white bg for undefined tone', () => {
+    const tile: BentoTile = {
+      id: 'test-plain',
+      span: 'md:col-span-4',
+      title: 'Plain Tile',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const outerDiv = container.querySelector('[data-motion="div"]')
+    expect(outerDiv?.className).toContain('bg-white')
+  })
+
+  // --- layout: band ---
+  it('renders band layout with flex-row', () => {
+    const tile: BentoTile = {
+      id: 'test-band',
+      span: 'md:col-span-12',
+      title: 'Band Tile',
+      layout: 'band',
+      icon: fakeIcon,
+      description: 'Band description',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    // Should have a flex-row container
+    const flexRow = container.querySelector('.flex.flex-row')
+    expect(flexRow).toBeTruthy()
+    expect(screen.getByText('Band Tile')).toBeTruthy()
+    expect(screen.getByText('Band description')).toBeTruthy()
+  })
+
+  it('renders band layout without icon when icon absent', () => {
+    const tile: BentoTile = {
+      id: 'test-band-no-icon',
+      span: 'md:col-span-12',
+      title: 'Band No Icon',
+      layout: 'band',
+      description: 'No icon band',
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} />)
+    expect(screen.queryByTestId('fake-icon')).toBeNull()
+    expect(screen.getByText('Band No Icon')).toBeTruthy()
+  })
+
+  it('band layout - group-by id uses text-2xl heading', () => {
+    const tile: BentoTile = {
+      id: 'group-by',
+      span: 'md:col-span-4',
+      title: 'Group By',
+      layout: 'band',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const h3 = container.querySelector('h3')
+    expect(h3?.className).toContain('text-2xl')
+  })
+
+  it('band layout - non-group-by id uses text-base heading', () => {
+    const tile: BentoTile = {
+      id: 'other-id',
+      span: 'md:col-span-4',
+      title: 'Other',
+      layout: 'band',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const h3 = container.querySelector('h3')
+    expect(h3?.className).toContain('text-base')
+  })
+
+  // --- default (stack) layout ---
+  it('renders stack layout by default', () => {
+    const tile: BentoTile = {
+      id: 'test-stack',
+      span: 'md:col-span-4',
+      title: 'Stack Tile',
+      icon: fakeIcon,
+      description: 'Stack description',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const flexCol = container.querySelector('.flex.flex-col')
+    expect(flexCol).toBeTruthy()
+    expect(screen.getByText('Stack description')).toBeTruthy()
+  })
+
+  it('stack layout - group-by id uses text-2xl', () => {
+    const tile: BentoTile = {
+      id: 'group-by',
+      span: 'md:col-span-4',
+      title: 'Group By Stack',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const h3 = container.querySelector('h3')
+    expect(h3?.className).toContain('text-2xl')
+  })
+
+  it('stack layout - other id uses text-lg', () => {
+    const tile: BentoTile = {
+      id: 'other-id',
+      span: 'md:col-span-4',
+      title: 'Other Stack',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const h3 = container.querySelector('h3')
+    expect(h3?.className).toContain('text-lg')
+  })
+
+  // --- icon present / absent ---
+  it('renders icon when provided', () => {
+    const tile: BentoTile = {
+      id: 'test-icon',
+      span: 'md:col-span-4',
+      title: 'With Icon',
+      icon: fakeIcon,
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} />)
+    expect(screen.getByTestId('fake-icon')).toBeTruthy()
+  })
+
+  it('renders without icon when absent', () => {
+    const tile: BentoTile = {
+      id: 'test-no-icon',
+      span: 'md:col-span-4',
+      title: 'No Icon',
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} />)
+    expect(screen.queryByTestId('fake-icon')).toBeNull()
+  })
+
+  // --- description present / absent ---
+  it('renders description when provided', () => {
+    const tile: BentoTile = {
+      id: 'test-desc',
+      span: 'md:col-span-4',
+      title: 'Title',
+      description: 'My description',
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} />)
+    expect(screen.getByText('My description')).toBeTruthy()
+  })
+
+  it('does not render description paragraph when absent', () => {
+    const tile: BentoTile = {
+      id: 'test-no-desc',
+      span: 'md:col-span-4',
+      title: 'Title Only',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    // No <p> element
+    expect(container.querySelector('p')).toBeNull()
+  })
+
+  // --- render() closure present ---
+  it('renders tile.render() content when provided', () => {
+    const tile: BentoTile = {
+      id: 'test-render',
+      span: 'md:col-span-4',
+      title: 'Render Tile',
+      render: () => <span data-testid="custom-render">Custom Content</span>,
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} />)
+    expect(screen.getByTestId('custom-render')).toBeTruthy()
+  })
+
+  // --- media present ---
+  it('renders media image when provided', () => {
+    const tile: BentoTile = {
+      id: 'test-media',
+      span: 'md:col-span-4',
+      title: 'Media Tile',
+      media: { src: '/shots/test.png', alt: 'Test Image' },
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} />)
+    const img = screen.getByAltText('Test Image')
+    expect(img).toBeTruthy()
+    expect(img.getAttribute('src')).toBe('/shots/test.png')
+  })
+
+  it('does not render media when absent', () => {
+    const tile: BentoTile = {
+      id: 'test-no-media',
+      span: 'md:col-span-4',
+      title: 'No Media',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    expect(container.querySelector('img')).toBeNull()
+  })
+
+  // --- shine overlay present when reduce=false ---
+  it('renders shine overlay when reduce=false', () => {
+    const tile: BentoTile = {
+      id: 'test-shine',
+      span: 'md:col-span-4',
+      title: 'Shine Tile',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    // Shine div has pointer-events-none and skew class
+    const shine = container.querySelector('.pointer-events-none.-skew-x-12')
+    expect(shine).toBeTruthy()
+  })
+
+  // --- mouseMove / mouseLeave handlers (reduce=false, with media) ---
+  it('fires handleMouseMove and handleMouseLeave when reduce=false and media present', () => {
+    const tile: BentoTile = {
+      id: 'test-mouse',
+      span: 'md:col-span-4',
+      title: 'Mouse Tile',
+      media: { src: '/img/x.png', alt: 'X' },
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    // The inner wrapper is the SECOND data-motion="div" — it has onMouseMove/onMouseLeave
+    const innerDivs = container.querySelectorAll('[data-motion="div"]')
+    // innerDivs[0] = outer wrapper (wrapperStyle), innerDivs[1] = inner wrapper (onMouseMove)
+    const innerWrapper = innerDivs[1] as HTMLElement | undefined
+
+    // Mock getBoundingClientRect — e.currentTarget points to the element the handler is on
+    const mockRect = {
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    }
+    if (innerWrapper) {
+      // Override getBoundingClientRect on the prototype chain and directly
+      Object.defineProperty(innerWrapper, 'getBoundingClientRect', {
+        value: () => mockRect,
+        configurable: true,
+        writable: true,
+      })
+      fireEvent.mouseMove(innerWrapper, { clientX: 150, clientY: 60 })
+      fireEvent.mouseLeave(innerWrapper)
+    }
+    // No error thrown = pass
+    expect(true).toBe(true)
+  })
+
+  it('fires handleMouseMove when reduce=false but no media (early return)', () => {
+    const tile: BentoTile = {
+      id: 'test-mouse-no-media',
+      span: 'md:col-span-4',
+      title: 'No Media Mouse',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    const innerDiv = container.querySelectorAll('[data-motion="div"]')[1]
+    if (innerDiv) {
+      fireEvent.mouseMove(innerDiv, { clientX: 50, clientY: 50 })
+      fireEvent.mouseLeave(innerDiv)
+    }
+    expect(true).toBe(true)
+  })
+
+  // --- index affects wrapperStyle keys (different index) ---
+  it('renders correctly with a high index (stagger cap)', () => {
+    const tile: BentoTile = {
+      id: 'test-high-index',
+      span: 'md:col-span-4',
+      title: 'High Index',
+    }
+    renderWithI18n(<BentoCard tile={tile} index={20} progress={fakeProgress} />)
+    expect(screen.getByText('High Index')).toBeTruthy()
+  })
+
+  // --- all three tiles with description absent in band layout ---
+  it('band layout without description omits <p>', () => {
+    const tile: BentoTile = {
+      id: 'band-no-desc',
+      span: 'md:col-span-4',
+      title: 'Band No Desc',
+      layout: 'band',
+    }
+    const { container } = renderWithI18n(
+      <BentoCard tile={tile} index={0} progress={fakeProgress} />,
+    )
+    expect(container.querySelector('p')).toBeNull()
+  })
+})

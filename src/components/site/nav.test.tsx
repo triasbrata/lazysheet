@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
+import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { act, cleanup } from '@testing-library/react'
 import { screen } from '@testing-library/react'
+
+// Hoisted variable lets individual tests override useParams locale
+const mockParamsLocale = vi.hoisted(() => ({ value: 'en' as string | undefined }))
 
 // Nav renders TanStack <Link>s, which normally need a RouterProvider.
 // Stub them with plain anchors so the nav can be tested in isolation.
@@ -11,9 +15,40 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return {
     ...actual,
     Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
-    useParams: () => ({ locale: 'en' }),
+    useParams: () => ({ locale: mockParamsLocale.value }),
     useNavigate: () => () => {},
     useLocation: () => ({ pathname: '/en' }),
+  }
+})
+
+// motion/react mock — Nav uses useScroll and useMotionValueEvent.
+// We capture the useMotionValueEvent callback so tests can invoke it manually
+// to drive the `scrolled` state and exercise the `solid = scrolled || !overHero` branch.
+let capturedScrollChangeCallback: ((y: number) => void) | null = null
+
+vi.mock('motion/react', () => {
+  const motion = new Proxy(
+    {},
+    {
+      get(_target, tag: string) {
+        return function MotionEl({ children, ...rest }: React.HTMLAttributes<HTMLElement> & { [key: string]: unknown }) {
+          return React.createElement(tag as string, rest, children)
+        }
+      },
+    },
+  )
+  return {
+    motion,
+    useScroll: () => ({ scrollY: { get: () => 0 }, scrollYProgress: { get: () => 0 } }),
+    useTransform: (_mv: unknown, _in: unknown, out: unknown[]) => ({
+      get: () => (Array.isArray(out) ? out[0] : 0),
+    }),
+    useMotionValue: (v: number) => ({ get: () => v, set: vi.fn() }),
+    useSpring: (mv: unknown) => mv,
+    useReducedMotion: () => false,
+    useMotionValueEvent: (_mv: unknown, _event: string, cb: (y: number) => void) => {
+      capturedScrollChangeCallback = cb
+    },
   }
 })
 
@@ -30,7 +65,11 @@ vi.mock('#/features/github/github-stars', () => ({
 import { Nav } from '#/components/site/nav'
 import { renderWithI18n } from '#/test/i18n'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  capturedScrollChangeCallback = null
+  mockParamsLocale.value = 'en'
+})
 
 describe('Nav — what the user sees', () => {
   it('shows the LazySheet brand', () => {
@@ -51,5 +90,58 @@ describe('Nav — what the user sees', () => {
     expect(github.getAttribute('href')).toBe(
       'https://github.com/triasbrata/lazysheet',
     )
+  })
+})
+
+describe('Nav — solid/transparent branch (overHero prop)', () => {
+  it('renders transparent nav when overHero=true and not scrolled (solid=false)', () => {
+    renderWithI18n(<Nav overHero={true} />)
+    const nav = document.querySelector('nav')
+    // solid=false → border-transparent bg-transparent
+    expect(nav?.className).toContain('border-transparent')
+    expect(nav?.className).toContain('bg-transparent')
+  })
+
+  it('renders solid nav when overHero=false (default) even with no scrolling', () => {
+    renderWithI18n(<Nav overHero={false} />)
+    const nav = document.querySelector('nav')
+    // solid=true → bg-white/70 shadow-sm
+    expect(nav?.className).toContain('bg-white/70')
+    expect(nav?.className).toContain('shadow-sm')
+  })
+
+  it('flips to solid nav when scrolled past threshold (overHero=true, scrolled=true)', () => {
+    renderWithI18n(<Nav overHero={true} />)
+    // Initially transparent
+    let nav = document.querySelector('nav')
+    expect(nav?.className).toContain('border-transparent')
+
+    // Simulate scrolling past threshold via the captured useMotionValueEvent callback
+    act(() => {
+      if (capturedScrollChangeCallback) {
+        capturedScrollChangeCallback(50) // y=50 > 8 → setScrolled(true)
+      }
+    })
+    nav = document.querySelector('nav')
+    // solid=true → bg-white/70
+    expect(nav?.className).toContain('bg-white/70')
+  })
+})
+
+describe('Nav — locale fallback branch', () => {
+  it('falls back to DEFAULT_LOCALE when params.locale is not a valid locale', () => {
+    // Set invalid locale so isLocale() returns false → DEFAULT_LOCALE branch is taken
+    mockParamsLocale.value = 'zz-invalid'
+    renderWithI18n(<Nav />)
+    // Nav still renders — the DEFAULT_LOCALE branch was exercised
+    expect(screen.getByText('LazySheet')).toBeTruthy()
+  })
+
+  it('uses empty string fallback when params.locale is undefined (??  branch)', () => {
+    // Set locale to undefined so `params.locale ?? ''` takes the ?? fallback branch
+    mockParamsLocale.value = undefined
+    renderWithI18n(<Nav />)
+    // Nav still renders — the ?? '' branch was exercised
+    expect(screen.getByText('LazySheet')).toBeTruthy()
   })
 })

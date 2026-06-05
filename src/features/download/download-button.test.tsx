@@ -26,6 +26,7 @@ const release: ReleaseData = {
   assets: [
     { name: 'LazySheet_1.0.0_universal.dmg', url: 'https://dl/mac.dmg', size: 1, os: 'macOS', arch: 'universal', format: 'dmg' },
     { name: 'LazySheet_1.0.0_x64-setup.exe', url: 'https://dl/win.exe', size: 1, os: 'Windows', arch: 'x64', format: 'exe' },
+    { name: 'LazySheet_1.0.0_amd64.AppImage', url: 'https://dl/linux.AppImage', size: 1, os: 'Linux', arch: 'x64', format: 'AppImage' },
   ],
 }
 
@@ -52,5 +53,13 @@ describe('DownloadButton', () => {
     const link = await screen.findByRole('link')
     expect(link.getAttribute('href')).toBe(LATEST_PAGE_URL)
     expect(link.textContent).toMatch(/Download/)
+  })
+
+  it('renders LinuxMark icon and Linux label when serverOS is Linux', async () => {
+    const data: DownloadData = { release, serverOS: 'Linux' }
+    renderWithI18n(<DownloadButton data={data} />)
+    const link = await screen.findByRole('link')
+    expect(link.getAttribute('href')).toBe('https://dl/linux.AppImage')
+    expect(link.textContent).toMatch(/Linux/)
   })
 })
