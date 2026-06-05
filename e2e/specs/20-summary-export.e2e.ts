@@ -57,7 +57,7 @@ describe("summary-export", () => {
     expect(c).toContain("SUM(Age)");
   });
 
-  it("copy as image fires (smoke)", async () => {
+  it("copy as image selects the image format and persists it", async () => {
     await openFixture(FIX.csv);
     await installClipboardCapture();
     await openSummary(0, 0, 3, 1);
@@ -68,24 +68,51 @@ describe("summary-export", () => {
     await tid(T.summaryCopyOptImg).click();
     await browser.pause(300);
 
-    // Verify the format selection was persisted to localStorage.
-    // navigator.clipboard.write(ClipboardItem) fails under WebKit webdriver
-    // (no permission), so the success toast never appears — don't assert it.
+    // Format selection is persisted to localStorage.
     const stored = await browser.execute(() =>
       localStorage.getItem("summary-panel:copy-format"),
     );
     expect(stored).toBe("image");
 
-    // The copy button should be enabled (not stuck in a disabled/loading state).
+    // The copy button should be enabled (not stuck disabled/loading).
     expect(await tid(T.summaryCopyBtn).isEnabled()).toBe(true);
+  });
 
-    // Optionally fire the copy — don't assert its result (clipboard.write may fail).
-    try {
-      await tid(T.summaryCopyBtn).click();
-      await browser.pause(300);
-    } catch {
-      // Ignore — clipboard.write permission failure is expected under WebKit driver.
-    }
+  it("renders the summary table to a real non-blank PNG", async () => {
+    await openFixture(FIX.csv);
+    await installClipboardCapture();
+    await openSummary(0, 0, 3, 1);
+
+    // Allow the in-browser render (two html-to-image passes + decode) ample
+    // time; the hook itself caps at 20s and always settles.
+    await browser.setTimeout({ script: 30000 });
+
+    // Run the REAL copy-as-image pipeline, capturing the PNG blob instead of
+    // writing the clipboard (WebKit's WebDriver rejects clipboard.write). The
+    // hook decodes the PNG so we can assert it's a valid, sized, non-blank image
+    // — i.e. the WebKit first-render-blank workaround actually produced pixels.
+    const res = await browser.executeAsync(
+      (done: (v: unknown) => void) => {
+        window.__E2E__!.captureSummaryImage().then(done).catch((e: unknown) =>
+          done({ ok: false, error: String(e) }),
+        );
+      },
+    );
+
+    expect(res).toBeTruthy();
+    const r = res as {
+      ok: boolean;
+      bytes?: number;
+      width?: number;
+      height?: number;
+      nonBlank?: boolean;
+      error?: string;
+    };
+    expect(r.ok).toBe(true);
+    expect(r.bytes ?? 0).toBeGreaterThan(0);
+    expect(r.width ?? 0).toBeGreaterThan(0);
+    expect(r.height ?? 0).toBeGreaterThan(0);
+    expect(r.nonBlank).toBe(true);
   });
 
   it("copy format persists to localStorage", async () => {

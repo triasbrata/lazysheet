@@ -60,7 +60,3 @@ spec/helper bugs, not regressions. Note Ctrl+F, Ctrl+K, Ctrl+W DO work, so basic
 - `e2e/wdio.conf.js` — `resolveAppBinary()` (+ stray console.log to remove)
 - `src-tauri/Cargo.toml` — `webdriver` feature adds `tauri/custom-protocol`
 - `e2e/helpers/app.js` — `openFixture` + `readClipboard` use `executeAsync`
-
-## ⚠️ Security
-`.envrc` contains a live `CLAUDE_CODE_OAUTH_TOKEN` (`sk-ant-oat01-…`) that got echoed to a
-transcript this session. **Rotate it.** Move secret out of `.envrc` or ensure `.envrc` is gitignored.

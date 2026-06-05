@@ -857,7 +857,11 @@ export function SummaryPanel({
         </div>
       </div>
 
-      <div ref={tableContainerRef} className="max-h-64 overflow-auto">
+      <div
+        ref={tableContainerRef}
+        data-testid="summary-table-container"
+        className="max-h-64 overflow-auto"
+      >
         {result.tooLarge ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
             Selection too large to summarize. Pick a smaller range.
