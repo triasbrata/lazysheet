@@ -16,7 +16,6 @@ describe("Toaster (Sonner)", () => {
     renderWithProviders(<Toaster />);
     // Sonner renders an ol element with the toaster
     // The Toaster mounts even if no toasts are shown
-    const toasterEl = document.querySelector("[data-sonner-toaster]");
     // Sonner may render in a portal — check if body contains it
     expect(document.body).toBeInTheDocument();
   });

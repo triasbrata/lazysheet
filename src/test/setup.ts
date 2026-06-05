@@ -85,10 +85,7 @@ if (!HTMLElement.prototype.setPointerCapture) {
 // ClipboardItem polyfill
 if (!globalThis.ClipboardItem) {
   globalThis.ClipboardItem = class ClipboardItem {
-    private _data: Record<string, unknown>;
-    constructor(data: Record<string, unknown>) {
-      this._data = data;
-    }
+    constructor(_data: Record<string, unknown>) {}
   } as unknown as typeof ClipboardItem;
 }
 

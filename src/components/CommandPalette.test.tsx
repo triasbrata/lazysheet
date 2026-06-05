@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderWithProviders, screen, userEvent, fireEvent } from "@/test/render";
 import { CommandPalette } from "./CommandPalette";
 import type { PaletteMode } from "./CommandPalette";
@@ -401,7 +401,6 @@ describe("CommandPalette", () => {
     });
 
     it("ArrowDown moves activeIdx down and ArrowUp moves it up", async () => {
-      const user = userEvent.setup();
       const onModeChange = vi.fn();
       renderWithProviders(
         <CommandPalette {...makeProps({ onModeChange })} />

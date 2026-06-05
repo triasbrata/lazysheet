@@ -196,7 +196,7 @@ describe("useWorkbook", () => {
       });
 
       expect(caught).toBeInstanceOf(Error);
-      expect(caught?.message).toBe("open failed");
+      expect(caught!.message).toBe("open failed");
     });
 
     it("sets error when openWorkbook rejects with object without message (String(e) fallback)", async () => {

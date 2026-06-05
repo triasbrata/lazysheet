@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mock motion/react before importing QueryModal ────────────────────────────
 // The component uses `motion.div` and `useAnimationControls`.
@@ -240,7 +240,6 @@ describe("QueryModal", () => {
     // ── nonKeyCount === 0 error ────────────────────────────────────────────
 
     it("shows non-key error when all columns are keys (nonKeyCount===0)", async () => {
-      const user = userEvent.setup();
       // Use initialKeyCols to pre-populate ALL columns as key fields.
       // The useEffect runs after mount and sets keyVals=["0"] so nonKeyCount=0.
       renderWithProviders(
@@ -483,7 +482,6 @@ describe("QueryModal", () => {
     });
 
     it("shows toast.error when needsKey and nonKeyCount===0 (submit path)", async () => {
-      const user = userEvent.setup();
       // Use initialKeyCols=[0] with columns=[COL_ID] so nonKeyCount=0 from the start.
       // Then trigger submit via Enter key (bypasses disabled button check).
       renderWithProviders(

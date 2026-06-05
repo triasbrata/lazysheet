@@ -132,9 +132,8 @@ describe("Tabs", () => {
   });
 
   it("renders controlled Tabs with value and onValueChange", async () => {
-    const user = userEvent.setup();
     let currentValue = "tab1";
-    const { rerender } = renderWithProviders(
+    renderWithProviders(
       <Tabs value={currentValue} onValueChange={(v) => { currentValue = v; }}>
         <TabsList>
           <TabsTrigger value="tab1">Tab 1</TabsTrigger>

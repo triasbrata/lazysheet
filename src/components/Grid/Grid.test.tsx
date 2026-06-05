@@ -6,13 +6,14 @@
  *  2. Mock @tanstack/react-virtual as a last resort so we get deterministic rows.
  *  3. Mock motion/react (animation) + @/lib/measure (autofit) to avoid DOM deps.
  */
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import { fireEvent, act, waitFor, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test/render";
 import { Grid } from "./Grid";
 import type { GridMatch } from "./Grid";
 import type { Selection } from "./grid-utils";
 import type { SheetModel, CellModel } from "@/lib/types";
+import type { SheetFilters } from "@/lib/grid-filter";
 
 // ─── Layout geometry stubs ────────────────────────────────────────────────────
 // @tanstack/react-virtual reads clientHeight/clientWidth and getBoundingClientRect
@@ -773,10 +774,6 @@ describe("Grid — body pointer drag", () => {
     const r = parseInt(firstCell.getAttribute("data-r")!, 10);
     const c = parseInt(firstCell.getAttribute("data-c")!, 10);
 
-    // Find the body div (the context menu trigger wrapper)
-    const bodyDiv = firstCell.closest<HTMLElement>("[style*='position: relative'][style*='userSelect']") ??
-      firstCell.closest<HTMLElement>("[style*='position']");
-
     // Fire on the cell itself — Grid's body handler checks for [data-r][data-c] ancestor
     fireEvent.pointerDown(firstCell, { button: 0, pointerId: 1 });
 
@@ -838,7 +835,6 @@ describe("Grid — body pointer drag", () => {
     });
 
     const cells = container.querySelectorAll("[data-r][data-c]");
-    const bodyDiv = cells[0].closest("[style]") as HTMLElement;
 
     fireEvent.pointerDown(cells[0], { button: 0, pointerId: 1 });
     // pointerUp should clear drag state
@@ -1108,10 +1104,6 @@ describe("Grid — keyboard Escape during drag", () => {
     const scrollEl = container.querySelector("[tabindex='0']")!;
     fireEvent.keyDown(scrollEl, { key: "Escape" });
 
-    // onSelectionChange may have been called from pointerDown + Escape
-    // The Escape call should collapse focus to anchor
-    const calls = onSelectionChange.mock.calls;
-    const escapedCall = calls.find(([sel]) => sel.anchor.row === sel.focus.row && sel.anchor.col === sel.focus.col);
     // Either the escape call happened or drag wasn't active enough — no throw
     expect(container).toBeInTheDocument();
   });
@@ -1263,8 +1255,6 @@ describe("Grid — selection frame (SelectionFrame sub-component)", () => {
 
     // After virtual rows render, measurements should populate and SVG can appear
     await act(async () => {});
-    // The SVG has aria-hidden and class selection-ants inside
-    const svgs = container.querySelectorAll("svg[aria-hidden]");
     // May or may not exist depending on virtualizer measurement timing; just no throw
     expect(container).toBeInTheDocument();
   });
@@ -1371,7 +1361,7 @@ describe("Grid — filters with active condition", () => {
         condition: { op: "equals" as const, operand: "test" },
         excluded: [],
       },
-    };
+    } as unknown as SheetFilters;
     await expect(
       renderGrid({
         sheet,
@@ -1763,10 +1753,6 @@ describe("Grid — body pointerMove resolves cells via elementFromPoint", () => 
 
       document.elementFromPoint = originalEFP;
 
-      // Should have called extendTo → onSelectionChange
-      const extendCalls = onSelectionChange.mock.calls.filter(
-        ([sel]) => sel.anchor.row === 0 && sel.anchor.col === 0 && (sel.focus.row > 0 || sel.focus.col > 0),
-      );
       // May or may not have been called depending on whether selection changed
       expect(container).toBeInTheDocument();
     }
@@ -2072,8 +2058,6 @@ describe("Grid — SelectionFrame SVG rendering", () => {
       await new Promise((r) => setTimeout(r, 50));
     });
 
-    // If measurements exist, SelectionFrame renders an SVG
-    const ants = container.querySelectorAll("rect.selection-ants");
     // Either rendered (≥0) — the exact count depends on virtualizer timing
     expect(container).toBeInTheDocument();
     // SVG aria-hidden is definitely there if SelectionFrame renders
@@ -2470,26 +2454,6 @@ describe("Grid — handleResizeAutofit row-orientation branch", () => {
 // ─── runAutoScrollLoop tick body (L604-641): with drag active + ptr near edge ──
 
 describe("Grid — runAutoScrollLoop RAF tick (L604-641)", () => {
-  // Override RAF to call the callback synchronously so the tick body executes
-  // while drag state is still active (jsdom's setTimeout-based RAF fires
-  // asynchronously after the drag ends in normal test flow).
-  let rafOverride: ((cb: FrameRequestCallback) => number) | null = null;
-
-  beforeEach(() => {
-    // Make RAF call the callback immediately (synchronous tick during test)
-    rafOverride = (cb: FrameRequestCallback) => {
-      // Only call once per schedule to avoid infinite loop in tests
-      // The tick reschedules itself; we call it at most 3 times then stop
-      const handle = (Date.now() + Math.random()) as unknown as number;
-      Promise.resolve().then(() => cb(Date.now()));
-      return handle as unknown as number;
-    };
-  });
-
-  afterEach(() => {
-    rafOverride = null;
-  });
-
   it("auto-scroll RAF loop executes tick body when drag is active near viewport edge", async () => {
     const onSelectionChange = vi.fn();
     const { container } = await renderGrid({ onSelectionChange });

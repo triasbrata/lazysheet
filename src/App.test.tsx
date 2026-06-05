@@ -6,7 +6,6 @@ import App from "./App";
 import type { SheetModel, WorkbookModel } from "@/lib/types";
 
 // ─── Mock: @tauri-apps/api/webview ───────────────────────────────────────────
-const mockUnlisten = vi.fn(() => Promise.resolve(() => {}));
 const mockOnDragDropEvent = vi.fn(() => Promise.resolve(() => {}));
 
 vi.mock("@tauri-apps/api/webview", () => ({
@@ -499,7 +498,6 @@ function makeWorkbook(sheet: SheetModel): WorkbookModel {
 
 function makeWorkbookMultiSheet(): WorkbookModel {
   const s1 = makeSheet("Sheet1");
-  const s2 = makeSheet("Sheet2");
   return {
     path: "/test/multi.xlsx",
     file_name: "multi.xlsx",
@@ -2398,10 +2396,10 @@ describe("App", () => {
   describe("drag-drop overlay", () => {
     it("sets dragOver=true on enter drag event, false on drop", async () => {
       let capturedCallback: ((event: unknown) => void) | null = null;
-      mockOnDragDropEvent.mockImplementation((cb: (event: unknown) => void) => {
+      mockOnDragDropEvent.mockImplementation(((cb: (event: unknown) => void) => {
         capturedCallback = cb;
         return Promise.resolve(() => {});
-      });
+      }) as never);
       await act(async () => {
         renderWithProviders(<App />);
       });
@@ -2420,10 +2418,10 @@ describe("App", () => {
 
     it("sets dragOver=true on over event", async () => {
       let capturedCallback: ((event: unknown) => void) | null = null;
-      mockOnDragDropEvent.mockImplementation((cb: (event: unknown) => void) => {
+      mockOnDragDropEvent.mockImplementation(((cb: (event: unknown) => void) => {
         capturedCallback = cb;
         return Promise.resolve(() => {});
-      });
+      }) as never);
       await act(async () => {
         renderWithProviders(<App />);
       });

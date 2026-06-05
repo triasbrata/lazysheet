@@ -76,7 +76,7 @@ describe("auto-update", () => {
   // empty, so each assertion starts from a known-clean state.
   beforeEach(async () => {
     await browser.execute(() => window.__E2E__!.dismissToasts());
-    await browser.waitUntil(async () => (await $$(TOAST)).length === 0, {
+    await browser.waitUntil(async () => (await $$(TOAST).length) === 0, {
       timeout: 10000,
       timeoutMsg: "toasts did not clear between tests",
     });

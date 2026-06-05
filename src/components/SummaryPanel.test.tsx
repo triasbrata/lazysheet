@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import React from "react";
-import { renderWithProviders, screen, fireEvent, waitFor, within, act, userEvent } from "@/test/render";
-import type { SheetModel, CellModel, CellValue } from "@/lib/types";
+import { renderWithProviders, screen, fireEvent, waitFor, act, userEvent } from "@/test/render";
+import type { SheetModel, CellModel } from "@/lib/types";
 import type { Selection } from "@/components/Grid/Grid";
 import { STATS_CELL_CAP } from "@/lib/selection-stats";
 
@@ -27,9 +26,6 @@ import { toast } from "sonner";
 
 // ─── Fixture helpers ──────────────────────────────────────────────────────────
 
-function cell(v: CellValue): CellModel {
-  return { v };
-}
 function textCell(c: string): CellModel {
   return { v: { t: "Text", c } };
 }

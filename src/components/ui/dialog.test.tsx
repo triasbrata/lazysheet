@@ -9,8 +9,6 @@ import {
   DialogHeader,
   DialogFooter,
   DialogClose,
-  DialogOverlay,
-  DialogPortal,
 } from "./dialog";
 
 describe("Dialog", () => {

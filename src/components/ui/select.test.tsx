@@ -9,8 +9,6 @@ import {
   SelectGroup,
   SelectLabel,
   SelectSeparator,
-  SelectScrollUpButton,
-  SelectScrollDownButton,
 } from "./select";
 
 describe("Select", () => {

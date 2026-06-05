@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import React, { useState } from "react";
+import { useState } from "react";
 import { renderWithProviders, screen, userEvent, fireEvent } from "@/test/render";
 import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
 import type { ColumnFilter } from "@/lib/grid-filter";

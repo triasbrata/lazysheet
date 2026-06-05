@@ -151,7 +151,7 @@ describe("onWebviewDragDrop", () => {
 
     mockGetCurrentWebview.mockReturnValueOnce({
       onDragDropEvent: mockOnDragDropEvent,
-    } as ReturnType<typeof getCurrentWebview>);
+    } as unknown as ReturnType<typeof getCurrentWebview>);
 
     const cb = vi.fn();
     const unlisten = await onWebviewDragDrop(cb);
