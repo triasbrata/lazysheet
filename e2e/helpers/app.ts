@@ -154,7 +154,10 @@ export async function prepareApp(): Promise<void> {
     localStorage.removeItem("lazysheet:default-copy-format");
     localStorage.removeItem("lazysheet:sql-dialect");
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith("lazysheet:sql-table:")) {
+      if (
+        key.startsWith("lazysheet:sql-table:") ||
+        key.startsWith("lazysheet:sql-keys:")
+      ) {
         localStorage.removeItem(key);
       }
     }

@@ -106,6 +106,7 @@ export function MultiSelect({
                   key={opt.value}
                   type="button"
                   role="option"
+                  data-testid={`multi-select-option-${opt.value}`}
                   aria-selected={isChecked}
                   onClick={() => toggle(opt.value)}
                   className={cn(

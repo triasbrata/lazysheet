@@ -11,8 +11,9 @@
  *   7. Zoom persists per-file (localStorage, debounce 250ms).
  *   8. Plain wheel (no ctrlKey) does NOT change zoom.
  *
- * Lifecycle: prepareApp once + beforeEach openFixture so each test starts at
- * zoom=1 with a clean file-state (prepareApp clears lazysheet:file-state).
+ * Lifecycle: beforeEach prepareApp (reload + clear lazysheet:file-state) +
+ * openFixture so each test starts at zoom=1 — zoom is held in the in-memory
+ * useFileState store, so only a reload truly resets it.
  */
 
 import {
@@ -24,6 +25,7 @@ import {
   dispatchCtrlWheel,
   getZoom,
   gridKey,
+  selectCell,
 } from "../helpers/app.js";
 
 /** Pixel tolerance for cell-width comparison. */
@@ -56,18 +58,17 @@ async function dispatchPlainWheel(deltaY: number): Promise<void> {
 }
 
 describe("grid-zoom", () => {
-  before(async () => {
-    await prepareApp();
-  });
-
-  // Re-open fixture before each test so we always start at zoom=1 with a clean state.
+  // Full reset per test (same pattern as 05-column-filter): zoom lives in the
+  // useFileState IN-MEMORY store, synced to localStorage only as a debounced
+  // backup — removing lazysheet:file-state does NOT reset the live React state,
+  // so without a reload the previous test's zoom leaks into the next one.
+  // prepareApp() clears the storage AND reloads the page, killing both.
   beforeEach(async () => {
+    await prepareApp();
     await openFixture(FIX.csv);
-    // Ensure zoom is reset to 1 in case a previous test left it changed
-    await browser.execute(() => {
-      localStorage.removeItem("lazysheet:file-state");
-    });
-    await openFixture(FIX.csv);
+    // StatusBar early-returns a placeholder (no zoom controls) until a
+    // selection exists — after a fresh reload there is none, so select A1.
+    await selectCell(0, 0);
   });
 
   it("initial zoom is 1 after opening fixture", async () => {
