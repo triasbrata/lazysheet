@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   update-changelog:
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,6 +48,8 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           LAZYSHEET_APP_TOKEN: ${{ secrets.LAZYSHEET_APP_TOKEN }}
         run: |
+          # Derive the final (non-rc) tag name; for bare tags FINAL_TAG == TAG
+          FINAL_TAG="${TAG%-rc.*}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote add lazysheet \
@@ -55,12 +58,12 @@ jobs:
           # push fast-forwards (the tag commit is behind that tip).
           git fetch lazysheet "$DEFAULT_BRANCH"
           git checkout -B changelog-sync "lazysheet/${DEFAULT_BRANCH}"
-          if grep -q "^## ${TAG} " changelog-app.log 2>/dev/null; then
-            echo "changelog-app.log already contains ${TAG}; nothing to do."
+          if grep -q "^## ${FINAL_TAG} " changelog-app.log 2>/dev/null; then
+            echo "changelog-app.log already contains ${FINAL_TAG}; nothing to do."
             exit 0
           fi
           DATE=$(date -u +%Y-%m-%d)
-          ENTRY="## ${TAG} (${DATE})\n\n${BODY}\n\n---\n\n"
+          ENTRY="## ${FINAL_TAG} (${DATE})\n\n${BODY}\n\n---\n\n"
           if [ -f changelog-app.log ]; then
             OLD=$(cat changelog-app.log)
             printf "%b%s" "$ENTRY" "$OLD" > changelog-app.log
@@ -68,7 +71,7 @@ jobs:
             printf "%b" "$ENTRY" > changelog-app.log
           fi
           git add -f changelog-app.log
-          git commit -m "chore: update changelog for ${TAG}"
+          git commit -m "chore: update changelog for ${FINAL_TAG}"
           git push lazysheet "HEAD:${DEFAULT_BRANCH}"
 
   build:
@@ -264,6 +267,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Derive tag variables
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          FINAL_TAG="${TAG%-rc.*}"
+          if [ "$TAG" != "$FINAL_TAG" ]; then
+            IS_RC=true
+          else
+            IS_RC=false
+          fi
+          echo "TAG=${TAG}"           >> "$GITHUB_ENV"
+          echo "FINAL_TAG=${FINAL_TAG}" >> "$GITHUB_ENV"
+          echo "IS_RC=${IS_RC}"       >> "$GITHUB_ENV"
+
       - name: Extract tag annotation
         id: tagbody
         shell: bash
@@ -287,18 +304,42 @@ jobs:
           merge-multiple: true
           path: artifacts/
 
+      - name: Promote RC to final tag
+        if: env.IS_RC == 'true'
+        shell: bash
+        env:
+          ANNOTATION_BODY: ${{ steps.tagbody.outputs.body }}
+        run: |
+          # pushed with GITHUB_TOKEN on purpose — it does NOT trigger workflows, the release is already published by this run
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Fetch the final tag from remote in case a previous re-run already created it
+          git fetch origin "refs/tags/${FINAL_TAG}" 2>/dev/null || true
+          if git rev-parse -q --verify "refs/tags/${FINAL_TAG}" >/dev/null 2>&1; then
+            EXISTING_COMMIT="$(git rev-parse "refs/tags/${FINAL_TAG}^{commit}" 2>/dev/null || git rev-parse "refs/tags/${FINAL_TAG}")"
+            if [ "$EXISTING_COMMIT" = "${{ github.sha }}" ]; then
+              echo "Final tag ${FINAL_TAG} already exists at this commit — skipping creation (idempotent re-run)."
+            else
+              echo "::error::${FINAL_TAG} already exists at a different commit (${EXISTING_COMMIT}); refusing to overwrite."
+              exit 1
+            fi
+          else
+            git tag -a "${FINAL_TAG}" "${{ github.sha }}" -m "${ANNOTATION_BODY}"
+            git push origin "${FINAL_TAG}"
+            echo "Promoted ${TAG} -> ${FINAL_TAG} at ${{ github.sha }}"
+          fi
+
       - name: Mirror tag to lazysheet
         shell: bash
         run: |
           git remote add lazysheet \
             "https://x-access-token:${{ secrets.LAZYSHEET_APP_TOKEN }}@github.com/triasbrata/lazysheet.git"
-          git push lazysheet "${{ github.ref_name }}"
+          git push lazysheet "${FINAL_TAG}"
 
       - name: Generate latest.json
         shell: bash
         run: |
-          TAG="${{ github.ref_name }}"
-          VERSION="${TAG#v}"
+          VERSION="${FINAL_TAG#v}"
           PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           NOTES="${{ steps.tagbody.outputs.body }}"
 
@@ -316,7 +357,7 @@ jobs:
           if [ -n "$MAC_BUNDLE" ] && [ -n "$MAC_SIG" ]; then
             MAC_FILENAME="$(basename "$MAC_BUNDLE")"
             MAC_SIGNATURE="$(cat "$MAC_SIG")"
-            MAC_URL="https://github.com/triasbrata/lazysheet/releases/download/${TAG}/${MAC_FILENAME}"
+            MAC_URL="https://github.com/triasbrata/lazysheet/releases/download/${FINAL_TAG}/${MAC_FILENAME}"
             PLATFORMS_JSON="${PLATFORMS_JSON}$(jq -n \
               --arg sig "$MAC_SIGNATURE" \
               --arg url "$MAC_URL" \
@@ -334,7 +375,7 @@ jobs:
           if [ -n "$LINUX_BUNDLE" ] && [ -n "$LINUX_SIG" ]; then
             LINUX_FILENAME="$(basename "$LINUX_BUNDLE")"
             LINUX_SIGNATURE="$(cat "$LINUX_SIG")"
-            LINUX_URL="https://github.com/triasbrata/lazysheet/releases/download/${TAG}/${LINUX_FILENAME}"
+            LINUX_URL="https://github.com/triasbrata/lazysheet/releases/download/${FINAL_TAG}/${LINUX_FILENAME}"
             LINUX_ENTRY="\"linux-x86_64\":$(jq -n --arg sig "$LINUX_SIGNATURE" --arg url "$LINUX_URL" '{"signature":$sig,"url":$url}')"
           else
             echo "::warning::linux-x86_64 updater bundle or sig not found — omitting from latest.json"
@@ -347,7 +388,7 @@ jobs:
           if [ -n "$WIN_BUNDLE" ] && [ -n "$WIN_SIG" ]; then
             WIN_FILENAME="$(basename "$WIN_BUNDLE")"
             WIN_SIGNATURE="$(cat "$WIN_SIG")"
-            WIN_URL="https://github.com/triasbrata/lazysheet/releases/download/${TAG}/${WIN_FILENAME}"
+            WIN_URL="https://github.com/triasbrata/lazysheet/releases/download/${FINAL_TAG}/${WIN_FILENAME}"
             WIN_ENTRY="\"windows-x86_64\":$(jq -n --arg sig "$WIN_SIGNATURE" --arg url "$WIN_URL" '{"signature":$sig,"url":$url}')"
           else
             echo "::warning::windows-x86_64 updater bundle or sig not found — omitting from latest.json"
@@ -414,17 +455,17 @@ jobs:
           # holds files (dmg) alongside dirs (deb, appimage, msi, nsis). gh only
           # uploads files, so collect them recursively.
           mapfile -t FILES < <(find artifacts -type f)
-          if gh release view "${{ github.ref_name }}" --repo triasbrata/lazysheet >/dev/null 2>&1; then
-            gh release edit "${{ github.ref_name }}" \
+          if gh release view "${FINAL_TAG}" --repo triasbrata/lazysheet >/dev/null 2>&1; then
+            gh release edit "${FINAL_TAG}" \
               --repo triasbrata/lazysheet \
               --notes-file /tmp/release-notes.md
-            gh release upload "${{ github.ref_name }}" \
+            gh release upload "${FINAL_TAG}" \
               --repo triasbrata/lazysheet \
               --clobber "${FILES[@]}"
           else
-            gh release create "${{ github.ref_name }}" \
+            gh release create "${FINAL_TAG}" \
               --repo triasbrata/lazysheet \
-              --title "LazySheet ${{ github.ref_name }}" \
+              --title "LazySheet ${FINAL_TAG}" \
               --notes-file /tmp/release-notes.md \
               "${FILES[@]}"
           fi

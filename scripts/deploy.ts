@@ -1,13 +1,23 @@
 #!/usr/bin/env bun
 /**
- * Local deploy script.
+ * Local deploy script — RC-first flow.
  *
- * Flow: load .env -> build changelog from commits since latest tag ->
- * ask Claude Code to decide the semantic version bump -> bump version files ->
- * commit -> create annotated tag (message = changelog) -> push.
+ * Flow: load .env -> build changelog from commits since last stable tag ->
+ * ask Claude Code to decide the semantic version bump (fresh cycle only) ->
+ * bump version files + commit "chore: release vX.Y.Z" (fresh cycle only) ->
+ * create annotated RC tag vX.Y.Z-rc.N (message = changelog) -> push.
  *
- * The pushed tag triggers .github/workflows/release.yml which builds the
- * cross-platform artifacts and publishes the release.
+ * CI (release.yml) receives the RC tag, builds all platform artifacts,
+ * and on success creates the final tag vX.Y.Z at the same commit using
+ * GITHUB_TOKEN (which intentionally does not re-trigger the workflow),
+ * then publishes the GitHub release under the final tag name.
+ *
+ * On CI failure: fix the code, re-run `bun run app:deploy`. deploy.ts
+ * detects the in-progress RC cycle and creates vX.Y.Z-rc.(N+1) without
+ * re-bumping version files or creating another release commit.
+ *
+ * Version files always hold the bare base version (e.g. 0.5.0) — the
+ * rc suffix lives only in the git tag, never in package.json or Cargo.toml.
  *
  * Usage:
  *   bun run app:deploy            # interactive, asks for confirmation
@@ -218,6 +228,48 @@ function bumpVersionFiles(newVersion: string) {
   }
 }
 
+/**
+ * Extract the rc counter N from a tag name like "v0.5.0-rc.3".
+ * Returns null if the tag is not an rc tag.
+ */
+function parseRcNumber(tagName: string): number | null {
+  const m = tagName.match(/^v\d+\.\d+\.\d+-rc\.(\d+)$/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * Given a base version (e.g. "0.5.0") and a list of existing tag names,
+ * return the next rc tag string: "v0.5.0-rc.{maxN+1}", or "v0.5.0-rc.1"
+ * if no rc tags exist for that base version.
+ */
+function nextRcTag(baseVersion: string, existingTags: string[]): string {
+  const prefix = `v${baseVersion}-rc.`;
+  let maxN = 0;
+  for (const tag of existingTags) {
+    if (!tag.startsWith(prefix)) continue;
+    const n = parseRcNumber(tag);
+    if (n !== null && n > maxN) maxN = n;
+  }
+  return `${prefix}${maxN + 1}`;
+}
+
+/**
+ * Return the most recent stable (non-rc) tag reachable from HEAD, or null
+ * if no stable tag exists. Uses --exclude to skip all rc tags.
+ */
+async function resolveLastStableTag(): Promise<string | null> {
+  try {
+    const tag = (
+      await $`git describe --tags --abbrev=0 --exclude ${"*-rc.*"}`.cwd(ROOT).quiet().text()
+    ).trim();
+    return tag || null;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   loadEnv(resolve(ROOT, ".env"));
 
@@ -227,25 +279,18 @@ async function main() {
     die("working tree not clean — commit or stash changes before deploying");
   }
 
-  // 2. resolve commit range
-  let latestTag: string | null = null;
-  try {
-    latestTag = (
-      await $`git describe --tags --abbrev=0`.cwd(ROOT).quiet().text()
-    ).trim();
-  } catch {
-    latestTag = null;
-  }
+  // 2. resolve commit range — use last stable (non-rc) tag as baseline
+  const lastStableTag = await resolveLastStableTag();
 
   // 3. collect commits
-  const range = latestTag ? `${latestTag}..HEAD` : "HEAD";
+  const range = lastStableTag ? `${lastStableTag}..HEAD` : "HEAD";
   const logOut = (
     await $`git log ${range} --pretty=format:%s%x1f%h`.cwd(ROOT).quiet().text()
   ).trim();
   if (!logOut) {
     die(
-      latestTag
-        ? `no new commits since ${latestTag}`
+      lastStableTag
+        ? `no new commits since ${lastStableTag}`
         : "no commits found",
     );
   }
@@ -254,37 +299,72 @@ async function main() {
     return { subject, hash };
   });
 
-  // 4. current version
+  // 4. current version from package.json (always the bare base version)
   const currentVersion = JSON.parse(
     readFileSync(resolve(ROOT, "package.json"), "utf8"),
   ).version as string;
 
+  // Derive the stable version string from the last stable tag (strip leading "v")
+  const lastStableVersion = lastStableTag ? lastStableTag.replace(/^v/, "") : null;
+
   log(`\nCurrent version: ${currentVersion}`);
-  log(`Commits in range (${latestTag ?? "initial"}..HEAD): ${commits.length}`);
+  log(`Commits in range (${lastStableTag ?? "initial"}..HEAD): ${commits.length}`);
 
-  // 5. changelog + version decision
+  // 5. changelog (built from the full range regardless of cycle state)
   const changelog = buildChangelog(commits);
-  log(`\nAsking Claude to decide version bump...`);
-  const { bump, version } = await decideBump(currentVersion, commits);
-  const tag = `v${version}`;
 
-  log(`\n${"=".repeat(50)}`);
-  log(`Bump: ${bump}   ${currentVersion} -> ${version}   (tag ${tag})`);
-  log(`${"=".repeat(50)}`);
+  // 6. Determine baseVersion and whether this is a fresh or mid-cycle run.
+  //    Mid-cycle: last stable tag exists AND package.json version has already
+  //    been bumped ahead of it (i.e. an RC cycle is in progress).
+  let baseVersion: string;
+  let freshCycle: boolean;
+
+  if (lastStableVersion !== null && currentVersion !== lastStableVersion) {
+    // RC cycle already in progress — package.json was bumped in the prior run.
+    baseVersion = currentVersion;
+    freshCycle = false;
+    log(`\nRC cycle in progress for v${baseVersion} — skipping version bump.`);
+  } else {
+    // Fresh cycle: ask Claude to decide the bump.
+    log(`\nAsking Claude to decide version bump...`);
+    const { bump, version } = await decideBump(currentVersion, commits);
+    baseVersion = version;
+    freshCycle = true;
+
+    log(`\n${"=".repeat(50)}`);
+    log(`Bump: ${bump}   ${currentVersion} -> ${baseVersion}`);
+    log(`${"=".repeat(50)}`);
+  }
+
   log(`\n${changelog}\n`);
 
+  // 7. Compute rc tag for this run.
+  const existingRcTagsOut = (
+    await $`git tag -l ${`v${baseVersion}-rc.*`}`.cwd(ROOT).quiet().text()
+  ).trim();
+  const existingRcTags = existingRcTagsOut
+    ? existingRcTagsOut.split("\n").filter((t) => t.trim() !== "")
+    : [];
+  const rcTag = nextRcTag(baseVersion, existingRcTags);
+
+  log(`Planned RC tag:   ${rcTag}`);
+  log(`Target final tag: v${baseVersion}`);
+
   if (DRY_RUN) {
+    log(`\n--dry-run: would${freshCycle ? " bump version files, commit chore: release v" + baseVersion + "," : ""} create tag ${rcTag}, push HEAD + ${rcTag}.`);
     log("--dry-run: no files changed, no tag created, no push.");
     return;
   }
 
-  // 6. confirm
+  // 8. confirm
   if (!SKIP_CONFIRM) {
-    const answer = prompt(`Create and push ${tag}? (y/N)`)?.trim().toLowerCase();
+    const answer = prompt(
+      `Create and push ${rcTag}? CI will promote to v${baseVersion} on success. (y/N)`,
+    )?.trim().toLowerCase();
     if (answer !== "y" && answer !== "yes") die("aborted by user");
   }
 
-  // 7. e2e gate
+  // 9. e2e gate
   if (!SKIP_E2E && !DRY_RUN) {
     log("Running e2e gate (native tauri-webdriver)…");
     try {
@@ -294,23 +374,25 @@ async function main() {
     }
   }
 
-  // 8. bump version files
-  bumpVersionFiles(version);
+  // 10. Fresh cycle only: bump version files + commit.
+  //     The commit message uses the final version (no rc suffix) because
+  //     version files always hold the bare base version.
+  if (freshCycle) {
+    bumpVersionFiles(baseVersion);
+    await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock`
+      .cwd(ROOT);
+    await $`git commit -m ${`chore: release v${baseVersion}`}`.cwd(ROOT);
+  }
 
-  // 9. commit
-  await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock`
-    .cwd(ROOT);
-  await $`git commit -m ${`chore: release ${tag}`}`.cwd(ROOT);
-
-  // 10. annotated tag — clean summary: no commit hashes, no merge/release noise
+  // 11. annotated RC tag — clean summary: no commit hashes, no merge/release noise
   const tagMessage = buildChangelog(commits, { withHash: false });
-  await $`git tag -a ${tag} -m ${tagMessage}`.cwd(ROOT);
+  await $`git tag -a ${rcTag} -m ${tagMessage}`.cwd(ROOT);
 
-  // 11. push commit + tag
+  // 12. push commit (harmless no-op if HEAD is already up to date) + rc tag
   await $`git push origin HEAD`.cwd(ROOT);
-  await $`git push origin ${tag}`.cwd(ROOT);
+  await $`git push origin ${rcTag}`.cwd(ROOT);
 
-  log(`\n✔ Pushed ${tag}. Release workflow will build and publish artifacts.`);
+  log(`\n✔ Pushed ${rcTag}. CI will build, and on success promote to v${baseVersion} and publish the release.`);
 }
 
 main().catch((err) => die(err?.message ?? String(err)));
