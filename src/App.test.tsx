@@ -457,6 +457,8 @@ let mockFileStateApi: {
   resetColWidth: ReturnType<typeof vi.fn>;
   resetRowHeight: ReturnType<typeof vi.fn>;
   resetAllDimensions: ReturnType<typeof vi.fn>;
+  getZoom: ReturnType<typeof vi.fn>;
+  setZoom: ReturnType<typeof vi.fn>;
   detectStaleOverrides: ReturnType<typeof vi.fn>;
   reapplyStaleOverrides: ReturnType<typeof vi.fn>;
   discardStaleOverrides: ReturnType<typeof vi.fn>;
@@ -543,6 +545,8 @@ function resetMockFileState(
     resetColWidth: vi.fn(),
     resetRowHeight: vi.fn(),
     resetAllDimensions: vi.fn(),
+    getZoom: vi.fn().mockReturnValue(1),
+    setZoom: vi.fn(),
     detectStaleOverrides: vi
       .fn()
       .mockReturnValue({ hasStaleCols: false, hasStaleRows: false }),
@@ -3260,6 +3264,133 @@ describe("App", () => {
         writable: true,
         configurable: true,
       });
+    });
+  });
+
+  // ── Zoom ─────────────────────────────────────────────────────────────────────
+
+  describe("zoom", () => {
+    it("Ctrl+= zooms in: setZoom is called with value >1 after 250ms debounce", async () => {
+      vi.useFakeTimers();
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      resetMockFileState();
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "=", ctrlKey: true });
+      });
+      // Advance past debounce window
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      expect(mockFileStateApi.setZoom).toHaveBeenCalledTimes(1);
+      const calledWith = (mockFileStateApi.setZoom as ReturnType<typeof vi.fn>).mock.calls[0][0] as number;
+      expect(calledWith).toBeGreaterThan(1);
+      vi.useRealTimers();
+    });
+
+    it("Ctrl+- zooms out: setZoom is called with value <1 after 250ms debounce", async () => {
+      vi.useFakeTimers();
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      resetMockFileState();
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "-", ctrlKey: true });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      expect(mockFileStateApi.setZoom).toHaveBeenCalledTimes(1);
+      const calledWith = (mockFileStateApi.setZoom as ReturnType<typeof vi.fn>).mock.calls[0][0] as number;
+      expect(calledWith).toBeLessThan(1);
+      vi.useRealTimers();
+    });
+
+    it("Ctrl+= then Ctrl+0 resets zoom: final setZoom call value is 1", async () => {
+      vi.useFakeTimers();
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      resetMockFileState();
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      // Zoom in first
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "=", ctrlKey: true });
+      });
+      // Advance enough for first debounce to fire
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      // Now reset
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "0", ctrlKey: true });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+      const calls = (mockFileStateApi.setZoom as ReturnType<typeof vi.fn>).mock.calls;
+      const lastCall = calls[calls.length - 1][0] as number;
+      expect(lastCall).toBe(1);
+      vi.useRealTimers();
+    });
+
+    it("restore: getZoom is called after workbook opens, zoom restored from persistence", async () => {
+      // Set getZoom to return 1.5 before rendering with open workbook
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      resetMockFileState({
+        getZoom: vi.fn().mockReturnValue(1.5),
+      });
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      // The restore effect (line 264-271) fires on filePath change — filePath is non-null here
+      expect(mockFileStateApi.getZoom).toHaveBeenCalled();
+    });
+
+    it("pending timer is cleared when filePath changes: no stale setZoom fires after file switch", async () => {
+      vi.useFakeTimers();
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      resetMockFileState();
+
+      let rerender!: (ui: React.ReactElement) => void;
+      await act(async () => {
+        const result = renderWithProviders(<App />);
+        rerender = result.rerender;
+      });
+
+      // Zoom in — starts the 250ms debounce timer but do NOT advance yet
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "=", ctrlKey: true });
+      });
+
+      // Simulate file close: workbook becomes null, filePath changes to null
+      resetMockWorkbookState({ workbook: null, activeSheet: null });
+      await act(async () => {
+        rerender(<App />);
+      });
+
+      // Advance past the debounce window — timer should have been cleared
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+
+      // setZoom should NOT have been called (timer was cleared on filePath change)
+      expect(mockFileStateApi.setZoom).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
   });
 });

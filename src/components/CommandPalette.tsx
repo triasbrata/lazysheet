@@ -277,6 +277,7 @@ export function CommandPalette({
       <DialogContent
         className="max-w-md p-0 gap-0 overflow-hidden sm:max-w-md"
         showCloseButton={false}
+        data-testid="command-palette"
       >
         <DialogTitle className="sr-only">{t("command.paletteTitle")}</DialogTitle>
         <div className="flex items-center gap-2 border-b border-border px-3 py-2">
@@ -297,6 +298,7 @@ export function CommandPalette({
             }}
             onKeyDown={onKeyDown}
             placeholder={placeholder}
+            data-testid="command-palette-input"
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -327,6 +329,7 @@ export function CommandPalette({
                       return (
                         <button
                           key={c.id}
+                          data-testid="command-palette-item"
                           onMouseEnter={() => setActiveIdx(globalIdx)}
                           onClick={() => c.run()}
                           className={cn(

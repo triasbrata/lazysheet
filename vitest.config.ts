@@ -9,8 +9,11 @@ export default defineConfig({
     setupFiles: ["src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
-      provider: "v8",
-      reporter: ["text", "json-summary", "json"],
+      // istanbul (not v8) is required: scripts/e2e.ts merges this unit coverage
+      // with the e2e istanbul chunks via nyc. json -> coverage-final.json (nyc
+      // merge); json-summary -> coverage-summary.json (scripts/coverage-total.ts).
+      provider: "istanbul",
+      reporter: ["text", "json", "json-summary"],
       reportsDirectory: "coverage/unit",
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
@@ -20,6 +23,8 @@ export default defineConfig({
         "src/test/**",
         "src/**/*.test.{ts,tsx}",
         "src/**/*.d.ts",
+        "e2e/**",
+        "node_modules/**",
       ],
       thresholds: { lines: 95 },
     },

@@ -108,11 +108,13 @@ export function Cell({
     color: s?.fg,
     fontWeight: s?.bold ? 600 : undefined,
     fontStyle: s?.italic ? "italic" : undefined,
-    fontSize: s?.font_size ? `${s.font_size}px` : undefined,
+    fontSize: s?.font_size ? `calc(${s.font_size}px * var(--grid-zoom, 1))` : undefined,
     fontFamily: s?.font_name,
     boxSizing: "border-box",
     // Keep in sync with measure.ts DEFAULT_PADDING_X/Y (halfX=10, halfY=6).
-    padding: "6px 10px",
+    // Measurement stays in logical space (padding constants in measure.ts stay 20/12);
+    // rendering scales via the --grid-zoom CSS var on the scroll container.
+    padding: "calc(6px * var(--grid-zoom, 1)) calc(10px * var(--grid-zoom, 1))",
     borderRight: "1px solid var(--border)",
     borderBottom: "1px solid var(--border)",
     display: "flex",
@@ -216,6 +218,10 @@ export function Cell({
             alignItems: "center",
             alignSelf: "center",
             marginLeft: "auto",
+            // Reserve a small gap so the funnel never abuts/overlaps the header
+            // text — guarantees clear separation even at narrow column widths and
+            // during the brief autofit reflow after a header is marked.
+            paddingLeft: 4,
             flexShrink: 0,
           }}
         >

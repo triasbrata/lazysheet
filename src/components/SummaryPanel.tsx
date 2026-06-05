@@ -606,6 +606,7 @@ export function SummaryPanel({
 
   return (
     <div
+      data-testid="summary-panel"
       className="flex shrink-0 flex-col border-t border-border bg-card/30"
       onKeyDown={handleKeyDown}
     >
@@ -679,6 +680,7 @@ export function SummaryPanel({
               onClick={addCategoryCol}
               className="self-start text-muted-foreground"
               title={`Add sub-category (up to ${MAX_CATEGORY_FIELDS - 1})`}
+              data-testid="summary-add-category"
             >
               <Plus className="h-3 w-3" />
               <span>Add sub-category</span>
@@ -699,6 +701,7 @@ export function SummaryPanel({
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
                 title="Collapsible tree view"
+                data-testid="summary-view-tree"
               >
                 Tree
               </button>
@@ -711,6 +714,7 @@ export function SummaryPanel({
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
                 title="Hierarchical flat view (Excel-style indent)"
+                data-testid="summary-view-flat"
               >
                 Flat
               </button>
@@ -726,6 +730,7 @@ export function SummaryPanel({
                 onChange={(e) => setIncludeSubtotals(e.target.checked)}
                 disabled={categoryCols.length < 2}
                 className="h-3 w-3 accent-primary"
+                data-testid="summary-subtotals"
               />
               Subtotals
             </label>
@@ -760,6 +765,7 @@ export function SummaryPanel({
           <div className="flex items-center gap-2">
             <div className="inline-flex items-stretch overflow-hidden rounded-md border border-border">
               <Button
+                data-testid="summary-copy-btn"
                 type="button"
                 variant="ghost"
                 size="xs"
@@ -801,6 +807,7 @@ export function SummaryPanel({
                     className="rounded-none border-0 border-l border-border"
                     title="Choose copy format"
                     aria-label="Choose copy format"
+                    data-testid="summary-copy-caret"
                   >
                     <ChevronDown className="h-3 w-3" />
                   </Button>
@@ -816,16 +823,18 @@ export function SummaryPanel({
                     <DropdownMenuRadioItem
                       value="markdown"
                       className="text-xs"
+                      data-testid="summary-copy-opt-markdown"
                     >
                       <Copy className="size-3" /> Markdown
                     </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="tsv" className="text-xs">
+                    <DropdownMenuRadioItem value="tsv" className="text-xs" data-testid="summary-copy-opt-tsv">
                       <Copy className="size-3" /> TSV
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value="image"
                       disabled={result.tooLarge}
                       className="text-xs"
+                      data-testid="summary-copy-opt-image"
                     >
                       <ImageDown className="size-3" /> Image
                     </DropdownMenuRadioItem>
@@ -840,6 +849,7 @@ export function SummaryPanel({
               onClick={onClose}
               title="Close (Esc)"
               aria-label="Close summary panel"
+              data-testid="summary-close"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -847,7 +857,11 @@ export function SummaryPanel({
         </div>
       </div>
 
-      <div ref={tableContainerRef} className="max-h-64 overflow-auto">
+      <div
+        ref={tableContainerRef}
+        data-testid="summary-table-container"
+        className="max-h-64 overflow-auto"
+      >
         {result.tooLarge ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
             Selection too large to summarize. Pick a smaller range.
@@ -929,7 +943,7 @@ function FlatTable({ rows, catLabels, valueHeader }: FlatTableProps) {
   // the blank-out tracking.
   let prev: string[] = [];
   return (
-    <table className="w-full text-xs">
+    <table data-testid="summary-table" className="w-full text-xs">
       <thead className="sticky top-0 bg-muted/40 backdrop-blur-sm">
         <tr className="text-foreground/70">
           {catLabels.map((l, i) => (
@@ -1007,7 +1021,7 @@ function TreeTable({
   onToggle,
 }: TreeTableProps) {
   return (
-    <table className="w-full text-xs">
+    <table data-testid="summary-table" className="w-full text-xs">
       <thead className="sticky top-0 bg-muted/40 backdrop-blur-sm">
         <tr className="text-foreground/70">
           <th

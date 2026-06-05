@@ -27,6 +27,8 @@ export interface PersistedFileState {
   lastActiveSheet?: string;
   sheets: Record<string, PersistedSheetState>;
   updatedAt: number;
+  // Per-file grid zoom factor; 1 = 100%. Absent means default (1).
+  zoom?: number;
 }
 
 type Store = Record<string, PersistedFileState>;
@@ -65,6 +67,9 @@ export interface UseFileStateApi {
   resetColWidth: (sheetName: string, col: number) => void;
   resetRowHeight: (sheetName: string, row: number) => void;
   resetAllDimensions: (sheetName: string) => void;
+
+  getZoom: () => number;
+  setZoom: (zoom: number) => void;
 
   detectStaleOverrides: (
     sheetName: string,
@@ -115,6 +120,7 @@ function ensureEntry(store: Store, path: string): PersistedFileState {
       lastActiveSheet: existing.lastActiveSheet,
       sheets: { ...(existing.sheets ?? {}) },
       updatedAt: existing.updatedAt ?? 0,
+      zoom: existing.zoom,
     };
   }
   return { sheets: {}, updatedAt: 0 };
@@ -471,6 +477,30 @@ export function useFileState(path: string | null): UseFileStateApi {
     [path, commit],
   );
 
+  const getZoom = useCallback((): number => {
+    if (!path) return 1;
+    return store[path]?.zoom ?? 1;
+  }, [store, path]);
+
+  const setZoom = useCallback(
+    (zoom: number) => {
+      if (!path) return;
+      commit((prev) => {
+        const next: Store = { ...prev };
+        const entry = ensureEntry(next, path);
+        if (zoom === 1) {
+          delete entry.zoom;
+        } else {
+          entry.zoom = zoom;
+        }
+        entry.updatedAt = Date.now();
+        next[path] = entry;
+        return next;
+      });
+    },
+    [path, commit],
+  );
+
   useEffect(() => {
     return () => {
       if (debounceRef.current !== null) {
@@ -511,5 +541,7 @@ export function useFileState(path: string | null): UseFileStateApi {
     detectStaleOverrides,
     reapplyStaleOverrides,
     discardStaleOverrides,
+    getZoom,
+    setZoom,
   };
 }

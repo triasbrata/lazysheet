@@ -36,6 +36,7 @@ import {
   headerBandStuck,
   FUNNEL_ALLOWANCE_X,
   FUNNEL_ICON_PX,
+  FUNNEL_ROW_MIN_HEIGHT,
   resolveActiveCoords,
   ROW_NUM_COL_WIDTH,
   sampleRowIndices,
@@ -56,6 +57,7 @@ import {
   type MeasureOptions,
 } from "@/lib/measure";
 import { getCellFormula, copyFormula } from "@/lib/formula-copy";
+import { zoomFromWheel } from "@/lib/zoom";
 import { Filter } from "lucide-react";
 import { motion } from "motion/react";
 import { ColumnFilterDropdown } from "./ColumnFilterDropdown";
@@ -115,6 +117,9 @@ interface GridProps {
   onColumnFilterChange?: (colAnchor: number, filter: ColumnFilter) => void;
   canCopyQuery?: boolean;
   onCopyQuery?: (kind: QueryKind) => void;
+  // Grid zoom factor (0.5–2.0). 1 = 100%. Multiplies the dimension pipeline at render.
+  zoom?: number;
+  onZoomChange?: (next: number) => void;
 }
 
 type DragMode = "cell" | "rowHeader" | "colHeader";
@@ -155,6 +160,8 @@ export function Grid({
   onColumnFilterChange,
   canCopyQuery,
   onCopyQuery,
+  zoom = 1,
+  onZoomChange,
 }: GridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalRows = sheet.rows.length;
@@ -177,18 +184,18 @@ export function Grid({
   const widths = useMemo(
     () =>
       Array.from({ length: totalCols }, (_, i) => {
-        if (colPreview && colPreview.idx === i) return colPreview.w;
-        return effectiveColWidth(sheet, i, colOverrides);
+        if (colPreview && colPreview.idx === i) return colPreview.w; // already screen px
+        return Math.round(effectiveColWidth(sheet, i, colOverrides) * zoom);
       }),
-    [sheet, totalCols, colOverrides, colPreview],
+    [sheet, totalCols, colOverrides, colPreview, zoom],
   );
   const heights = useMemo(
     () =>
       Array.from({ length: totalRows }, (_, i) => {
-        if (rowPreview && rowPreview.idx === i) return rowPreview.h;
-        return effectiveRowHeight(sheet, i, rowOverrides);
+        if (rowPreview && rowPreview.idx === i) return rowPreview.h; // already screen px
+        return Math.round(effectiveRowHeight(sheet, i, rowOverrides) * zoom);
       }),
-    [sheet, totalRows, rowOverrides, rowPreview],
+    [sheet, totalRows, rowOverrides, rowPreview, zoom],
   );
 
   const handleResizePreview = useCallback(
@@ -201,15 +208,17 @@ export function Grid({
 
   const handleResizeCommit = useCallback(
     (orientation: ResizeOrientation, idx: number, size: number) => {
+      // size is screen px (drag result). Convert to logical px so overrides are
+      // stored zoom-independent (logical px).
       if (orientation === "col") {
         setColPreview(null);
-        onColResize?.(idx, size);
+        onColResize?.(idx, Math.round(size / zoom));
       } else {
         setRowPreview(null);
-        onRowResize?.(idx, size);
+        onRowResize?.(idx, Math.round(size / zoom));
       }
     },
-    [onColResize, onRowResize],
+    [onColResize, onRowResize, zoom],
   );
 
   // Merge map + header-group anchors — declared before the autofit orchestrator
@@ -298,7 +307,8 @@ export function Grid({
         const cell = row[c];
         texts.push(cell ? cellText(cell) : "");
         perCell.push(cellMeasureOpts(cell));
-        widthsForMeasure.push(widths[c] ?? DEFAULT_COL_WIDTH);
+        // widths are zoomed screen px; measurement must happen in logical px
+        widthsForMeasure.push((widths[c] ?? Math.round(DEFAULT_COL_WIDTH * zoom)) / zoom);
       }
       const base: MeasureOptions = {
         ...baseFont,
@@ -308,11 +318,11 @@ export function Grid({
       // The header row carries inline funnels; keep it tall enough for the icon
       // (icon box + 2× cell vertical padding of 6px).
       if (rowIdx === headerRow && groupByAnchor.size > 0) {
-        return Math.max(measured, FUNNEL_ICON_PX + 12);
+        return Math.max(measured, FUNNEL_ROW_MIN_HEIGHT);
       }
       return measured;
     },
-    [sheet, totalRows, totalCols, widths, cellMeasureOpts, headerRow, groupByAnchor],
+    [sheet, totalRows, totalCols, widths, cellMeasureOpts, headerRow, groupByAnchor, zoom],
   );
 
   const handleAutofitCols = useCallback(
@@ -328,6 +338,9 @@ export function Grid({
       // microtasks after fonts.ready resolves.
       void awaitFontsReady().then(() => {
         const baseFont: MeasureOptions = sampleCellFont();
+        // sampleCellFont() samples a live (zoomed) cell — font-size is in screen px.
+        // Normalize to logical px so measurement produces zoom-independent overrides.
+        if (zoom !== 1 && baseFont.fontSize) baseFont.fontSize = baseFont.fontSize / zoom;
         let applied = 0;
         let reset = 0;
         for (const col of unique) {
@@ -349,7 +362,7 @@ export function Grid({
         toast.success(`Autofit ${label}`);
       });
     },
-    [totalCols, computeAutofitColWidth, onColResize, onColReset],
+    [totalCols, computeAutofitColWidth, onColResize, onColReset, zoom],
   );
 
   const handleAutofitRows = useCallback(
@@ -361,6 +374,9 @@ export function Grid({
       if (unique.length === 0) return;
       void awaitFontsReady().then(() => {
         const baseFont: MeasureOptions = sampleCellFont();
+        // sampleCellFont() samples a live (zoomed) cell — font-size is in screen px.
+        // Normalize to logical px so measurement produces zoom-independent overrides.
+        if (zoom !== 1 && baseFont.fontSize) baseFont.fontSize = baseFont.fontSize / zoom;
         let applied = 0;
         let reset = 0;
         for (const row of unique) {
@@ -382,7 +398,7 @@ export function Grid({
         toast.success(`Autofit ${label}`);
       });
     },
-    [totalRows, computeAutofitRowHeight, onRowResize, onRowReset],
+    [totalRows, computeAutofitRowHeight, onRowResize, onRowReset, zoom],
   );
 
   // ResizeHandle dblclick entry point. Expands to selection range when the
@@ -421,9 +437,12 @@ export function Grid({
   }, [widths]);
 
   const totalContentWidth = cumColX[cumColX.length - 1] ?? 0;
-  const bodyWidth = ROW_NUM_COL_WIDTH + totalContentWidth;
+  // Zoomed row-number column width (base ROW_NUM_COL_WIDTH × zoom).
+  const rowNumColWidth = Math.round(ROW_NUM_COL_WIDTH * zoom);
+  const bodyWidth = rowNumColWidth + totalContentWidth;
 
-  const headerHeight = 26;
+  // Base 26px × zoom.
+  const headerHeight = Math.round(26 * zoom);
 
   // ── Filter-aware row visibility ─────────────────────────────────────────
   const mergedRowSet = useMemo(() => buildMergedRowSet(sheet.merges), [sheet.merges]);
@@ -476,6 +495,31 @@ export function Grid({
   useEffect(() => {
     selectionRef.current = selection ?? null;
   }, [selection]);
+
+  // Latest zoom held in a ref so the wheel listener reads the current value
+  // without re-binding on every zoom tick (effect deps stay [onZoomChange]).
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  // ── Ctrl+wheel / pinch zoom ───────────────────────────────────────────────
+  // macOS translates touchpad pinch into `wheel` events with ctrlKey=true, so
+  // this ONE native listener covers both Ctrl+scroll and pinch-to-zoom. It must
+  // be a native listener with { passive: false } — React's synthetic onWheel is
+  // passive and cannot preventDefault(), which is required to block the Tauri
+  // WKWebView's built-in native page zoom.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !onZoomChange) return;
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey) return; // normal scroll passes through untouched
+      e.preventDefault(); // blocks WKWebView native page zoom (and pinch zoom)
+      onZoomChange(zoomFromWheel(zoomRef.current, e.deltaY));
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [onZoomChange]);
 
   // ── Cell setters ─────────────────────────────────────────────────────────
   const setSingleCell = useCallback(
@@ -1086,11 +1130,24 @@ export function Grid({
   const rowVirtualizer = useVirtualizer({
     count: visibleRowIndices.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (i) => { const r = visibleRowIndices[i]; return heights[r] ?? DEFAULT_ROW_HEIGHT; },
+    estimateSize: (i) => {
+      const r = visibleRowIndices[i];
+      const h = heights[r] ?? Math.round(DEFAULT_ROW_HEIGHT * zoom);
+      // Floor the funnel-bearing header row at FUNNEL_ROW_MIN_HEIGHT so a
+      // measure() cache-clear (file re-open / font-ready) never collapses it to
+      // the native estimate and then async re-grows — that gap is a visible
+      // height shift. Skip while this row is mid drag-resize (heights[r] is the
+      // live preview): flooring then would block shrinking the header below 24.
+      const previewing = rowPreview?.idx === r;
+      if (r === headerRow && groupByAnchor.size > 0 && !previewing) {
+        return Math.max(h, Math.round(FUNNEL_ROW_MIN_HEIGHT * zoom));
+      }
+      return h;
+    },
     getItemKey: (i) => visibleRowIndices[i] ?? i,
     overscan: 8,
     measureElement: (el) =>
-      el ? el.getBoundingClientRect().height : DEFAULT_ROW_HEIGHT,
+      el ? el.getBoundingClientRect().height : Math.round(DEFAULT_ROW_HEIGHT * zoom),
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
@@ -1115,6 +1172,18 @@ export function Grid({
       prevSheetRef.current = sheet;
       prevRowOverridesRef.current = rowOverrides;
       rowVirtualizer.measure();
+      // measure() wipes the size cache. On (re)open the row DOM nodes are reused
+      // (stable row-index keys), so measureElement/ResizeObserver won't re-fire to
+      // reseed the cache — a funnel header would stay at the estimate (collapsed,
+      // funnel overlapping text). Queue the currently-rendered rows for the
+      // real-DOM remeasure below (useLayoutEffect runs pre-paint, before the user
+      // sees the collapsed frame).
+      for (const vr of virtualRows) {
+        const r = visibleRowIndices[vr.index];
+        if (r !== undefined && r >= 0 && r < totalRows) {
+          pendingMeasureRowsRef.current.add(r);
+        }
+      }
       return;
     }
     const changed = changedRowIndices(prevRowOverridesRef.current, rowOverrides);
@@ -1122,11 +1191,50 @@ export function Grid({
       if (r < 0 || r >= totalRows) continue;
       const pos = visiblePos.get(r);
       if (pos === undefined) continue;
-      rowVirtualizer.resizeItem(pos, effectiveRowHeight(sheet, r, rowOverrides));
+      rowVirtualizer.resizeItem(
+        pos,
+        Math.round(effectiveRowHeight(sheet, r, rowOverrides) * zoom),
+      );
       pendingMeasureRowsRef.current.add(r);
     }
     prevRowOverridesRef.current = rowOverrides;
-  }, [rowOverrides, sheet, totalRows, rowVirtualizer, visiblePos]);
+  }, [rowOverrides, sheet, totalRows, rowVirtualizer, visiblePos, zoom]);
+
+  // Zoom changes invalidate the measured-height cache: rows were measured at
+  // the old zoom, and `minHeight: vr.size` feeds the stale size back into the
+  // DOM — rows grow on zoom-in (content pushes the box) but never shrink on
+  // zoom-out (minHeight pins the box, so ResizeObserver stays silent). Heights
+  // ratchet up while widths scale down. measure() resets to estimateSize
+  // (already zoom-scaled); queue the rendered rows so the pre-paint remeasure
+  // below corrects any row whose real box differs from the estimate.
+  const prevZoomRef = useRef(zoom);
+  useEffect(() => {
+    if (prevZoomRef.current === zoom) return;
+    prevZoomRef.current = zoom;
+    rowVirtualizer.measure();
+    for (const vr of virtualRows) {
+      const r = visibleRowIndices[vr.index];
+      if (r !== undefined && r >= 0 && r < totalRows) {
+        pendingMeasureRowsRef.current.add(r);
+      }
+    }
+  }, [zoom, rowVirtualizer, virtualRows, visibleRowIndices, totalRows]);
+
+  // One-shot remeasure once the real Geist glyphs load. The first measure runs
+  // with the fallback font (shorter line box), so rows whose content has no
+  // height override settle to a too-small box and—because measureElement only
+  // fires on a DOM size change—stay squished after the font swaps in. Forcing a
+  // measure() when document.fonts.ready resolves discards the stale cache so
+  // measureElement re-reads each row at its real glyph height.
+  useEffect(() => {
+    let cancelled = false;
+    void awaitFontsReady().then(() => {
+      if (!cancelled) rowVirtualizer.measure();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rowVirtualizer]);
 
   // After each render, measure actual DOM height for recently-resized rows and
   // correct the virtualizer. Needed because overflow:visible cells keep the row
@@ -1174,7 +1282,7 @@ export function Grid({
       if (focusPos !== undefined) rowVirtualizer.scrollToIndex(focusPos, { align: "center" });
       const x = cumColX[focusC] ?? 0;
       const w = widths[focusC] ?? 0;
-      const viewportW = el.clientWidth - ROW_NUM_COL_WIDTH;
+      const viewportW = el.clientWidth - rowNumColWidth;
       const desiredLeft = Math.max(0, x - viewportW / 2 + w / 2);
       el.scrollTo({ left: desiredLeft, behavior: "smooth" });
       return;
@@ -1184,15 +1292,15 @@ export function Grid({
     if (focusPos !== undefined) rowVirtualizer.scrollToIndex(focusPos, { align: "auto" });
     const x = cumColX[focusC] ?? 0;
     const w = widths[focusC] ?? 0;
-    const viewportLeft = el.scrollLeft + ROW_NUM_COL_WIDTH;
+    const viewportLeft = el.scrollLeft + rowNumColWidth;
     const viewportRight = el.scrollLeft + el.clientWidth;
-    const cellLeft = ROW_NUM_COL_WIDTH + x;
+    const cellLeft = rowNumColWidth + x;
     const cellRight = cellLeft + w;
     if (cellLeft < viewportLeft) {
       el.scrollTo({ left: x, behavior: "auto" });
     } else if (cellRight > viewportRight) {
       el.scrollTo({
-        left: cellRight - el.clientWidth + ROW_NUM_COL_WIDTH,
+        left: cellRight - el.clientWidth + rowNumColWidth,
         behavior: "auto",
       });
     }
@@ -1236,6 +1344,12 @@ export function Grid({
     return null;
   };
 
+  // Funnel icon box (FUNNEL_ICON_PX logical) scaled by the grid zoom var.
+  const funnelIconStyle = {
+    width: `calc(${FUNNEL_ICON_PX}px * var(--grid-zoom, 1))`,
+    height: `calc(${FUNNEL_ICON_PX}px * var(--grid-zoom, 1))`,
+  } as const;
+
   // Shared helper — renders a funnel button + ColumnFilterDropdown for column i
   // triggered from the given source ("band" or "ruler").
   const renderFilterControl = (i: number, source: FilterSource, iconColor?: string) => {
@@ -1258,8 +1372,13 @@ export function Grid({
           aria-label="Filter column"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setOpenFilter({ col: i, source }); }}
-          className="inline-flex items-center justify-center rounded p-0.5 transition-opacity hover:opacity-60"
-          style={iconColor ? { color: iconColor } : undefined}
+          className="inline-flex items-center justify-center rounded transition-opacity hover:opacity-60"
+          // Icon box + padding scale with zoom so the funnel matches the
+          // FUNNEL_ALLOWANCE_X autofit reservation (logical px × zoom).
+          style={{
+            padding: "calc(2px * var(--grid-zoom, 1))",
+            ...(iconColor ? { color: iconColor } : undefined),
+          }}
         >
           {filterIsActive ? (
             <motion.span
@@ -1267,10 +1386,10 @@ export function Grid({
               animate={{ scale: [1, 1.18, 1], opacity: [1, 0.55, 1] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             >
-              <Filter className="size-3" fill="currentColor" />
+              <Filter style={funnelIconStyle} fill="currentColor" />
             </motion.span>
           ) : (
-            <Filter className="size-3" fill="currentColor" />
+            <Filter style={funnelIconStyle} fill="currentColor" />
           )}
         </button>
       </ColumnFilterDropdown>
@@ -1315,11 +1434,12 @@ export function Grid({
     <div className="relative flex-1 overflow-hidden bg-background">
       <div
         ref={scrollRef}
+        data-testid="grid-scroll-container"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         onScroll={handleScroll}
         className="h-full w-full overflow-auto outline-none focus:outline-none"
-        style={{ contain: "strict" }}
+        style={{ contain: "strict", ["--grid-zoom" as string]: zoom, fontSize: "calc(1em * var(--grid-zoom))" }}
       >
         {/* Sticky header — column letters */}
         <div
@@ -1333,7 +1453,7 @@ export function Grid({
           <div
             onPointerDown={handleCornerPointerDown}
             className="sticky left-0 z-40 shrink-0 border-r border-border bg-muted/90 cursor-cell"
-            style={{ width: ROW_NUM_COL_WIDTH, height: headerHeight }}
+            style={{ width: rowNumColWidth, height: headerHeight }}
           />
           {widths.map((w, i) => {
             const colInSel =
@@ -1390,12 +1510,12 @@ export function Grid({
           {headerRow != null && headerStuck && (
             <div
               className="sticky left-0 z-20 flex border-b border-border bg-muted/85 backdrop-blur-md"
-              style={{ top: headerHeight, width: bodyWidth, height: effectiveRowHeight(sheet, headerRow, rowOverrides) }}
+              style={{ top: headerHeight, width: bodyWidth, height: Math.round(effectiveRowHeight(sheet, headerRow, rowOverrides) * zoom) }}
             >
               {/* Corner spacer aligns with row-number column */}
               <div
                 className="sticky left-0 z-10 shrink-0 border-r border-border bg-muted/90"
-                style={{ width: ROW_NUM_COL_WIDTH }}
+                style={{ width: rowNumColWidth }}
               />
               {Array.from({ length: totalCols }, (_, i) => {
                 const key = `${headerRow + 1}:${i + 1}`;
@@ -1464,7 +1584,7 @@ export function Grid({
                         : "bg-muted/85 text-muted-foreground"
                   }`}
                   style={{
-                    width: ROW_NUM_COL_WIDTH,
+                    width: rowNumColWidth,
                     minHeight: vr.size,
                     alignSelf: "stretch",
                   }}
@@ -1560,7 +1680,7 @@ export function Grid({
             sheet={sheet}
             widths={widths}
             cumColX={cumColX}
-            leftOffset={ROW_NUM_COL_WIDTH}
+            leftOffset={rowNumColWidth}
             cellHighlight={cellHighlight}
             headerRow={headerRow}
           />
@@ -1573,7 +1693,7 @@ export function Grid({
             cumColX={cumColX}
             visiblePos={visiblePos}
             measurements={measurements}
-            leftOffset={ROW_NUM_COL_WIDTH}
+            leftOffset={rowNumColWidth}
           />
             </div>
           </ContextMenuTrigger>

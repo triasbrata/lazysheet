@@ -30,8 +30,24 @@ anyhow = "1"
 thiserror = "1"
 tauri-plugin-drag = "2.1.1"
 tauri-plugin-clipboard = "2.1.11"
+# E2E WebDriver automation — optional, enabled by the `webdriver` feature for
+# e2e builds only (`cargo build --features webdriver`). Never enabled by
+# `tauri build` (release), so it never ships in production.
+tauri-plugin-webdriver = { version = "0.2", optional = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+
+[features]
+# Embeds a W3C WebDriver server in the app (native WKWebView/WebKitGTK/WebView2)
+# so tauri-webdriver can drive it cross-platform. e2e builds only.
+# `tauri/custom-protocol` forces Tauri to serve the embedded frontendDist
+# (../dist) instead of the dev server URL (localhost:1420). Without it a plain
+# `cargo build` is a `dev` build that loads devUrl → blank window in e2e.
+webdriver = ["dep:tauri-plugin-webdriver", "tauri/custom-protocol"]
+# Same WebDriver server, but NO custom-protocol → the binary is a `dev` build
+# that loads devUrl (localhost:1420). Run `VITE_E2E=true deno task dev` alongside
+# it to drive specs against the live Vite server (HMR, no dist rebuild per change).
+webdriver-dev = ["dep:tauri-plugin-webdriver"]

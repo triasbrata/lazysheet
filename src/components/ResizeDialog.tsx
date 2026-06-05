@@ -84,7 +84,7 @@ export function ResizeDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" data-testid="resize-dialog">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -102,6 +102,7 @@ export function ResizeDialog({
             max={RESIZE_DIALOG_MAX}
             step={1}
             value={value}
+            data-testid="resize-input"
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -125,7 +126,7 @@ export function ResizeDialog({
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={submit}>OK</Button>
+          <Button onClick={submit} data-testid="resize-ok-btn">OK</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

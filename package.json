@@ -10,8 +10,17 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "run:dev": "tauri dev",
-    "test": "vitest run",
-    "app:deploy": "deno run -A scripts/deploy.ts"
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "app:deploy": "deno run -A scripts/deploy.ts",
+    "e2e:fixtures": "deno run -A e2e/fixtures/generate.ts",
+    "e2e:build-app": "VITE_E2E=true deno task build:web && cargo build --manifest-path src-tauri/Cargo.toml --features webdriver",
+    "e2e:dev:vite": "VITE_E2E=true vite",
+    "e2e:dev:build-app": "cargo build --manifest-path src-tauri/Cargo.toml --features webdriver-dev",
+    "e2e:run": "cd e2e && pnpm test",
+    "e2e:full:run": "deno task e2e:build-app && deno task e2e:run",
+    "test:e2e": "deno run -A scripts/e2e.ts"
   },
   "dependencies": {
     "@crabnebula/tauri-plugin-drag": "^2",
@@ -59,6 +68,9 @@
     "jsdom": "^29.1.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "xlsx": "^0.18.5",
+    "vite-plugin-istanbul": "^7.0.0",
+    "@vitest/coverage-istanbul": "^3.0.0"
   }
 }

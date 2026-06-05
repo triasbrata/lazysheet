@@ -2,11 +2,28 @@ import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import istanbul from "vite-plugin-istanbul";
 
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig(async () => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(process.env.VITE_E2E
+      ? [
+          istanbul({
+            include: "src/**/*",
+            exclude: ["node_modules", "**/*.test.ts", "e2e/", "src/vite-env.d.ts"],
+            extension: [".js", ".ts", ".tsx"],
+            requireEnv: false,
+            // vite-plugin-istanbul skips instrumentation during `vite build`
+            // (production) unless this is set — our e2e binary is a production build.
+            forceBuildInstrument: true,
+          }),
+        ]
+      : []),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

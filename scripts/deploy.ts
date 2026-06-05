@@ -13,6 +13,7 @@
  *   deno task app:deploy            # interactive, asks for confirmation
  *   deno task app:deploy --yes      # skip confirmation
  *   deno task app:deploy --dry-run  # print the plan, no git writes / push
+ *   deno task app:deploy --skip-e2e # bypass the e2e gate (emergency escape hatch)
  */
 
 import { $ } from "jsr:@david/dax@^0.43.0";
@@ -24,6 +25,7 @@ const ROOT = resolve(import.meta.dirname!, "..");
 const args = new Set(Deno.args);
 const DRY_RUN = args.has("--dry-run");
 const SKIP_CONFIRM = args.has("--yes") || args.has("-y");
+const SKIP_E2E = args.has("--skip-e2e");
 
 function die(msg: string): never {
   console.error(`\n✖ ${msg}\n`);
@@ -282,19 +284,29 @@ async function main() {
     if (answer !== "y" && answer !== "yes") die("aborted by user");
   }
 
-  // 7. bump version files
+  // 7. e2e gate
+  if (!SKIP_E2E && !DRY_RUN) {
+    log("Running e2e gate (native tauri-webdriver)…");
+    try {
+      await $`deno run -A scripts/e2e.ts`.cwd(ROOT);
+    } catch {
+      die("E2E gate failed — release aborted (no git writes made). Fix tests, or re-run with --skip-e2e to override.");
+    }
+  }
+
+  // 8. bump version files
   bumpVersionFiles(version);
 
-  // 8. commit
+  // 9. commit
   await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock`
     .cwd(ROOT);
   await $`git commit -m ${`chore: release ${tag}`}`.cwd(ROOT);
 
-  // 9. annotated tag — clean summary: no commit hashes, no merge/release noise
+  // 10. annotated tag — clean summary: no commit hashes, no merge/release noise
   const tagMessage = buildChangelog(commits, { withHash: false });
   await $`git tag -a ${tag} -m ${tagMessage}`.cwd(ROOT);
 
-  // 10. push commit + tag
+  // 11. push commit + tag
   await $`git push origin HEAD`.cwd(ROOT);
   await $`git push origin ${tag}`.cwd(ROOT);
 

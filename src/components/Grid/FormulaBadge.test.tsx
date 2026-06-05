@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderWithProviders, screen, userEvent } from "@/test/render";
+import { renderWithProviders, screen, userEvent, fireEvent } from "@/test/render";
 import { FormulaBadge } from "./FormulaBadge";
 
 vi.mock("@/lib/formula-copy", () => ({
@@ -75,5 +75,49 @@ describe("FormulaBadge", () => {
     // Popover should close — formula text no longer in DOM
     // (waitFor not needed if copyFormula resolves immediately via mock)
     expect(screen.queryByText("=MIN(D1:D5)")).toBeNull();
+  });
+
+  // Lines 46-47: PopoverContent onPointerDown and onClick call e.stopPropagation()
+  it("PopoverContent onPointerDown stops propagation to outer element", async () => {
+    const user = userEvent.setup();
+    const outerPointerDown = vi.fn();
+    renderWithProviders(
+      <div onPointerDown={outerPointerDown}>
+        <FormulaBadge formula="=SUM(A1:A5)" />
+      </div>
+    );
+
+    // Open popover
+    await user.click(screen.getByRole("button", { name: /Show formula/i }));
+    const formulaText = await screen.findByText("=SUM(A1:A5)");
+    expect(formulaText).toBeInTheDocument();
+
+    // Find the PopoverContent element (the popover panel, not the trigger)
+    // The formula code element is inside PopoverContent
+    const codeEl = screen.getByText("=SUM(A1:A5)");
+    // pointerDown on the content — should NOT bubble to outer div
+    fireEvent.pointerDown(codeEl);
+    expect(outerPointerDown).not.toHaveBeenCalled();
+  });
+
+  it("PopoverContent onClick stops propagation to outer element", async () => {
+    const user = userEvent.setup();
+    const outerClick = vi.fn();
+    renderWithProviders(
+      <div onClick={outerClick}>
+        <FormulaBadge formula="=AVERAGE(B1:B5)" />
+      </div>
+    );
+
+    // Open popover
+    await user.click(screen.getByRole("button", { name: /Show formula/i }));
+    const formulaText = await screen.findByText("=AVERAGE(B1:B5)");
+    expect(formulaText).toBeInTheDocument();
+
+    // Click inside the popover content — should not bubble to wrapper div
+    fireEvent.click(formulaText);
+    expect(outerClick).not.toHaveBeenCalled();
+    // Formula text still visible (popover stays open — click on code doesn't close it)
+    expect(screen.queryByText("=AVERAGE(B1:B5)")).toBeInTheDocument();
   });
 });

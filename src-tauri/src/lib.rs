@@ -10,6 +10,13 @@ use tauri::{Emitter, Manager};
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
+    // E2E WebDriver automation server — only when built with `--features webdriver`,
+    // never in release. Powers native cross-platform e2e via tauri-webdriver.
+    #[cfg(any(feature = "webdriver", feature = "webdriver-dev"))]
+    {
+        builder = builder.plugin(tauri_plugin_webdriver::init());
+    }
+
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
@@ -43,6 +50,21 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(PendingFiles::default())
         .manage(OpenFile::default())
+        .setup(|app| {
+            // E2E runs: spawn the window on the primary monitor instead of whichever monitor is
+            // active, so multi-monitor dev machines get deterministic placement.
+            // Never affects release builds.
+            #[cfg(any(feature = "webdriver", feature = "webdriver-dev"))]
+            if let Some(window) = app.webview_windows().values().next() {
+                if let Ok(Some(monitor)) = window.primary_monitor() {
+                    let _ = window.set_position(*monitor.position());
+                    let _ = window.center();
+                }
+            }
+            #[cfg(not(any(feature = "webdriver", feature = "webdriver-dev")))]
+            let _ = app;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::open_workbook,
             commands::load_sheet,

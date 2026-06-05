@@ -35,5 +35,13 @@ src-tauri/target/
 .claude/
 .envrc
 
-# Test coverage output
+# E2E runner
+e2e/node_modules/
+e2e/.wdio*
+e2e/*.log
+
+# Coverage
+.nyc_output/
 coverage/
+e2e/fixtures/*.xlsx
+e2e/fixtures/*.xls

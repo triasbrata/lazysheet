@@ -32,23 +32,24 @@ function resolveBackgroundColor(explicit?: string): string {
   return "#ffffff";
 }
 
-export async function copyNodeAsImage(
+/**
+ * Render a DOM node to a PNG Blob via html-to-image, including the WebKit
+ * blank-first-render warm-up. Exported so it can be exercised directly (e.g. in
+ * e2e) without the clipboard write that WebDriver can't permit.
+ *
+ * Called synchronously (returns a Promise) by copyNodeAsImage so the user
+ * gesture survives — do not await anything before invoking it there.
+ */
+export function renderNodeToPngBlob(
   node: HTMLElement,
   opts: CopyNodeAsImageOptions = {},
-): Promise<CopyNodeAsImageResult> {
-  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
-    return {
-      ok: false,
-      error: "Clipboard image write not supported in this environment",
-    };
-  }
-
+): Promise<Blob> {
   const pixelRatio =
     opts.pixelRatio ?? Math.max(2, window.devicePixelRatio || 1);
   const backgroundColor = resolveBackgroundColor(opts.backgroundColor);
   const filter = opts.filter;
 
-  const blobPromise: Promise<Blob> = (async () => {
+  return (async () => {
     await document.fonts?.ready?.catch(() => undefined);
     const { toBlob } = await import("html-to-image");
 
@@ -65,6 +66,20 @@ export async function copyNodeAsImage(
     if (!b) throw new Error("Failed to render node to PNG");
     return b;
   })();
+}
+
+export async function copyNodeAsImage(
+  node: HTMLElement,
+  opts: CopyNodeAsImageOptions = {},
+): Promise<CopyNodeAsImageResult> {
+  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+    return {
+      ok: false,
+      error: "Clipboard image write not supported in this environment",
+    };
+  }
+
+  const blobPromise = renderNodeToPngBlob(node, opts);
 
   try {
     const item = new ClipboardItem({ "image/png": blobPromise });
