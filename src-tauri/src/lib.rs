@@ -50,6 +50,21 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(PendingFiles::default())
         .manage(OpenFile::default())
+        .setup(|app| {
+            // E2E runs: spawn the window on the primary monitor instead of whichever monitor is
+            // active, so multi-monitor dev machines get deterministic placement.
+            // Never affects release builds.
+            #[cfg(any(feature = "webdriver", feature = "webdriver-dev"))]
+            if let Some(window) = app.webview_windows().values().next() {
+                if let Ok(Some(monitor)) = window.primary_monitor() {
+                    let _ = window.set_position(*monitor.position());
+                    let _ = window.center();
+                }
+            }
+            #[cfg(not(any(feature = "webdriver", feature = "webdriver-dev")))]
+            let _ = app;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::open_workbook,
             commands::load_sheet,
