@@ -173,8 +173,8 @@ describe("TitleBar — VITE_FF_MULTI_LANG feature flag", () => {
     vi.resetModules();
   });
 
-  it("shows lang-toggle-btn when flag is ON (default env)", () => {
-    // Default: VITE_FF_MULTI_LANG not set → flags.multiLang = true
+  it("shows lang-toggle-btn when flag is ON (test env sets VITE_FF_MULTI_LANG=true)", () => {
+    // vitest.config.ts sets VITE_FF_MULTI_LANG="true" → flags.multiLang = true
     renderWithProviders(
       <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
     );

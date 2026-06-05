@@ -73,8 +73,8 @@ describe("i18n instance", () => {
     expect(i18n.options.interpolation?.escapeValue).toBe(false);
   });
 
-  it("has detection options when flag is ON (default)", () => {
-    // When VITE_FF_MULTI_LANG is not set (or truthy), detection block is present
+  it("has detection options when flag is ON (test env sets VITE_FF_MULTI_LANG=true)", () => {
+    // vitest.config.ts sets VITE_FF_MULTI_LANG="true", so detection block is present
     expect(i18n.options.detection).toBeDefined();
   });
 });

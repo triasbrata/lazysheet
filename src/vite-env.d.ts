@@ -5,10 +5,10 @@ interface ImportMetaEnv {
   readonly VITE_E2E?: string;
 
   /**
-   * Build-time feature flags. Convention: VITE_FF_<NAME>. Absent or any other
-   * value = enabled; 'false' | '0' | 'off' = disabled. Declare each flag here
-   * as `readonly VITE_FF_<NAME>?: string;`. See src/lib/feature-flags.ts.
+   * Build-time feature flags. Convention: VITE_FF_<NAME>. See src/lib/feature-flags.ts.
+   * Default polarity is per-flag (see parseFlag's defaultValue argument).
    */
+  /** default OFF; set "true" to enable multi-language (language toggle + browser language detection). */
   readonly VITE_FF_MULTI_LANG?: string;
 }
 

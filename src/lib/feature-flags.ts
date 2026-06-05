@@ -4,10 +4,14 @@
 // Vite statically replaces `import.meta.env.VITE_*` at build time, so flags have zero
 // runtime overhead and unused branches can be removed by the bundler.
 //
-// Polarity — default ON:
-//   Absent (env var not set)       → enabled  (true)
-//   Set to "false", "0", or "off"  → disabled (false)
-//   Set to anything else (incl. "") → enabled  (true)
+// Polarity — default is per-flag via parseFlag's second argument (defaultValue):
+//   The conventional default is ON (defaultValue = true), meaning:
+//     Absent (env var not set)        → enabled  (true)
+//     Set to "false", "0", or "off"   → disabled (false)
+//     Set to anything else (incl. "") → enabled  (true)
+//
+//   A flag may opt into default-OFF by passing false as the second argument.
+//   Example: multiLang is default-OFF (absent → disabled, set to e.g. "true" → enabled).
 //
 // Setting flags:
 //   - In a .env file:       VITE_FF_AUTO_UPDATE=false
@@ -31,12 +35,14 @@
  * Parse a raw Vite env string into a boolean feature-flag value.
  *
  * Rules:
- * - `undefined` (variable absent)       → `true`  (default ON)
+ * - `undefined` (variable absent)       → `defaultValue` (default: `true`)
  * - `"false"`, `"0"`, `"off"` (any case, any surrounding whitespace) → `false`
  * - anything else (including `""`)       → `true`
+ *
+ * Pass `defaultValue = false` for flags that should be OFF when absent.
  */
-export function parseFlag(raw: string | undefined): boolean {
-  if (raw === undefined) return true;
+export function parseFlag(raw: string | undefined, defaultValue = true): boolean {
+  if (raw === undefined) return defaultValue;
   const normalized = raw.trim().toLowerCase();
   return normalized !== "false" && normalized !== "0" && normalized !== "off";
 }
@@ -53,5 +59,5 @@ export function parseFlag(raw: string | undefined): boolean {
  * replacement). Consumers read e.g. `flags.autoUpdate`.
  */
 export const flags = {
-  multiLang: parseFlag(import.meta.env.VITE_FF_MULTI_LANG),
+  multiLang: parseFlag(import.meta.env.VITE_FF_MULTI_LANG, false),
 } as const satisfies Readonly<Record<string, boolean>>;

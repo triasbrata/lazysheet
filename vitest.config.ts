@@ -7,6 +7,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: false,
     setupFiles: ["src/test/setup.ts"],
+    env: { VITE_FF_MULTI_LANG: "true" },
     include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
       // istanbul (not v8) is required: scripts/e2e.ts merges this unit coverage

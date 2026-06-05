@@ -1,11 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { parseFlag, flags } from "./feature-flags";
 
 // ── parseFlag ────────────────────────────────────────────────────────────────
 
 describe("parseFlag", () => {
-  it("undefined → true (absent = default ON)", () => {
+  it("undefined → true (absent, default defaultValue=true)", () => {
     expect(parseFlag(undefined)).toBe(true);
+  });
+
+  it("undefined with defaultValue=false → false", () => {
+    expect(parseFlag(undefined, false)).toBe(false);
+  });
+
+  it("undefined with defaultValue=true → true (explicit)", () => {
+    expect(parseFlag(undefined, true)).toBe(true);
   });
 
   it('"false" → false', () => {
@@ -60,13 +68,26 @@ describe("parseFlag", () => {
 // ── flags registry ───────────────────────────────────────────────────────────
 
 describe("flags", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it("is an object (smoke test)", () => {
     expect(typeof flags).toBe("object");
     expect(flags).not.toBeNull();
   });
 
-  it("flags.multiLang is true by default (env var absent)", () => {
-    // In test env VITE_FF_MULTI_LANG is not set → parseFlag(undefined) → true
+  it("flags.multiLang is true in test env (VITE_FF_MULTI_LANG=true set by vitest config)", () => {
+    // vitest.config.ts sets VITE_FF_MULTI_LANG="true" so flags.multiLang is true
     expect(flags.multiLang).toBe(true);
+  });
+
+  it("flags.multiLang is false when VITE_FF_MULTI_LANG is absent (real default-OFF)", async () => {
+    // Simulate the real production default: env var absent → parseFlag(undefined, false) → false
+    vi.stubEnv("VITE_FF_MULTI_LANG", undefined as unknown as string);
+    vi.resetModules();
+    const { flags: freshFlags } = await import("./feature-flags");
+    expect(freshFlags.multiLang).toBe(false);
   });
 });
