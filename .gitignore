@@ -45,3 +45,4 @@ e2e/*.log
 coverage/
 e2e/fixtures/*.xlsx
 e2e/fixtures/*.xls
+*.tsbuildinfo

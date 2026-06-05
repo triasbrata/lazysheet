@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 // minimizing the fallback→Geist swap window. The autofit measurement waits for
 // document.fonts.ready, so the sooner the real glyphs are available the smaller
 // the layout shift (grid columns/rows resizing) on open and on header-mark.
-import geistLatinUrl from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
+import geistLatinUrl from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2";
 import "./App.css";
 
 {

@@ -1,5 +1,3 @@
-/// <reference types="vite/client" />
-
 interface ImportMetaEnv {
   /** Set to "true" only for e2e (WebDriver) builds. Enables the window.__E2E__ test hook. */
   readonly VITE_E2E?: string;
@@ -14,6 +12,11 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+declare module "*.woff2" {
+  const url: string;
+  export default url;
 }
 
 interface Window {

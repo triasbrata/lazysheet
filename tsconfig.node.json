@@ -3,8 +3,10 @@
     "composite": true,
     "skipLibCheck": true,
     "module": "ESNext",
+    "target": "ES2022",
     "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["bun"]
   },
-  "include": ["vite.config.ts"]
+  "include": ["scripts/**/*.ts"]
 }

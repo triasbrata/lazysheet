@@ -59,5 +59,5 @@ export function parseFlag(raw: string | undefined, defaultValue = true): boolean
  * replacement). Consumers read e.g. `flags.autoUpdate`.
  */
 export const flags = {
-  multiLang: parseFlag(import.meta.env.VITE_FF_MULTI_LANG, false),
+  multiLang: parseFlag((import.meta as any).env?.VITE_FF_MULTI_LANG, false),
 } as const satisfies Readonly<Record<string, boolean>>;
