@@ -5,7 +5,10 @@
     "githubAria": "GitHub 仓库",
     "logoAlt": "LazySheet 标志",
     "feedbackAria": "打开反馈表单",
-    "githubStarsAria": "{{count}} 个 GitHub Star"
+    "githubStarsAria": "{{count}} 个 GitHub Star",
+    "version": "版本",
+    "versionAria": "选择版本",
+    "versionLatest": "最新"
   },
   "hero": {
     "iconAlt": "LazySheet 图标",

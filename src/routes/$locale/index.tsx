@@ -6,13 +6,9 @@ import {
   ExcelIcon,
   CsvIcon,
   TsvIcon,
-  LockIcon,
-  TerminalIcon,
-  LinuxMark,
 } from '#/components/site/icons'
 import { getDownloadData, type DownloadData } from '#/lib/releases-data'
 import { DownloadButton } from '#/features/download/download-button'
-import { CopyCommand } from '#/features/faq/copy-command'
 import {
   Accordion,
   AccordionItem,
@@ -22,10 +18,17 @@ import {
 import { BentoGrid } from '#/sections/bento/BentoGrid'
 import { useBentoTiles } from '#/sections/bento/features'
 import { isLocale, DEFAULT_LOCALE, type Locale } from '#/i18n/config'
+import { activeVersionFromRelease, selectReleaseByTag } from '#/lib/version'
+import { useFaqEntries } from '#/sections/faq/faq-entries'
+
+type IndexSearch = { v?: string }
 
 export const Route = createFileRoute('/$locale/')({
   component: Home,
   loader: () => getDownloadData(),
+  validateSearch: (search: Record<string, unknown>): IndexSearch => ({
+    v: typeof search.v === 'string' ? search.v : undefined,
+  }),
 })
 
 const FORMATS = [
@@ -126,9 +129,9 @@ export function Formats() {
   )
 }
 
-function Features() {
+function Features({ activeTag }: { activeTag: string }) {
   const { t } = useTranslation()
-  const tiles = useBentoTiles()
+  const tiles = useBentoTiles(activeTag)
 
   return (
     <BentoGrid
@@ -147,8 +150,9 @@ function Features() {
   )
 }
 
-export function Faq() {
+export function Faq({ activeTag }: { activeTag: string }) {
   const { t } = useTranslation()
+  const entries = useFaqEntries(activeTag)
 
   return (
     <section
@@ -168,61 +172,28 @@ export function Faq() {
         <Accordion
           type="single"
           collapsible
-          defaultValue="unsigned"
+          defaultValue={entries[0]?.id}
           className="overflow-hidden rounded-xl border border-surface-container-high bg-white px-6 md:px-8"
         >
-          <AccordionItem value="unsigned" className="border-surface-container-high">
-            <AccordionTrigger className="py-6 text-base">
-              <span className="flex items-center gap-3">
-                <span className="inline-flex shrink-0 rounded-lg bg-secondary-container p-2 text-[var(--st-secondary)]">
-                  <LockIcon className="text-[16px]" />
+          {entries.map((e, i) => (
+            <AccordionItem
+              value={e.id}
+              key={e.id}
+              className={i === 0 ? 'border-surface-container-high' : 'border-t border-surface-container-high'}
+            >
+              <AccordionTrigger className="py-6 text-base">
+                <span className="flex items-center gap-3">
+                  <span className="inline-flex shrink-0 rounded-lg bg-secondary-container p-2 text-[var(--st-secondary)]">
+                    <e.icon className="text-[16px]" />
+                  </span>
+                  <span className="font-display font-semibold text-on-surface">
+                    {e.question}
+                  </span>
                 </span>
-                <span className="font-display font-semibold text-on-surface">
-                  {t('faq.unsignedQuestion')}
-                </span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <p className="mb-4 text-on-surface-variant">
-                {t('faq.unsignedAnswerPre')}{' '}
-                <span className="inline-flex items-center gap-1 font-medium text-on-surface">
-                  <TerminalIcon className="text-[14px]" />
-                  {t('faq.terminal')}
-                </span>{' '}
-                app and run:
-              </p>
-
-              <CopyCommand command={'xattr -dr com.apple.quarantine "/Applications/LazySheet.app"'} />
-
-              <p className="mt-4 text-sm text-on-surface-variant">
-                {t('faq.unsignedAnswerPost')}
-              </p>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="deb-deps" className="border-t border-surface-container-high">
-            <AccordionTrigger className="py-6 text-base">
-              <span className="flex items-center gap-3">
-                <span className="inline-flex shrink-0 rounded-lg bg-secondary-container p-2 text-[var(--st-secondary)]">
-                  <LinuxMark className="text-[16px]" />
-                </span>
-                <span className="font-display font-semibold text-on-surface">
-                  {t('faq.debQuestion')}
-                </span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <p className="mb-4 text-on-surface-variant">
-                {t('faq.debAnswerPre')}
-              </p>
-
-              <CopyCommand command={'sudo apt install -y libjavascriptcoregtk-4.1-0 libsoup-3.0-0 libsoup-3.0-common libwebkit2gtk-4.1-0'} />
-
-              <p className="mt-4 text-sm text-on-surface-variant">
-                {t('faq.debAnswerPost')}
-              </p>
-            </AccordionContent>
-          </AccordionItem>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6">{e.body}</AccordionContent>
+            </AccordionItem>
+          ))}
         </Accordion>
       </div>
     </section>
@@ -231,14 +202,18 @@ export function Faq() {
 
 function Home() {
   const data = Route.useLoaderData()
+  const { v } = Route.useSearch()
+  const selected = selectReleaseByTag(data.releases, v)
+  const selectedTag = selected?.tag ?? activeVersionFromRelease(data.release)
+  const selectedData = { ...data, release: selected ?? data.release }
   return (
     <div className="min-h-screen">
-      <Nav overHero />
+      <Nav overHero releases={data.releases} selectedTag={selectedTag} />
       <main>
-        <Hero data={data} />
+        <Hero data={selectedData} />
         <Formats />
-        <Features />
-        <Faq />
+        <Features activeTag={selectedTag} />
+        <Faq activeTag={selectedTag} />
       </main>
       <Footer />
     </div>

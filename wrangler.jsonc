@@ -5,4 +5,5 @@
   "compatibility_flags": ["nodejs_compat"],
   "routes": [{ "pattern": "lazysheet.brata.cloud", "custom_domain": true }],
   "main": "@tanstack/react-start/server-entry",
+  "preview_urls": true,
 }

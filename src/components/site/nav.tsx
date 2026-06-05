@@ -8,10 +8,12 @@ import { cn } from '#/lib/utils'
 import { isLocale, DEFAULT_LOCALE, type Locale } from '#/i18n/config'
 import { FeedbackDialog } from '#/features/feedback/feedback-dialog'
 import { GithubStars } from '#/features/github/github-stars'
+import { VersionSelector } from '#/features/version/version-selector'
+import type { ReleaseData } from '#/lib/releases'
 
-type NavProps = { overHero?: boolean }
+type NavProps = { overHero?: boolean; releases?: ReleaseData[]; selectedTag?: string }
 
-export function Nav({ overHero = false }: NavProps) {
+export function Nav({ overHero = false, releases, selectedTag }: NavProps) {
   const [scrolled, setScrolled] = useState(false)
   const { scrollY } = useScroll()
   useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 8))
@@ -78,6 +80,9 @@ export function Nav({ overHero = false }: NavProps) {
             </a>
             <GithubStars className="hidden sm:inline-flex" />
           </div>
+          {releases && selectedTag ? (
+            <VersionSelector releases={releases} selectedTag={selectedTag} />
+          ) : null}
           <LanguageSwitcher />
         </div>
       </div>

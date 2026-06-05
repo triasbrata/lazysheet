@@ -7,8 +7,8 @@ import React from 'react'
 
 afterEach(cleanup)
 
-function TileHarness() {
-  const tiles = useBentoTiles()
+function TileHarness({ activeTag }: { activeTag: string }) {
+  const tiles = useBentoTiles(activeTag)
   return (
     <div data-testid="count" data-count={tiles.length}>
       {tiles.map((t) => (
@@ -22,18 +22,18 @@ function TileHarness() {
 
 describe('useBentoTiles', () => {
   it('returns 12 tiles', () => {
-    renderWithI18n(<TileHarness />)
+    renderWithI18n(<TileHarness activeTag="v0.4.0" />)
     const el = screen.getByTestId('count')
     expect(Number(el.getAttribute('data-count'))).toBe(12)
   })
 
   it('has a tile with id group-by', () => {
-    renderWithI18n(<TileHarness />)
+    renderWithI18n(<TileHarness activeTag="v0.4.0" />)
     expect(screen.getByTestId('tile-group-by')).toBeTruthy()
   })
 
   it('has a tile with id formats', () => {
-    renderWithI18n(<TileHarness />)
+    renderWithI18n(<TileHarness activeTag="v0.4.0" />)
     expect(screen.getByTestId('tile-formats')).toBeTruthy()
   })
 
@@ -41,7 +41,7 @@ describe('useBentoTiles', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
     function Capture() {
-      tiles = useBentoTiles()
+      tiles = useBentoTiles('v0.4.0')
       return null
     }
     renderWithI18n(<Capture />)
@@ -61,7 +61,7 @@ describe('useBentoTiles', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
     function Capture() {
-      tiles = useBentoTiles()
+      tiles = useBentoTiles('v0.4.0')
       return null
     }
     renderWithI18n(<Capture />)
@@ -83,7 +83,7 @@ describe('useBentoTiles', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
     function Capture() {
-      tiles = useBentoTiles()
+      tiles = useBentoTiles('v0.4.0')
       return null
     }
     renderWithI18n(<Capture />)
@@ -93,5 +93,29 @@ describe('useBentoTiles', () => {
       expect(typeof tile.span).toBe('string')
       expect(typeof tile.title).toBe('string')
     }
+  })
+
+  it('returns 12 tiles for a future tag (v9.9.9) — highest defined <= active resolves to v0.4.0', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v9.9.9')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    expect(tiles.length).toBe(12)
+  })
+
+  it('returns 12 tiles for a tag below all defined (v0.0.1) — falls back to min = v0.4.0', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.0.1')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    expect(tiles.length).toBe(12)
   })
 })

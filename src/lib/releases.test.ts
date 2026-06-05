@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   classifyAsset,
   parseRelease,
+  parseReleases,
   groupByOS,
   pickPrimaryAsset,
   osLabel,
@@ -213,6 +214,103 @@ describe('parseRelease', () => {
     const result = parseRelease([releaseJunkAssets])
     expect(result).not.toBeNull()
     expect((result as ReleaseData).assets).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// parseReleases
+// ---------------------------------------------------------------------------
+
+const mockRelease2 = {
+  tag_name: 'v0.9.0',
+  name: 'LazySheet 0.9.0',
+  html_url: 'https://github.com/triasbrata/lazysheet/releases/tag/v0.9.0',
+  published_at: '2025-12-01T00:00:00Z',
+  draft: false,
+  assets: [
+    {
+      name: 'LazySheet_0.9.0_aarch64.AppImage',
+      browser_download_url: 'https://example.com/LazySheet_0.9.0_aarch64.AppImage',
+      size: 65000,
+    },
+  ],
+}
+
+describe('parseReleases', () => {
+  it('array of 2 non-draft releases -> returns 2 ReleaseData in order with correct tags', () => {
+    const result = parseReleases([mockRelease, mockRelease2])
+    expect(result).toHaveLength(2)
+    expect(result[0]!.tag).toBe('v1.0.0')
+    expect(result[1]!.tag).toBe('v0.9.0')
+  })
+
+  it('array of 2 releases -> assets classified correctly', () => {
+    const result = parseReleases([mockRelease, mockRelease2])
+    // first release has 3 valid assets (junk filtered)
+    expect(result[0]!.assets).toHaveLength(3)
+    // second release has 1 valid asset
+    expect(result[1]!.assets).toHaveLength(1)
+    expect(result[1]!.assets[0]!.os).toBe('Linux')
+    expect(result[1]!.assets[0]!.arch).toBe('arm64')
+    expect(result[1]!.assets[0]!.format).toBe('AppImage')
+    expect(result[1]!.assets[0]!.url).toBe(
+      'https://example.com/LazySheet_0.9.0_aarch64.AppImage',
+    )
+  })
+
+  it('draft release in array is filtered out', () => {
+    const draft = { ...mockRelease2, draft: true, tag_name: 'v0.9.0-draft' }
+    const result = parseReleases([mockRelease, draft])
+    expect(result).toHaveLength(1)
+    expect(result[0]!.tag).toBe('v1.0.0')
+  })
+
+  it('empty array -> []', () => {
+    expect(parseReleases([])).toEqual([])
+  })
+
+  it('null -> []', () => {
+    expect(parseReleases(null)).toEqual([])
+  })
+
+  it('undefined -> []', () => {
+    expect(parseReleases(undefined)).toEqual([])
+  })
+
+  it('single object (not array) -> [one ReleaseData]', () => {
+    const result = parseReleases(mockRelease)
+    expect(result).toHaveLength(1)
+    expect(result[0]!.tag).toBe('v1.0.0')
+    expect(result[0]!.name).toBe('LazySheet 1.0.0')
+    expect(result[0]!.publishedAt).toBe('2026-01-01T00:00:00Z')
+  })
+
+  it('asset url / os / format preserved via classifyAsset', () => {
+    const result = parseReleases([mockRelease])
+    const dmg = result[0]!.assets.find((a) => a.format === 'dmg')
+    expect(dmg).toBeDefined()
+    expect(dmg!.url).toBe('https://example.com/LazySheet_1.0.0_universal.dmg')
+    expect(dmg!.os).toBe('macOS')
+    expect(dmg!.arch).toBe('universal')
+    expect(dmg!.size).toBe(100000)
+  })
+
+  it('all releases are drafts -> []', () => {
+    const d1 = { ...mockRelease, draft: true }
+    const d2 = { ...mockRelease2, draft: true }
+    expect(parseReleases([d1, d2])).toEqual([])
+  })
+
+  it('htmlUrl falls back to empty string when absent', () => {
+    const rel = { ...mockRelease, html_url: undefined }
+    const result = parseReleases([rel])
+    expect(result[0]!.htmlUrl).toBe('')
+  })
+
+  it('name falls back to tag_name when name is absent', () => {
+    const rel = { ...mockRelease2, name: undefined }
+    const result = parseReleases([rel])
+    expect(result[0]!.name).toBe('v0.9.0')
   })
 })
 

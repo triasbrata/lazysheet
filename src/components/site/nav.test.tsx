@@ -62,6 +62,13 @@ vi.mock('#/features/github/github-stars', () => ({
   GithubStars: () => null,
 }))
 
+// Stub VersionSelector so Nav tests are isolated from router/select internals
+vi.mock('#/features/version/version-selector', () => ({
+  VersionSelector: ({ selectedTag }: { selectedTag: string }) => (
+    <div data-testid="version-selector">{selectedTag}</div>
+  ),
+}))
+
 import { Nav } from '#/components/site/nav'
 import { renderWithI18n } from '#/test/i18n'
 
@@ -143,5 +150,24 @@ describe('Nav — locale fallback branch', () => {
     renderWithI18n(<Nav />)
     // Nav still renders — the ?? '' branch was exercised
     expect(screen.getByText('LazySheet')).toBeTruthy()
+  })
+})
+
+describe('Nav — VersionSelector integration', () => {
+  const releases = [
+    { tag: 'v0.5.0', name: '', htmlUrl: '', publishedAt: '', assets: [] },
+    { tag: 'v0.4.0', name: '', htmlUrl: '', publishedAt: '', assets: [] },
+  ]
+
+  it('renders VersionSelector when releases and selectedTag are provided', () => {
+    renderWithI18n(<Nav releases={releases} selectedTag="v0.5.0" />)
+    const selector = screen.getByTestId('version-selector')
+    expect(selector).toBeTruthy()
+    expect(selector.textContent).toBe('v0.5.0')
+  })
+
+  it('does not render VersionSelector when releases/selectedTag are absent', () => {
+    renderWithI18n(<Nav />)
+    expect(screen.queryByTestId('version-selector')).toBeNull()
   })
 })

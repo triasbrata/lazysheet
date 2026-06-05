@@ -5,7 +5,10 @@
     "githubAria": "GitHub repository",
     "logoAlt": "LazySheet logo",
     "feedbackAria": "Open feedback form",
-    "githubStarsAria": "{{count}} GitHub stars"
+    "githubStarsAria": "{{count}} GitHub stars",
+    "version": "Version",
+    "versionAria": "Select version",
+    "versionLatest": "latest"
   },
   "hero": {
     "iconAlt": "LazySheet icon",
