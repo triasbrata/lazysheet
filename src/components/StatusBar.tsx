@@ -15,12 +15,18 @@ import {
   computeSelectionStats,
   formatStatNumber,
 } from "@/lib/selection-stats";
+import { formatZoomPercent } from "@/lib/zoom";
 
 interface StatusBarProps {
   sheet: SheetModel | null;
   selection: Selection | null;
   canSummarize?: boolean;
   onOpenSummary?: () => void;
+  // Zoom controls — wired in Step 6, UI rendered in Step 7.
+  zoom?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
 }
 
 const PREVIEW_MAX = 200;
@@ -30,6 +36,10 @@ export function StatusBar({
   selection,
   canSummarize,
   onOpenSummary,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }: StatusBarProps) {
   const { t } = useTranslation();
 
@@ -148,6 +158,37 @@ export function StatusBar({
           <Sigma className="h-3 w-3" />
           <span>{t("statusbar.analyze")}</span>
         </button>
+      )}
+      {zoom !== undefined && onZoomOut && onZoomReset && onZoomIn && (
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            data-testid="statusbar-zoom-out"
+            onClick={onZoomOut}
+            title={t("statusbar.zoomOut")}
+            className="rounded px-1.5 py-0.5 text-[11px] text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            data-testid="statusbar-zoom-label"
+            onClick={onZoomReset}
+            title={t("statusbar.zoomReset")}
+            className="rounded px-1.5 py-0.5 text-[11px] font-mono tabular-nums text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+          >
+            {formatZoomPercent(zoom)}
+          </button>
+          <button
+            type="button"
+            data-testid="statusbar-zoom-in"
+            onClick={onZoomIn}
+            title={t("statusbar.zoomIn")}
+            className="rounded px-1.5 py-0.5 text-[11px] text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+          >
+            +
+          </button>
+        </div>
       )}
     </div>
   );

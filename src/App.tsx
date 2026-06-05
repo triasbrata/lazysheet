@@ -52,8 +52,16 @@ import {
   type ColumnFilter,
 } from "@/lib/grid-filter";
 import { SummaryPanel } from "@/components/SummaryPanel";
-import { runUpdateCheck } from "@/lib/updater";
-import { shouldCloseSheet, shouldOpenFile } from "@/lib/keyboard-shortcuts";
+import { runUpdateCheck, type UpdateHandle } from "@/lib/updater";
+import { renderNodeToPngBlob } from "@/lib/copy-as-image";
+import {
+  shouldCloseSheet,
+  shouldOpenFile,
+  shouldZoomIn,
+  shouldZoomOut,
+  shouldZoomReset,
+} from "@/lib/keyboard-shortcuts";
+import { clampZoom, stepZoom } from "@/lib/zoom";
 import {
   buildSqlQuery,
   generateSqlWithProgress,
@@ -125,6 +133,7 @@ function App() {
   const [findQuery, setFindQuery] = useState("");
   const [findFocusNonce, setFindFocusNonce] = useState(0);
   const [summaryPanelOpen, setSummaryPanelOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const fileState = useFileState(wb.workbook?.path ?? null);
   const headerRows = fileState.headerRows;
 
@@ -200,6 +209,11 @@ function App() {
   //     already fired. Prevents re-restore on every selection-change re-render.
   const sheetSwitchAttemptedRef = useRef<string | null>(null);
   const anchorRestoredRef = useRef<string | null>(null);
+  // Zoom refs: live ref for fresh reads in __E2E__; debounce timer ref for persist.
+  const zoomLiveRef = useRef(zoom);
+  zoomLiveRef.current = zoom;
+  const zoomPersistTimerRef = useRef<number | null>(null);
+
   useEffect(() => {
     const sheet = wb.activeSheet;
     const path = wb.workbook?.path;
@@ -244,6 +258,18 @@ function App() {
 
   useFileEvents(open);
 
+  // Restore zoom from persistence when file opens or switches; reset stale
+  // debounce timer so a previous file's pending write doesn't fire.
+  const filePath = wb.workbook?.path ?? null;
+  useEffect(() => {
+    if (zoomPersistTimerRef.current !== null) {
+      window.clearTimeout(zoomPersistTimerRef.current);
+      zoomPersistTimerRef.current = null;
+    }
+    setZoom(filePath ? fileState.getZoom() : 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filePath]);
+
   // E2E test hook — only compiled into builds made with VITE_E2E=true (tree-shaken
   // from prod). Lets WebdriverIO open a file via the REAL backend (no native dialog)
   // and read the clipboard for copy assertions. See e2e/ and .rpi/e2e-webdriver/.
@@ -252,6 +278,86 @@ function App() {
     window.__E2E__ = {
       open: (path: string) => open(path),
       readClipboard: () => readText(),
+      // Drive the updater with a mocked plugin response so specs can assert the
+      // toast UX (up-to-date / offer / error) without a real update server or a
+      // genuine app relaunch. relaunchFn is a no-op for the same reason.
+      runUpdateCheck: (mock) =>
+        runUpdateCheck({
+          trigger: mock.trigger ?? "manual",
+          checkFn: async () => {
+            if (mock.fail) throw new Error(mock.fail);
+            if (!mock.update) return null;
+            return {
+              version: mock.update.version,
+              currentVersion: "0.0.0",
+              downloadAndInstall: async () => {},
+            } satisfies UpdateHandle;
+          },
+          relaunchFn: async () => {},
+        }),
+      // Dismiss all toasts — lets specs isolate toast assertions without a full
+      // page reload (which races sonner's mount/paint on WebKit).
+      dismissToasts: () => toast.dismiss(),
+      // Render the summary table to a PNG via the REAL render pipeline (the same
+      // renderNodeToPngBlob that copyNodeAsImage uses) — bypassing the clipboard
+      // write that WebKit's WebDriver rejects. Decodes the PNG and reports size +
+      // a non-blank check so the spec can verify the WebKit blank-render
+      // workaround actually produced pixels. A hard timeout guarantees the
+      // promise always settles (never hangs the e2e runner).
+      captureSummaryImage: async () => {
+        const node = document.querySelector<HTMLElement>(
+          '[data-testid="summary-table-container"]',
+        );
+        if (!node) return { ok: false, error: "summary container not found" };
+
+        // Mirror handleCopyImage: expand so the full table rasterizes.
+        const prevMaxHeight = node.style.maxHeight;
+        const prevOverflow = node.style.overflow;
+        node.style.maxHeight = "none";
+        node.style.overflow = "visible";
+        try {
+          const analyze = async () => {
+            const blob = await renderNodeToPngBlob(node);
+            const bmp = await createImageBitmap(blob);
+            const canvas = document.createElement("canvas");
+            canvas.width = bmp.width;
+            canvas.height = bmp.height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("no 2d context");
+            ctx.drawImage(bmp, 0, 0);
+            const { data } = ctx.getImageData(0, 0, bmp.width, bmp.height);
+            // Non-blank = at least one pixel differs from the top-left pixel.
+            const r0 = data[0];
+            const g0 = data[1];
+            const b0 = data[2];
+            let nonBlank = false;
+            for (let i = 4; i < data.length; i += 4) {
+              if (data[i] !== r0 || data[i + 1] !== g0 || data[i + 2] !== b0) {
+                nonBlank = true;
+                break;
+              }
+            }
+            return {
+              ok: true as const,
+              bytes: blob.size,
+              width: bmp.width,
+              height: bmp.height,
+              nonBlank,
+            };
+          };
+          const timeout = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("capture timed out")), 20000),
+          );
+          return await Promise.race([analyze(), timeout]);
+        } catch (e) {
+          return { ok: false, error: e instanceof Error ? e.message : String(e) };
+        } finally {
+          node.style.maxHeight = prevMaxHeight;
+          node.style.overflow = prevOverflow;
+        }
+      },
+      // Returns the current grid zoom level; uses a live ref for freshness.
+      getZoom: () => zoomLiveRef.current,
     };
     return () => {
       delete window.__E2E__;
@@ -312,6 +418,31 @@ function App() {
     setSummaryPanelOpen(false);
   }, []);
 
+  // ── Zoom handlers ────────────────────────────────────────────────────────
+  const handleZoomChange = useCallback((next: number) => {
+    const clamped = clampZoom(next);
+    setZoom(clamped);
+    if (zoomPersistTimerRef.current !== null) {
+      window.clearTimeout(zoomPersistTimerRef.current);
+    }
+    zoomPersistTimerRef.current = window.setTimeout(() => {
+      zoomPersistTimerRef.current = null;
+      fileState.setZoom(clamped);
+    }, 250);
+  }, [fileState]);
+
+  const handleZoomIn = useCallback(() => {
+    handleZoomChange(stepZoom(zoomLiveRef.current, 1));
+  }, [handleZoomChange]);
+
+  const handleZoomOut = useCallback(() => {
+    handleZoomChange(stepZoom(zoomLiveRef.current, -1));
+  }, [handleZoomChange]);
+
+  const handleZoomReset = useCallback(() => {
+    handleZoomChange(1);
+  }, [handleZoomChange]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (shouldCloseSheet(e, !!wb.workbook)) {
@@ -323,6 +454,11 @@ function App() {
         e.preventDefault();
         handlePick();
         return;
+      }
+      if (wb.workbook) {
+        if (shouldZoomIn(e))    { e.preventDefault(); handleZoomIn(); return; }
+        if (shouldZoomOut(e))   { e.preventDefault(); handleZoomOut(); return; }
+        if (shouldZoomReset(e)) { e.preventDefault(); handleZoomReset(); return; }
       }
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
@@ -349,7 +485,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook]);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset]);
 
   const handleGoto = useCallback(
     (ref: string): string | null => {
@@ -1104,8 +1240,6 @@ function App() {
 
   const findActive = findOpen && !!wb.activeSheet;
 
-  const filePath = wb.workbook?.path ?? null;
-
   const handleCopyFilePath = useCallback(async () => {
     if (!filePath) {
       toast.message("No file open");
@@ -1197,6 +1331,8 @@ function App() {
               onColumnFilterChange={handleColumnFilterChange}
               canCopyQuery
               onCopyQuery={handleCopyQuery}
+              zoom={zoom}
+              onZoomChange={handleZoomChange}
             />
           )}
           <StatusBar
@@ -1204,6 +1340,10 @@ function App() {
             selection={selection}
             canSummarize={summaryEligible}
             onOpenSummary={handleOpenSummary}
+            zoom={zoom}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onZoomReset={handleZoomReset}
           />
           {summaryPanelOpen && wb.activeSheet && selection && (
             <SummaryPanel

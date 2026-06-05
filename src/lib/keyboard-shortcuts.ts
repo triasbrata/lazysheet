@@ -13,3 +13,24 @@ export function shouldOpenFile(e: KeyboardEvent): boolean {
   if (e.shiftKey) return false;
   return true;
 }
+
+export function shouldZoomIn(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  if (e.key !== "=" && e.key !== "+") return false;
+  return true;
+}
+
+export function shouldZoomOut(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  if (e.key !== "-") return false;
+  return true;
+}
+
+export function shouldZoomReset(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  if (e.key !== "0") return false;
+  return true;
+}

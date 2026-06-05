@@ -11,6 +11,24 @@ declare global {
     __E2E__: {
       open(path: string): Promise<void>;
       readClipboard(): Promise<string>;
+      runUpdateCheck(mock: {
+        trigger?: "startup" | "manual";
+        update?: { version: string } | null;
+        fail?: string;
+      }): Promise<void>;
+      dismissToasts(): void;
+      captureSummaryImage(): Promise<
+        | {
+            ok: true;
+            bytes: number;
+            width: number;
+            height: number;
+            nonBlank: boolean;
+          }
+        | { ok: false; error: string }
+      >;
+      /** Returns the current grid zoom level (1 = 100%). */
+      getZoom?(): number;
     };
     __coverage__?: unknown;
     __e2eClip?: string;
@@ -304,6 +322,33 @@ export async function synthPointerClick(selector: string): Promise<void> {
 export async function synthClickItem(testid: string): Promise<void> {
   await tid(testid).waitForDisplayed({ timeout: 5000 });
   await synthPointerClick(`[data-testid="${testid}"]`);
+}
+
+/**
+ * Dispatches a synthetic WheelEvent with ctrlKey=true on the grid scroll
+ * container. Negative deltaY zooms in; positive deltaY zooms out.
+ * @param deltaY - Wheel delta; negative = zoom in, positive = zoom out.
+ */
+export async function dispatchCtrlWheel(deltaY: number): Promise<void> {
+  await browser.execute((dy: number) => {
+    const el = document.querySelector('[data-testid="grid-scroll-container"]');
+    if (!el) return;
+    el.dispatchEvent(
+      new WheelEvent("wheel", {
+        ctrlKey: true,
+        deltaY: dy,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, deltaY);
+}
+
+/**
+ * Returns the current grid zoom level via window.__E2E__.getZoom().
+ */
+export async function getZoom(): Promise<number> {
+  return browser.execute(() => window.__E2E__.getZoom?.() ?? 1);
 }
 
 /**
