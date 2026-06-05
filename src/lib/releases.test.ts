@@ -4,6 +4,10 @@ import {
   parseRelease,
   groupByOS,
   pickPrimaryAsset,
+  osLabel,
+  archBadge,
+  formatLabel,
+  LATEST_PAGE_URL,
   type ReleaseAsset,
   type ReleaseData,
 } from './releases'
@@ -353,5 +357,320 @@ describe('groupByOS', () => {
     expect(groups.macOS).toHaveLength(0)
     expect(groups.Windows).toHaveLength(0)
     expect(groups.Linux).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// osLabel
+// ---------------------------------------------------------------------------
+
+describe('osLabel', () => {
+  it("'macOS' -> 'macOS'", () => {
+    expect(osLabel('macOS')).toBe('macOS')
+  })
+
+  it("'Windows' -> 'Windows'", () => {
+    expect(osLabel('Windows')).toBe('Windows')
+  })
+
+  it("'Linux' -> 'Linux'", () => {
+    expect(osLabel('Linux')).toBe('Linux')
+  })
+
+  it("'unknown' -> 'your OS'", () => {
+    expect(osLabel('unknown')).toBe('your OS')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// archBadge
+// ---------------------------------------------------------------------------
+
+function makeAsset(
+  overrides: Partial<ReleaseAsset> & Pick<ReleaseAsset, 'os' | 'arch'>,
+): ReleaseAsset {
+  return {
+    name: 'test-asset',
+    url: 'https://example.com/test',
+    size: 1000,
+    format: 'dmg',
+    ...overrides,
+  }
+}
+
+describe('archBadge', () => {
+  it('macOS + universal -> "Intel + Apple Silicon"', () => {
+    const a = makeAsset({ os: 'macOS', arch: 'universal', format: 'dmg' })
+    expect(archBadge(a)).toBe('Intel + Apple Silicon')
+  })
+
+  it('non-macOS + arm64 -> "ARM64"', () => {
+    const a = makeAsset({ os: 'Linux', arch: 'arm64', format: 'AppImage' })
+    expect(archBadge(a)).toBe('ARM64')
+  })
+
+  it('macOS + arm64 -> "ARM64" (not macOS+universal path)', () => {
+    const a = makeAsset({ os: 'macOS', arch: 'arm64', format: 'dmg' })
+    expect(archBadge(a)).toBe('ARM64')
+  })
+
+  it('any OS + x64 -> "x64"', () => {
+    const a = makeAsset({ os: 'Windows', arch: 'x64', format: 'exe' })
+    expect(archBadge(a)).toBe('x64')
+  })
+
+  it('non-macOS + universal -> "Universal"', () => {
+    // Windows with a hypothetical universal arch (not a real Tauri scenario but exercises the branch)
+    const a = makeAsset({ os: 'Windows', arch: 'universal', format: 'exe' })
+    expect(archBadge(a)).toBe('Universal')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// formatLabel
+// ---------------------------------------------------------------------------
+
+describe('formatLabel', () => {
+  it('dmg -> "DMG"', () => {
+    const a = makeAsset({ os: 'macOS', arch: 'universal', format: 'dmg' })
+    expect(formatLabel(a)).toBe('DMG')
+  })
+
+  it('pkg -> "PKG"', () => {
+    const a = makeAsset({ os: 'macOS', arch: 'universal', format: 'pkg' })
+    expect(formatLabel(a)).toBe('PKG')
+  })
+
+  it('tar.gz -> "tar.gz"', () => {
+    const a = makeAsset({ os: 'macOS', arch: 'universal', format: 'tar.gz' })
+    expect(formatLabel(a)).toBe('tar.gz')
+  })
+
+  it('msi -> "MSI Installer"', () => {
+    const a = makeAsset({ os: 'Windows', arch: 'x64', format: 'msi' })
+    expect(formatLabel(a)).toBe('MSI Installer')
+  })
+
+  it('exe -> "Installer (.exe)"', () => {
+    const a = makeAsset({ os: 'Windows', arch: 'x64', format: 'exe' })
+    expect(formatLabel(a)).toBe('Installer (.exe)')
+  })
+
+  it('deb -> ".deb"', () => {
+    const a = makeAsset({ os: 'Linux', arch: 'x64', format: 'deb' })
+    expect(formatLabel(a)).toBe('.deb')
+  })
+
+  it('rpm -> ".rpm"', () => {
+    const a = makeAsset({ os: 'Linux', arch: 'x64', format: 'rpm' })
+    expect(formatLabel(a)).toBe('.rpm')
+  })
+
+  it('AppImage -> "AppImage"', () => {
+    const a = makeAsset({ os: 'Linux', arch: 'x64', format: 'AppImage' })
+    expect(formatLabel(a)).toBe('AppImage')
+  })
+
+  it('snap -> "Snap"', () => {
+    const a = makeAsset({ os: 'Linux', arch: 'x64', format: 'snap' })
+    expect(formatLabel(a)).toBe('Snap')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// classifyAsset — additional format/arch branches
+// ---------------------------------------------------------------------------
+
+describe('classifyAsset (extra formats and arch keywords)', () => {
+  it('.pkg -> macOS/universal/pkg', () => {
+    expect(classifyAsset('LazySheet_1.0.0_universal.pkg')).toEqual({
+      os: 'macOS',
+      arch: 'universal',
+      format: 'pkg',
+    })
+  })
+
+  it('.app.tar.gz -> macOS/universal/tar.gz (defaults to universal)', () => {
+    expect(classifyAsset('LazySheet_1.0.0.app.tar.gz')).toEqual({
+      os: 'macOS',
+      arch: 'universal',
+      format: 'tar.gz',
+    })
+  })
+
+  it('.msi -> Windows/x64/msi', () => {
+    expect(classifyAsset('LazySheet_1.0.0_x64_en-US.msi')).toEqual({
+      os: 'Windows',
+      arch: 'x64',
+      format: 'msi',
+    })
+  })
+
+  it('.snap -> Linux/x64/snap (defaults to x64)', () => {
+    expect(classifyAsset('LazySheet_1.0.0.snap')).toEqual({
+      os: 'Linux',
+      arch: 'x64',
+      format: 'snap',
+    })
+  })
+
+  it('win64 keyword in exe -> x64', () => {
+    expect(classifyAsset('LazySheet-win64.exe')).toEqual({
+      os: 'Windows',
+      arch: 'x64',
+      format: 'exe',
+    })
+  })
+
+  it('x86-64 keyword in deb -> x64', () => {
+    expect(classifyAsset('lazysheet-1.0.0-x86-64.deb')).toEqual({
+      os: 'Linux',
+      arch: 'x64',
+      format: 'deb',
+    })
+  })
+
+  it('.asc -> null (junk)', () => {
+    expect(classifyAsset('LazySheet_1.0.0_x64.exe.asc')).toBeNull()
+  })
+
+  it('.sha512 -> null (junk)', () => {
+    expect(classifyAsset('LazySheet_1.0.0_x64.msi.sha512')).toBeNull()
+  })
+
+  it('.yaml -> null (junk)', () => {
+    expect(classifyAsset('latest.yaml')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// parseRelease — additional branches
+// ---------------------------------------------------------------------------
+
+describe('parseRelease (additional branches)', () => {
+  it('object with tag_name but no name -> name falls back to tag_name', () => {
+    const rel = {
+      tag_name: 'v2.0.0',
+      // name is absent
+      html_url: 'https://github.com/triasbrata/lazysheet/releases/tag/v2.0.0',
+      published_at: '2026-06-01T00:00:00Z',
+      draft: false,
+      assets: [],
+    }
+    const result = parseRelease(rel)
+    expect(result).not.toBeNull()
+    expect((result as ReleaseData).name).toBe('v2.0.0')
+    expect((result as ReleaseData).tag).toBe('v2.0.0')
+  })
+
+  it('object missing html_url -> uses LATEST_PAGE_URL', () => {
+    const rel = {
+      tag_name: 'v2.0.0',
+      name: 'LazySheet 2.0.0',
+      // html_url absent
+      published_at: '2026-06-01T00:00:00Z',
+      draft: false,
+      assets: [],
+    }
+    const result = parseRelease(rel)
+    expect(result).not.toBeNull()
+    expect((result as ReleaseData).htmlUrl).toBe(LATEST_PAGE_URL)
+  })
+
+  it('object missing published_at -> publishedAt is empty string', () => {
+    const rel = {
+      tag_name: 'v2.0.0',
+      name: 'LazySheet 2.0.0',
+      html_url: 'https://github.com/triasbrata/lazysheet/releases/tag/v2.0.0',
+      // published_at absent
+      draft: false,
+      assets: [],
+    }
+    const result = parseRelease(rel)
+    expect(result).not.toBeNull()
+    expect((result as ReleaseData).publishedAt).toBe('')
+  })
+
+  it('asset with missing size -> size defaults to 0', () => {
+    const rel = {
+      tag_name: 'v2.0.0',
+      name: 'LazySheet 2.0.0',
+      html_url: 'https://github.com/triasbrata/lazysheet/releases/tag/v2.0.0',
+      published_at: '2026-06-01T00:00:00Z',
+      draft: false,
+      assets: [
+        {
+          name: 'LazySheet_2.0.0_universal.dmg',
+          browser_download_url: 'https://example.com/LazySheet_2.0.0_universal.dmg',
+          // size absent
+        },
+      ],
+    }
+    const result = parseRelease(rel)
+    expect(result).not.toBeNull()
+    const assets = (result as ReleaseData).assets
+    expect(assets).toHaveLength(1)
+    expect(assets[0]!.size).toBe(0)
+  })
+
+  it('non-array object with draft:true -> null', () => {
+    const rel = {
+      tag_name: 'v2.0.0',
+      name: 'LazySheet 2.0.0',
+      html_url: 'https://github.com/triasbrata/lazysheet/releases/tag/v2.0.0',
+      published_at: '2026-06-01T00:00:00Z',
+      draft: true,
+      assets: [],
+    }
+    expect(parseRelease(rel)).toBeNull()
+  })
+
+  it('object whose assets getter throws -> catch returns null', () => {
+    // Triggers the catch{} block by providing an assets property that throws on access
+    const rel = Object.defineProperty(
+      {
+        tag_name: 'v2.0.0',
+        name: 'LazySheet 2.0.0',
+        html_url: 'https://github.com/triasbrata/lazysheet/releases/tag/v2.0.0',
+        published_at: '2026-06-01T00:00:00Z',
+        draft: false,
+      },
+      'assets',
+      {
+        get() {
+          throw new Error('simulated fetch error')
+        },
+      },
+    )
+    expect(parseRelease(rel)).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// pickPrimaryAsset — forOS[0] last-resort fallback
+// ---------------------------------------------------------------------------
+
+describe('pickPrimaryAsset (last-resort fallback)', () => {
+  it('when no asset matches arch or format rank, returns first asset of that OS', () => {
+    // Craft a Linux asset whose arch+format combo is not in fmtRank for any archPref step.
+    // archPref for arch=null is ['universal','x64','arm64']
+    // fmtRank for Linux is ['AppImage','deb','rpm','snap']
+    // We need an asset whose (arch, format) is never hit.
+    // Use arch='x64' but a format not in fmtRank... but Linux formats in fmtRank cover all.
+    // Instead: use arch='universal' + format='AppImage' — that WOULD be found.
+    // Trick: provide ONLY an arm64 snap asset but request arch='x64'.
+    // archPref for arch='x64' is ['x64','universal','x64'... wait, it's [arch, 'universal', 'x64'] = ['x64','universal','x64']
+    // So arm64 snap won't match x64 or universal -> falls through to forOS[0]
+    const fallbackAsset: ReleaseAsset = {
+      name: 'lazysheet-1.0.0-arm64.snap',
+      url: 'https://example.com/arm64.snap',
+      size: 50000,
+      os: 'Linux',
+      arch: 'arm64',
+      format: 'snap',
+    }
+    const result = pickPrimaryAsset([fallbackAsset], 'Linux', 'x64')
+    // snap with arm64 is not matched by x64/universal prefs, falls back to forOS[0]
+    expect(result).toBe(fallbackAsset)
   })
 })
