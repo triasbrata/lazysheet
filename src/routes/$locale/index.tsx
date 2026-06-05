@@ -18,12 +18,17 @@ import {
 import { BentoGrid } from '#/sections/bento/BentoGrid'
 import { useBentoTiles } from '#/sections/bento/features'
 import { isLocale, DEFAULT_LOCALE, type Locale } from '#/i18n/config'
-import { activeVersionFromRelease } from '#/lib/version'
+import { activeVersionFromRelease, selectReleaseByTag } from '#/lib/version'
 import { useFaqEntries } from '#/sections/faq/faq-entries'
+
+type IndexSearch = { v?: string }
 
 export const Route = createFileRoute('/$locale/')({
   component: Home,
   loader: () => getDownloadData(),
+  validateSearch: (search: Record<string, unknown>): IndexSearch => ({
+    v: typeof search.v === 'string' ? search.v : undefined,
+  }),
 })
 
 const FORMATS = [
@@ -197,15 +202,18 @@ export function Faq({ activeTag }: { activeTag: string }) {
 
 function Home() {
   const data = Route.useLoaderData()
-  const activeTag = activeVersionFromRelease(data.release)
+  const { v } = Route.useSearch()
+  const selected = selectReleaseByTag(data.releases, v)
+  const selectedTag = selected?.tag ?? activeVersionFromRelease(data.release)
+  const selectedData = { ...data, release: selected ?? data.release }
   return (
     <div className="min-h-screen">
-      <Nav overHero />
+      <Nav overHero releases={data.releases} selectedTag={selectedTag} />
       <main>
-        <Hero data={data} />
+        <Hero data={selectedData} />
         <Formats />
-        <Features activeTag={activeTag} />
-        <Faq activeTag={activeTag} />
+        <Features activeTag={selectedTag} />
+        <Faq activeTag={selectedTag} />
       </main>
       <Footer />
     </div>

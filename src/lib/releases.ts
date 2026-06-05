@@ -32,6 +32,7 @@ export const REPO = 'triasbrata/lazysheet'
 export const RELEASES_PAGE_URL = `https://github.com/${REPO}/releases`
 export const LATEST_PAGE_URL = `${RELEASES_PAGE_URL}/latest`
 export const GH_API_LATEST = `https://api.github.com/repos/${REPO}/releases?per_page=1`
+export const GH_API_RELEASES = `https://api.github.com/repos/${REPO}/releases?per_page=30`
 
 export function classifyAsset(
   name: string,
@@ -130,6 +131,38 @@ export function parseRelease(json: unknown): ReleaseData | null {
   } catch {
     return null
   }
+}
+
+export function parseReleases(json: unknown): ReleaseData[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const arr: any[] = Array.isArray(json) ? json : (json ? [json] : [])
+  const result: ReleaseData[] = []
+  for (const rel of arr) {
+    if (!rel || rel.draft) continue
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const assets: ReleaseAsset[] = ((rel.assets ?? []) as any[])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((a: any) => {
+        const c = classifyAsset(a.name)
+        return c
+          ? ({
+              name: a.name,
+              url: a.browser_download_url,
+              size: a.size ?? 0,
+              ...c,
+            } as ReleaseAsset)
+          : null
+      })
+      .filter((x): x is ReleaseAsset => x !== null)
+    result.push({
+      tag: rel.tag_name ?? '',
+      name: rel.name ?? rel.tag_name ?? '',
+      htmlUrl: rel.html_url ?? '',
+      publishedAt: rel.published_at ?? '',
+      assets,
+    })
+  }
+  return result
 }
 
 export function groupByOS(

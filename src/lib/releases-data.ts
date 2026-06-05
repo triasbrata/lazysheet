@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { detectOSFromUA, type OS } from './os'
-import { parseRelease, GH_API_LATEST, type ReleaseData } from './releases'
+import { parseReleases, GH_API_RELEASES, type ReleaseData } from './releases'
 import { FALLBACK_RELEASE } from './fallback-release'
 
 export interface DownloadData {
+  releases: ReleaseData[]
   release: ReleaseData | null
   serverOS: OS
 }
@@ -13,14 +14,13 @@ export const getDownloadData = createServerFn({ method: 'GET' }).handler(
   async (): Promise<DownloadData> => {
     const ua = getRequestHeader('user-agent')
     const serverOS = detectOSFromUA(ua)
-    const release = await fetchLatestCached()
-    return { release, serverOS }
+    const releases = await fetchReleasesCached()
+    return { releases, release: releases[0] ?? null, serverOS }
   },
 )
 
-async function fetchLatestCached(): Promise<ReleaseData | null> {
-  // v2: bump to invalidate entries poisoned with `null` by the old code path.
-  const cacheKey = new Request('https://lazysheet.internal/latest-release-v2')
+async function fetchReleasesCached(): Promise<ReleaseData[]> {
+  const cacheKey = new Request('https://lazysheet.internal/releases-v1')
 
   // Guard: `caches` is a Workers/browser global; undefined in dev (Node.js)
   const g = globalThis as unknown as {
@@ -36,11 +36,11 @@ async function fetchLatestCached(): Promise<ReleaseData | null> {
   // Last-known-good cache. Only successful parses are ever written here, so a
   // hit is always usable. We still re-fetch below to refresh, but the cached
   // value is the fallback if GitHub is rate-limiting or down.
-  let cached: ReleaseData | null = null
+  let cached: ReleaseData[] | null = null
   if (cache) {
     const hit = await cache.match(cacheKey)
     if (hit) {
-      cached = (await hit.json()) as ReleaseData | null
+      cached = (await hit.json()) as ReleaseData[]
       // Fresh hit (within max-age): serve as-is, skip the network.
       return cached
     }
@@ -54,7 +54,7 @@ async function fetchLatestCached(): Promise<ReleaseData | null> {
       (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
         ?.GITHUB_TOKEN
 
-    const res = await fetch(GH_API_LATEST, {
+    const res = await fetch(GH_API_RELEASES, {
       headers: {
         Accept: 'application/vnd.github+json',
         'User-Agent': 'lazysheet-landing',
@@ -63,11 +63,12 @@ async function fetchLatestCached(): Promise<ReleaseData | null> {
       cf: { cacheTtl: 3600 },
     } as RequestInit & { cf?: Record<string, unknown> })
 
-    const data: ReleaseData | null = res.ok ? parseRelease(await res.json()) : null
+    const data: ReleaseData[] = res.ok ? parseReleases(await res.json()) : []
 
-    // Only persist real releases. Never poison the cache with null/failures —
-    // that would hide a published release until the entry expires.
-    if (cache && data && data.assets.length > 0) {
+    // Only persist real releases with assets. Never poison the cache with
+    // empty/failures — that would hide published releases until the entry expires.
+    const hasAssets = data.length > 0 && data.some((r) => r.assets.length > 0)
+    if (cache && hasAssets) {
       await cache.put(
         cacheKey,
         new Response(JSON.stringify(data), {
@@ -82,8 +83,8 @@ async function fetchLatestCached(): Promise<ReleaseData | null> {
     // On a failed/empty fetch, fall back to last-known-good, then to the
     // bundled snapshot. The page must always render direct download links so
     // users are never bounced to the GitHub releases page.
-    return data ?? cached ?? FALLBACK_RELEASE
+    return (data && data.length) ? data : (cached ?? [FALLBACK_RELEASE])
   } catch {
-    return cached ?? FALLBACK_RELEASE
+    return cached ?? [FALLBACK_RELEASE]
   }
 }

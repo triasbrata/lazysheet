@@ -36,3 +36,11 @@ export function resolveVersion(available: string[], active: string): string | un
 export function activeVersionFromRelease(release: ReleaseData | null): string {
   return release?.tag ?? FALLBACK_RELEASE.tag
 }
+
+export function selectReleaseByTag(releases: ReleaseData[], v: string | undefined): ReleaseData | null {
+  if (v) {
+    const found = releases.find((r) => r.tag === v)
+    if (found) return found
+  }
+  return releases[0] ?? null
+}

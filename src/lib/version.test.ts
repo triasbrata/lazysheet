@@ -4,7 +4,17 @@ import {
   compareVersions,
   resolveVersion,
   activeVersionFromRelease,
+  selectReleaseByTag,
 } from './version'
+import type { ReleaseData } from '#/lib/releases'
+
+const makeRelease = (tag: string): ReleaseData => ({
+  tag,
+  name: tag,
+  htmlUrl: '',
+  publishedAt: '',
+  assets: [],
+})
 
 describe('parseVersion', () => {
   it('parses a standard semver tag with leading v', () => {
@@ -99,5 +109,26 @@ describe('activeVersionFromRelease', () => {
         assets: [],
       }),
     ).toBe('v0.5.0')
+  })
+})
+
+describe('selectReleaseByTag', () => {
+  it('returns the matching release when v matches a tag', () => {
+    const releases = [makeRelease('v0.5.0'), makeRelease('v0.4.0')]
+    expect(selectReleaseByTag(releases, 'v0.4.0')).toBe(releases[1])
+  })
+
+  it('returns releases[0] when v is given but no tag matches', () => {
+    const releases = [makeRelease('v0.5.0'), makeRelease('v0.4.0')]
+    expect(selectReleaseByTag(releases, 'v0.9.9')).toBe(releases[0])
+  })
+
+  it('returns releases[0] when v is undefined', () => {
+    const releases = [makeRelease('v0.5.0'), makeRelease('v0.4.0')]
+    expect(selectReleaseByTag(releases, undefined)).toBe(releases[0])
+  })
+
+  it('returns null when releases array is empty', () => {
+    expect(selectReleaseByTag([], 'v0.5.0')).toBeNull()
   })
 })

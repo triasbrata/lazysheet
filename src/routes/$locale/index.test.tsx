@@ -4,6 +4,14 @@ import { cleanup, fireEvent } from "@testing-library/react";
 import { screen } from "@testing-library/react";
 import React from "react";
 
+// Stub VersionSelector to avoid Radix portal / Select issues in happy-dom
+vi.mock('#/features/version/version-selector', () => ({
+  VersionSelector: ({ releases, selectedTag }: { releases: { tag: string }[]; selectedTag: string }) => {
+    if (releases.length <= 1) return null
+    return <div data-testid="version-selector">{selectedTag}</div>
+  },
+}))
+
 // Hero renders a TanStack <Link>, which normally needs a RouterProvider.
 // Stub it with a plain anchor so we can test the section in isolation —
 // no router, no loader, no network.
@@ -12,6 +20,8 @@ import React from "react";
 const { mockUseParamsIndex } = vi.hoisted(() => ({
   mockUseParamsIndex: vi.fn(() => ({ locale: 'en' as string | undefined })),
 }))
+
+let mockSearch: { v?: string } = {}
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual =
@@ -26,6 +36,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
       options: opts,
       useLoaderData: () => mockLoaderData,
       useParams: () => ({ locale: 'en' }),
+      useSearch: () => mockSearch,
     }),
   };
 });
@@ -34,7 +45,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 // without a server runtime ("No Start context") error.
 vi.mock("#/lib/releases-data", () => ({
   getDownloadData: vi.fn(() =>
-    Promise.resolve({ release: null, serverOS: "unknown" }),
+    Promise.resolve({ releases: [], release: null, serverOS: "unknown" }),
   ),
 }));
 
@@ -109,8 +120,9 @@ import { renderWithI18n } from "#/test/i18n";
 
 const mockData: DownloadData = {
   serverOS: "macOS",
+  releases: [],
   release: null,
-} as DownloadData;
+};
 
 // Mutable loader data used by Route.useLoaderData stub
 let mockLoaderData: DownloadData = mockData;
@@ -118,6 +130,7 @@ let mockLoaderData: DownloadData = mockData;
 afterEach(() => {
   cleanup();
   mockLoaderData = mockData;
+  mockSearch = {};
   mockUseParamsIndex.mockReset();
   mockUseParamsIndex.mockImplementation(() => ({ locale: 'en' }));
 });
@@ -242,7 +255,7 @@ describe("Features section (bento grid) — what the user sees", () => {
 
 describe("Home page (route component) — rendering via loader data", () => {
   it("renders without crashing with null release", () => {
-    mockLoaderData = { serverOS: "macOS", release: null } as DownloadData;
+    mockLoaderData = { serverOS: "macOS", releases: [], release: null };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const opts = (Route as any).options
     const Home = opts.component as React.ComponentType
@@ -250,7 +263,7 @@ describe("Home page (route component) — rendering via loader data", () => {
   });
 
   it("renders the hero heading", () => {
-    mockLoaderData = { serverOS: "Windows", release: null } as DownloadData;
+    mockLoaderData = { serverOS: "Windows", releases: [], release: null };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const opts = (Route as any).options
     const Home = opts.component as React.ComponentType
@@ -284,6 +297,7 @@ describe("Route.options.loader", () => {
     // so await it to keep the rejection from escaping as an unhandled error.
     expect(typeof opts.loader).toBe('function');
     await expect(opts.loader()).resolves.toEqual({
+      releases: [],
       release: null,
       serverOS: "unknown",
     });
@@ -295,16 +309,18 @@ describe("Route.options.loader", () => {
 // ---------------------------------------------------------------------------
 describe("Home page — non-null release branch", () => {
   it("renders FAQ and features when release is a real object (non-null)", () => {
+    const relV040 = {
+      tag: 'v0.4.0',
+      name: 'v0.4.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
     mockLoaderData = {
       serverOS: "macOS",
-      release: {
-        tag: 'v0.4.0',
-        name: 'v0.4.0',
-        htmlUrl: '',
-        publishedAt: '',
-        assets: [],
-      },
-    } as DownloadData;
+      releases: [relV040],
+      release: relV040,
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const opts = (Route as any).options
     const Home = opts.component as React.ComponentType
@@ -316,3 +332,151 @@ describe("Home page — non-null release branch", () => {
     expect(tiles.length).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Version switch — ?v= param selects an older release
+// ---------------------------------------------------------------------------
+describe("Home page — version switch via ?v= param", () => {
+  it("renders without error and uses selectedTag when v matches an older release", () => {
+    const relLatest = {
+      tag: 'v0.5.0',
+      name: 'v0.5.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
+    const relOld = {
+      tag: 'v0.4.0',
+      name: 'v0.4.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
+    mockLoaderData = {
+      serverOS: 'macOS',
+      releases: [relLatest, relOld],
+      release: relLatest,
+    }
+    mockSearch = { v: 'v0.4.0' }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    const Home = opts.component as React.ComponentType
+    renderWithI18n(React.createElement(Home))
+
+    // Should render without throwing
+    // FAQ unsigned question should be visible (FAQ renders with selectedTag = v0.4.0)
+    expect(screen.getByText(/unidentified\s+developer/i)).toBeTruthy()
+    // At least one bento tile heading should be visible
+    const tiles = screen.getAllByText(/Group-by Summary/i)
+    expect(tiles.length).toBeGreaterThan(0)
+    // VersionSelector stub should show the selected tag
+    expect(screen.getByTestId('version-selector').textContent).toBe('v0.4.0')
+  })
+
+  it("falls back to latest release when v does not match any tag", () => {
+    const relLatest = {
+      tag: 'v0.5.0',
+      name: 'v0.5.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
+    const relOld = {
+      tag: 'v0.4.0',
+      name: 'v0.4.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
+    mockLoaderData = {
+      serverOS: 'macOS',
+      releases: [relLatest, relOld],
+      release: relLatest,
+    }
+    mockSearch = { v: 'v9.9.9' }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    const Home = opts.component as React.ComponentType
+    renderWithI18n(React.createElement(Home))
+
+    // Falls back to latest (relLatest.tag = v0.5.0)
+    expect(screen.getByTestId('version-selector').textContent).toBe('v0.5.0')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// validateSearch coverage
+// ---------------------------------------------------------------------------
+describe("Route validateSearch", () => {
+  it("passes through a string v param", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    expect(opts.validateSearch({ v: 'abc' })).toEqual({ v: 'abc' })
+  })
+
+  it("returns v: undefined when search is empty", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    expect(opts.validateSearch({})).toEqual({ v: undefined })
+  })
+
+  it("returns v: undefined when v is not a string", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    expect(opts.validateSearch({ v: 123 })).toEqual({ v: undefined })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Nav receives releases — version selector appears with multi-release data
+// ---------------------------------------------------------------------------
+describe("Home page — Nav receives releases (version selector shown)", () => {
+  it("renders version-selector testid when releases has 2 entries", () => {
+    const relLatest = {
+      tag: 'v0.5.0',
+      name: 'v0.5.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
+    const relOld = {
+      tag: 'v0.4.0',
+      name: 'v0.4.0',
+      htmlUrl: '',
+      publishedAt: '',
+      assets: [],
+    }
+    mockLoaderData = {
+      serverOS: 'macOS',
+      releases: [relLatest, relOld],
+      release: relLatest,
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    const Home = opts.component as React.ComponentType
+    renderWithI18n(React.createElement(Home))
+
+    // VersionSelector stub should be in the DOM (Nav passes releases + selectedTag)
+    expect(screen.getByTestId('version-selector')).toBeTruthy()
+  })
+
+  it("does not render version-selector testid when releases is empty", () => {
+    mockLoaderData = {
+      serverOS: 'macOS',
+      releases: [],
+      release: null,
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    const Home = opts.component as React.ComponentType
+    renderWithI18n(React.createElement(Home))
+
+    // Nav guard: releases && selectedTag — with empty releases, VersionSelector not rendered
+    // (Nav renders null branch when releases is empty/falsy)
+    expect(screen.queryByTestId('version-selector')).toBeNull()
+  })
+})
