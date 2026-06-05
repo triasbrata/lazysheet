@@ -75,7 +75,7 @@
   "plugins": {
     "updater": {
       "endpoints": ["https://github.com/triasbrata/lazysheet/releases/latest/download/latest.json"],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQyQzFBREE0OUVGODJGNTMKUldSVEwvaWVwSzNCMGdmeEJNbjlvNVF1T0ZBMmxGbklXdGJoTjBodzZWc3hjaXl0bW5QQk9zSEMK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJCRkQyNUQyQ0M0QTJBMkQKUldRdEtrck0waVg5dStYMi9BQmRyRmo0WEhYcDNldHZoa0pNTk9zdU9JRTBJblNHS1p3N2VMNXkK"
     }
   }
 }
