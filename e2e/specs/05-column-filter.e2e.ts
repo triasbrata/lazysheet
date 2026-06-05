@@ -27,7 +27,10 @@ async function openFirstColumnFilter() {
 }
 
 describe("column-filter", () => {
-  before(async () => {
+  // Reset per test: prepareApp() clears lazysheet:file-state (persisted header
+  // marks/filters) and reloads. Without this, test 1's marked header leaks into
+  // test 2 — markHeaderRow() then toggles it OFF and the filter funnel vanishes.
+  beforeEach(async () => {
     await prepareApp();
   });
 
