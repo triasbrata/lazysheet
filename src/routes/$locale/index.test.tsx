@@ -186,27 +186,27 @@ describe("Formats section — what the user sees", () => {
 
 describe("Faq section — what the user sees", () => {
   it("shows the troubleshooting heading", () => {
-    renderWithI18n(<Faq />);
+    renderWithI18n(<Faq activeTag="v0.4.0" />);
     expect(screen.getByText(/Having trouble opening the app\?/i)).toBeTruthy();
   });
 
   it("shows the Gatekeeper question as an accordion trigger", () => {
-    renderWithI18n(<Faq />);
+    renderWithI18n(<Faq activeTag="v0.4.0" />);
     expect(screen.getByText(/unidentified\s+developer/i)).toBeTruthy();
   });
 
   it("reveals the fix command (open by default)", () => {
-    renderWithI18n(<Faq />);
+    renderWithI18n(<Faq activeTag="v0.4.0" />);
     expect(screen.getByText(/xattr -dr com\.apple\.quarantine/i)).toBeTruthy();
   });
 
   it("shows the Linux .deb dependency question as an accordion trigger", () => {
-    renderWithI18n(<Faq />);
+    renderWithI18n(<Faq activeTag="v0.4.0" />);
     expect(screen.getByText(/missing dependencies/i)).toBeTruthy();
   });
 
   it("reveals the apt install command after opening the .deb item", () => {
-    renderWithI18n(<Faq />);
+    renderWithI18n(<Faq activeTag="v0.4.0" />);
     fireEvent.click(screen.getByText(/missing dependencies/i));
     expect(
       screen.getByText(
@@ -287,5 +287,32 @@ describe("Route.options.loader", () => {
       release: null,
       serverOS: "unknown",
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Non-null release branch — covers activeVersionFromRelease with real release
+// ---------------------------------------------------------------------------
+describe("Home page — non-null release branch", () => {
+  it("renders FAQ and features when release is a real object (non-null)", () => {
+    mockLoaderData = {
+      serverOS: "macOS",
+      release: {
+        tag: 'v0.4.0',
+        name: 'v0.4.0',
+        htmlUrl: '',
+        publishedAt: '',
+        assets: [],
+      },
+    } as DownloadData;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const opts = (Route as any).options
+    const Home = opts.component as React.ComponentType
+    renderWithI18n(React.createElement(Home));
+    // FAQ unsigned question should be visible
+    expect(screen.getByText(/unidentified\s+developer/i)).toBeTruthy();
+    // At least one bento tile heading should be visible
+    const tiles = screen.getAllByText(/Group-by Summary/i);
+    expect(tiles.length).toBeGreaterThan(0);
   });
 });
