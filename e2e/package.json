@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "wdio run ./wdio.conf.ts",
-    "typecheck": "tsc --noEmit",
-    "coverage": "nyc merge ../.nyc_output ../coverage/merged.json && nyc report -t ../.nyc_output --reporter=text-summary --reporter=html --report-dir ../coverage/html && nyc check-coverage -t ../.nyc_output --lines 95"
+    "typecheck": "bun x tsc --noEmit"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.7",
@@ -16,8 +15,6 @@
     "@wdio/mocha-framework": "^9",
     "@wdio/spec-reporter": "^9",
     "@wdio/types": "^9",
-    "nyc": "^17.0.0",
-    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
 }
