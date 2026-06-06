@@ -346,10 +346,13 @@ jobs:
 
       - name: Generate latest.json
         shell: bash
+        env:
+          # Passed via env, NOT inline ${{ }} interpolation — the tag body
+          # contains backticks/quotes that bash would otherwise execute.
+          NOTES: ${{ steps.tagbody.outputs.body }}
         run: |
           VERSION="${FINAL_TAG#v}"
           PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          NOTES="${{ steps.tagbody.outputs.body }}"
 
           # Helper: find a file matching a glob under artifacts/, return empty string if absent
           find_artifact() {
