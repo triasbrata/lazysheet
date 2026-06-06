@@ -138,34 +138,26 @@ Install `xvfb` (`sudo apt-get install -y xvfb`). `bun run test:e2e` wraps wdio i
 
 Frontend coverage is the **merge of two istanbul sources**:
 
-1. **E2E coverage** — collected from `window.__coverage__` (injected by `vite-plugin-istanbul` when the app is built with `VITE_E2E=true`). During each test run, `dumpCoverage()` in `helpers/app.js` reads `window.__coverage__` from the browser and writes a uniquely-named JSON chunk to `.nyc_output/` at the repo root. The wdio `afterTest` and `after` hooks also call `dumpCoverage()`. Coverage is always captured **before** `location.reload()` in `prepareApp()`, because a reload resets `window.__coverage__`.
+1. **E2E coverage** — collected from `window.__coverage__` (injected by the babel-istanbul Bun plugin, `scripts/istanbul-plugin.ts`, when the app is built with `VITE_E2E=true`). During each test run, `dumpCoverage()` in `helpers/app.js` reads `window.__coverage__` from the browser and writes a uniquely-named JSON chunk to `.nyc_output/` at the repo root. The wdio `afterTest` and `after` hooks also call `dumpCoverage()`. Coverage is always captured **before** `location.reload()` in `prepareApp()`, because a reload resets `window.__coverage__`.
 
-2. **Unit coverage** — produced by `vitest run --coverage` (via `@vitest/coverage-istanbul`). The resulting `coverage/unit/coverage-final.json` is copied into `.nyc_output/` so `nyc` can merge it with the e2e chunks.
+2. **Unit coverage** — produced by `bun test --coverage` (lcov reporter, written to `coverage/unit/lcov.info`).
 
 After the specs finish, `scripts/e2e.ts` runs:
 
 ```sh
-cd e2e && bun run coverage
+bun run scripts/coverage-merge.ts
 ```
 
-Which expands to:
-
-```sh
-nyc merge ../.nyc_output ../coverage/merged.json
-nyc report -t ../.nyc_output --reporter=text-summary --reporter=html --report-dir ../coverage/html
-nyc check-coverage -t ../.nyc_output --lines 95
-```
-
-`nyc check-coverage` exits non-zero when line coverage is below 95%. That propagates through `scripts/e2e.ts` and aborts the deploy gate in `scripts/deploy.ts` — **no git writes happen if coverage is below 95%**.
+Which merges the e2e istanbul chunks, writes the HTML + text-summary report, folds the e2e line coverage into the unit lcov line map (hits = max of the two suites), and exits non-zero when merged line coverage is below 95%. That propagates through `scripts/e2e.ts` and aborts the deploy gate in `scripts/deploy.ts` — **no git writes happen if coverage is below 95%**.
 
 ### Where reports land
 
 | Path | Contents |
 |------|----------|
-| `.nyc_output/` | Raw coverage chunks (e2e-*.json + unit-final.json) — gitignored |
-| `coverage/merged.json` | Merged istanbul map — gitignored |
-| `coverage/html/` | HTML report (open `index.html`) — gitignored |
-| Console (text-summary) | Per-file line/branch/function percentages |
+| `.nyc_output/` | Raw e2e coverage chunks (e2e-*.json) — gitignored |
+| `coverage/unit/lcov.info` | Unit lcov report from `bun test --coverage` — gitignored |
+| `coverage/html/` | HTML report for the e2e map (open `index.html`) — gitignored |
+| Console (text-summary) | e2e per-metric percentages + merged line total |
 
 ### Rust backend coverage (report-only)
 

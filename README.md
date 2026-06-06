@@ -165,7 +165,7 @@ On the next tagged release the workflow builds signed updater bundles plus a `la
 
 - **Shell:** [Tauri v2](https://v2.tauri.app)
 - **Backend:** Rust — [`umya-spreadsheet`](https://crates.io/crates/umya-spreadsheet) (`.xlsx`/`.xlsm`), [`calamine`](https://crates.io/crates/calamine) (`.xls`), [`csv`](https://crates.io/crates/csv) (`.csv`/`.tsv`)
-- **Frontend:** [React 19](https://react.dev) + TypeScript + [Vite](https://vite.dev)
+- **Frontend:** [React 19](https://react.dev) + TypeScript + [Bun](https://bun.sh) (bundler, dev server & test runner)
 - **UI:** [Tailwind CSS v4](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
 - **Grid:** [TanStack Virtual](https://tanstack.com/virtual)
 
