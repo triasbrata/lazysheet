@@ -246,8 +246,7 @@ jobs:
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/rpm/*.rpm
             src-tauri/target/release/bundle/appimage/*.AppImage
-            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
-            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
           if-no-files-found: error
 
       - name: Upload Windows artifacts
@@ -360,8 +359,6 @@ jobs:
             find artifacts -type f -name "$pattern" 2>/dev/null | head -n 1
           }
 
-          PLATFORMS_JSON=""
-
           # darwin-aarch64: *.app.tar.gz + *.app.tar.gz.sig
           MAC_BUNDLE="$(find_artifact '*.app.tar.gz')"
           MAC_SIG="$(find_artifact '*.app.tar.gz.sig')"
@@ -369,25 +366,21 @@ jobs:
             MAC_FILENAME="$(basename "$MAC_BUNDLE")"
             MAC_SIGNATURE="$(cat "$MAC_SIG")"
             MAC_URL="https://github.com/triasbrata/lazysheet/releases/download/${FINAL_TAG}/${MAC_FILENAME}"
-            PLATFORMS_JSON="${PLATFORMS_JSON}$(jq -n \
-              --arg sig "$MAC_SIGNATURE" \
-              --arg url "$MAC_URL" \
-              '{"signature":$sig,"url":$url}')"
-            PLATFORMS_JSON="\"darwin-aarch64\":${PLATFORMS_JSON}"
-            DARWIN_ENTRY="\"darwin-aarch64\":$(jq -n --arg sig "$MAC_SIGNATURE" --arg url "$MAC_URL" '{"signature":$sig,"url":$url}')"
+            DARWIN_ENTRY="\"darwin-aarch64\":$(jq -nc --arg sig "$MAC_SIGNATURE" --arg url "$MAC_URL" '{"signature":$sig,"url":$url}')"
           else
             echo "::warning::darwin-aarch64 updater bundle or sig not found — omitting from latest.json"
             DARWIN_ENTRY=""
           fi
 
-          # linux-x86_64: *.AppImage.tar.gz + *.AppImage.tar.gz.sig
-          LINUX_BUNDLE="$(find_artifact '*.AppImage.tar.gz')"
-          LINUX_SIG="$(find_artifact '*.AppImage.tar.gz.sig')"
+          # linux-x86_64: *.AppImage + *.AppImage.sig (Tauri v2 updater format —
+          # v1's *.AppImage.tar.gz is no longer produced)
+          LINUX_BUNDLE="$(find_artifact '*.AppImage')"
+          LINUX_SIG="$(find_artifact '*.AppImage.sig')"
           if [ -n "$LINUX_BUNDLE" ] && [ -n "$LINUX_SIG" ]; then
             LINUX_FILENAME="$(basename "$LINUX_BUNDLE")"
             LINUX_SIGNATURE="$(cat "$LINUX_SIG")"
             LINUX_URL="https://github.com/triasbrata/lazysheet/releases/download/${FINAL_TAG}/${LINUX_FILENAME}"
-            LINUX_ENTRY="\"linux-x86_64\":$(jq -n --arg sig "$LINUX_SIGNATURE" --arg url "$LINUX_URL" '{"signature":$sig,"url":$url}')"
+            LINUX_ENTRY="\"linux-x86_64\":$(jq -nc --arg sig "$LINUX_SIGNATURE" --arg url "$LINUX_URL" '{"signature":$sig,"url":$url}')"
           else
             echo "::warning::linux-x86_64 updater bundle or sig not found — omitting from latest.json"
             LINUX_ENTRY=""
@@ -400,7 +393,7 @@ jobs:
             WIN_FILENAME="$(basename "$WIN_BUNDLE")"
             WIN_SIGNATURE="$(cat "$WIN_SIG")"
             WIN_URL="https://github.com/triasbrata/lazysheet/releases/download/${FINAL_TAG}/${WIN_FILENAME}"
-            WIN_ENTRY="\"windows-x86_64\":$(jq -n --arg sig "$WIN_SIGNATURE" --arg url "$WIN_URL" '{"signature":$sig,"url":$url}')"
+            WIN_ENTRY="\"windows-x86_64\":$(jq -nc --arg sig "$WIN_SIGNATURE" --arg url "$WIN_URL" '{"signature":$sig,"url":$url}')"
           else
             echo "::warning::windows-x86_64 updater bundle or sig not found — omitting from latest.json"
             WIN_ENTRY=""
