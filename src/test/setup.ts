@@ -2,10 +2,37 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
+// @tanstack/virtual-core schedules a debounced isScrollingReset callback via
+// window.setTimeout and never cancels it on unmount. If the jsdom environment
+// is torn down before it fires, the callback reaches react-dom and throws an
+// uncaught "ReferenceError: window is not defined". Track timers scheduled on
+// window and clear any still pending after each test so none outlive the
+// environment.
+const pendingWindowTimeouts = new Set<number>();
+if (typeof window !== "undefined") {
+  const origSetTimeout = window.setTimeout.bind(window);
+  const origClearTimeout = window.clearTimeout.bind(window);
+  window.setTimeout = ((...args: Parameters<typeof window.setTimeout>) => {
+    const id = origSetTimeout(...args);
+    pendingWindowTimeouts.add(id);
+    return id;
+  }) as typeof window.setTimeout;
+  window.clearTimeout = ((id?: number) => {
+    if (id !== undefined) pendingWindowTimeouts.delete(id);
+    origClearTimeout(id);
+  }) as typeof window.clearTimeout;
+}
+
 // With globals:false RTL does not auto-register cleanup; unmount after each test
 // so the jsdom DOM does not accumulate (otherwise "found multiple elements").
 afterEach(() => {
   cleanup();
+  if (typeof window !== "undefined") {
+    for (const id of pendingWindowTimeouts) {
+      window.clearTimeout(id);
+    }
+  }
+  pendingWindowTimeouts.clear();
 });
 
 // window.matchMedia polyfill
