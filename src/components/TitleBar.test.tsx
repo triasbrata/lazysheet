@@ -201,12 +201,23 @@ describe("TitleBar — VITE_FF_MULTI_LANG feature flag", () => {
     vi.stubEnv("VITE_FF_MULTI_LANG", "false");
     vi.resetModules();
 
-    // Re-import TitleBar after module reset so it picks up the new flags value
-    const { TitleBar: TitleBarOff } = await import("./TitleBar");
-    const { renderWithProviders: rwp, screen: s } = await import("@/test/render");
-
-    rwp(<TitleBarOff fileName="file.xlsx" onOpenCommand={vi.fn()} />);
-    expect(s.queryByTestId("lang-toggle-btn")).toBeNull();
+    // bun migration: a re-import would still see the cached feature-flags
+    // module (flag ON). bun's mock.module patches the live binding TitleBar
+    // already holds, so the flag flips for the cached component; restore the
+    // real module right after the assertion.
+    const real = await import("@/lib/feature-flags");
+    vi.doMock("@/lib/feature-flags", () => ({
+      ...real,
+      flags: { ...real.flags, multiLang: false },
+    }));
+    try {
+      renderWithProviders(
+        <TitleBar fileName="file.xlsx" onOpenCommand={vi.fn()} />
+      );
+      expect(screen.queryByTestId("lang-toggle-btn")).toBeNull();
+    } finally {
+      vi.doMock("@/lib/feature-flags", () => real);
+    }
   });
 });
 

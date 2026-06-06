@@ -38,6 +38,86 @@
 const { GlobalRegistrator } = require("@happy-dom/global-registrator") as typeof import("@happy-dom/global-registrator");
 GlobalRegistrator.register();
 
+// happy-dom's localStorage/sessionStorage Proxy caches each method binding on
+// first access, so vi.spyOn(Storage.prototype, "setItem") installed later never
+// sees calls (App.test relies on this working). Install stable indirections
+// BEFORE any storage access: the proxy caches the indirection, which re-reads
+// Storage.prototype on every call, so later spies are honored and mockRestore
+// puts the indirection back.
+{
+  const storageMethods = ["setItem", "getItem", "removeItem", "clear", "key"] as const;
+  for (const name of storageMethods) {
+    const proto = Storage.prototype as unknown as Record<string, (...args: unknown[]) => unknown>;
+    const orig = proto[name];
+    if (typeof orig !== "function") continue;
+    let depth = 0;
+    const indirect = function (this: Storage, ...args: unknown[]): unknown {
+      // depth guard: a spy installed on Storage.prototype wraps `indirect` as
+      // its call-through, so without the guard spy → indirect → spy recurses.
+      const cur = (Storage.prototype as unknown as Record<string, unknown>)[name];
+      const target =
+        depth > 0 || cur === indirect || typeof cur !== "function" ? orig : (cur as typeof orig);
+      depth++;
+      try {
+        return target.apply(this, args);
+      } finally {
+        depth--;
+      }
+    };
+    Object.defineProperty(indirect, "name", { value: name });
+    proto[name] = indirect;
+  }
+}
+
+// happy-dom's CSS value parser rejects modern color functions, silently
+// dropping declarations like `background: color-mix(...)` that Cell.test
+// asserts on. Patch the parser to pass color-mix() through, and teach the
+// border-top shorthand to handle it (its space-splitter regexp breaks on the
+// nested parens in `color-mix(..., var(--x) 45%, ...)`).
+{
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const valueParserMod = require("happy-dom/lib/css/declaration/property-manager/CSSStyleDeclarationValueParser.js") as {
+    default: { getColor(value: string): string | null };
+  };
+  const setParserMod = require("happy-dom/lib/css/declaration/property-manager/CSSStyleDeclarationPropertySetParser.js") as {
+    default: {
+      getBorderTop(value: string, important: boolean): Record<string, unknown> | null;
+      getBorderTopColor(value: string, important: boolean): Record<string, unknown> | null;
+    };
+  };
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  const ValueParser = valueParserMod.default;
+  const SetParser = setParserMod.default;
+  const COLOR_MIX_REGEXP = /color-mix\((?:[^()]|\([^()]*\))*\)/i;
+
+  const origGetColor = ValueParser.getColor.bind(ValueParser);
+  ValueParser.getColor = function getColor(value: string): string | null {
+    const trimmed = value.trim();
+    if (/^color-mix\(/i.test(trimmed) && COLOR_MIX_REGEXP.test(trimmed)) {
+      return trimmed;
+    }
+    return origGetColor(value);
+  };
+
+  const origGetBorderTop = SetParser.getBorderTop.bind(SetParser);
+  SetParser.getBorderTop = function getBorderTop(
+    value: string,
+    important: boolean,
+  ): Record<string, unknown> | null {
+    const match = value.match(COLOR_MIX_REGEXP);
+    if (match && match.index !== undefined) {
+      const rest = (
+        value.slice(0, match.index) + value.slice(match.index + match[0].length)
+      ).trim();
+      const restProps = rest ? origGetBorderTop(rest, important) : {};
+      const colorProps = SetParser.getBorderTopColor(match[0], important);
+      if (restProps === null || colorProps === null) return null;
+      return { ...restProps, ...colorProps };
+    }
+    return origGetBorderTop(value, important);
+  };
+}
+
 // ── 2. Extend bun vi with missing vitest APIs ─────────────────────────────────
 // bun intercepts "vitest" imports at runtime with its own compat module (bun:test vi subset).
 // tsconfig paths + mock.module cannot override this for static ES imports.
@@ -53,6 +133,33 @@ const bunVi = vitestMod.vi as Record<string, unknown>;
 const _globalStubs = new Map<string, { had: boolean; value: unknown; descriptor?: PropertyDescriptor }>();
 const _envStubs = new Map<string, { had: boolean; value: string | undefined }>();
 let _resetCounter = 0;
+
+// ── vitest-compatible restoreAllMocks ─────────────────────────────────────────
+// vitest's vi.restoreAllMocks() resets EVERY vi.fn() to its creation-time
+// implementation, dropping mockReturnValue/mockImplementation overrides set in
+// tests. bun's jest.restoreAllMocks() only restores spies and leaves vi.fn()
+// overrides in place — overrides then leak across tests (e.g. App.test's
+// readStoredTableName "my_table" leaked into the next test and skipped the
+// query modal). Track every vi.fn() and its creation impl so restoreAllMocks
+// can replay vitest semantics.
+type AnyFn = (...args: never[]) => unknown;
+const _createdMocks = new Map<{ mockReset(): void; mockImplementation(fn: AnyFn): void }, AnyFn | undefined>();
+{
+  const origFn = bunVi["fn"] as (impl?: AnyFn) => ReturnType<typeof bunTest.jest.fn>;
+  bunVi["fn"] = function fn(impl?: AnyFn) {
+    const m = origFn(impl);
+    _createdMocks.set(m as unknown as { mockReset(): void; mockImplementation(fn: AnyFn): void }, impl);
+    return m;
+  };
+  const origRestoreAll = bunVi["restoreAllMocks"] as () => void;
+  bunVi["restoreAllMocks"] = function restoreAllMocks(): void {
+    origRestoreAll(); // restores vi.spyOn spies natively
+    for (const [m, impl] of _createdMocks) {
+      m.mockReset();
+      if (impl) m.mockImplementation(impl);
+    }
+  };
+}
 
 if (!bunVi["stubGlobal"]) {
   bunVi["stubGlobal"] = function stubGlobal(name: string, value: unknown): void {
@@ -99,12 +206,18 @@ if (!bunVi["unstubAllGlobals"]) {
 }
 
 if (!bunVi["stubEnv"]) {
-  bunVi["stubEnv"] = function stubEnv(name: string, value: string): void {
+  bunVi["stubEnv"] = function stubEnv(name: string, value: string | undefined): void {
     if (!_envStubs.has(name)) {
       const had = Object.prototype.hasOwnProperty.call(process.env, name);
       _envStubs.set(name, { had, value: process.env[name] });
     }
-    process.env[name] = value;
+    if (value === undefined) {
+      // vitest semantics: stubbing with undefined removes the variable.
+      // Plain assignment would coerce to the string "undefined".
+      delete process.env[name];
+    } else {
+      process.env[name] = value;
+    }
   };
 }
 
@@ -121,6 +234,21 @@ if (!bunVi["unstubAllEnvs"]) {
   };
 }
 
+if (!bunVi["advanceTimersByTimeAsync"]) {
+  // bun's vi has advanceTimersByTime but no async variant. Advance the fake
+  // clock, then drain the microtask queue so promise callbacks attached to
+  // fired timers resolve. The drain must NOT use setTimeout — with fake
+  // timers active it would be intercepted and never fire.
+  bunVi["advanceTimersByTimeAsync"] = async function advanceTimersByTimeAsync(
+    ms: number,
+  ): Promise<void> {
+    (bunVi["advanceTimersByTime"] as (ms: number) => void)(ms);
+    for (let i = 0; i < 25; i++) {
+      await Promise.resolve();
+    }
+  };
+}
+
 if (!bunVi["resetModules"]) {
   bunVi["resetModules"] = function resetModules(): void {
     _resetCounter++;
@@ -129,7 +257,8 @@ if (!bunVi["resetModules"]) {
 
 if (!bunVi["importFresh"]) {
   bunVi["importFresh"] = async function importFresh<T = unknown>(specifier: string): Promise<T> {
-    const repoRoot = new URL("../../..", import.meta.url).pathname.replace(/\/$/, "");
+    // preload.ts lives at <repo>/src/test/ → "../.." resolves to <repo>/
+    const repoRoot = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
     const expanded = specifier.startsWith("@/")
       ? `${repoRoot}/src/${specifier.slice(2)}`
       : specifier;

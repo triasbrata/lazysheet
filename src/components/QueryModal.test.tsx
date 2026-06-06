@@ -3,8 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ─── Mock motion/react before importing QueryModal ────────────────────────────
 // The component uses `motion.div` and `useAnimationControls`.
 // We need `motion.div` to be a valid React component that renders its children.
-vi.mock("motion/react", async () => {
-  const React = await import("react");
+// NOTE (bun migration): `await import("react")` inside a mock.module factory
+// deadlocks bun's module registry. bun does not hoist vi.mock, so the factory
+// can safely reference the top-level React import instead (hoisted import
+// bindings are initialized before the module body runs).
+vi.mock("motion/react", () => {
   function makeMotionComponent(tag: string) {
     const MotionEl = React.forwardRef(
       ({ children, animate: _animate, ...rest }: Record<string, unknown> & { children?: React.ReactNode }, ref: React.Ref<unknown>) => {

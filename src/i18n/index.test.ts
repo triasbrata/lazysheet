@@ -117,7 +117,9 @@ describe("i18n — VITE_FF_MULTI_LANG=false (flag OFF)", () => {
     vi.resetModules();
 
     // Re-import feature-flags so it re-evaluates parseFlag with the stubbed env
-    const { flags: freshFlags } = await import("@/lib/feature-flags");
+    const { flags: freshFlags } = await vi.importFresh<typeof import("@/lib/feature-flags")>(
+      "@/lib/feature-flags",
+    );
 
     // The flag should be OFF, confirming the OFF branch will be taken in i18n init
     expect(freshFlags.multiLang).toBe(false);

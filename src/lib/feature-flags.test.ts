@@ -87,7 +87,9 @@ describe("flags", () => {
     // Simulate the real production default: env var absent → parseFlag(undefined, false) → false
     vi.stubEnv("VITE_FF_MULTI_LANG", undefined as unknown as string);
     vi.resetModules();
-    const { flags: freshFlags } = await import("./feature-flags");
+    const { flags: freshFlags } = await vi.importFresh<typeof import("./feature-flags")>(
+      "@/lib/feature-flags",
+    );
     expect(freshFlags.multiLang).toBe(false);
   });
 });
