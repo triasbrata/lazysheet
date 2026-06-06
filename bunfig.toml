@@ -10,6 +10,9 @@ isolate = true
 preload = ["./src/test/preload.ts"]
 coverageReporter = ["text", "lcov"]
 coverageDir = "coverage/unit"
-coverageThreshold = { lines = 0.95 }
 coverageSkipTestFiles = true
-# coveragePathIgnorePatterns not yet supported in bun 1.3.14 — see rpi-progress.md D4
+# No coverageThreshold here: bun 1.3.14 cannot exclude files from coverage
+# (no coveragePathIgnorePatterns — see rpi-progress.md D4), so the built-in
+# gate would count src/test/preload.ts and entry points. The 95% line gate
+# (with the old vitest exclude list) lives in scripts/coverage-total.ts,
+# invoked by `bun run test`.
