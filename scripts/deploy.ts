@@ -222,6 +222,7 @@ async function generateReleaseNotes(
     `- Rewrite commit subjects into clear, user-facing sentences; merge related commits into one bullet.`,
     `- Do not include commit hashes, PR numbers, or a version heading.`,
     `- Skip internal-only noise (CI tweaks, release chores) unless user-relevant.`,
+    `- Judge by user impact, not commit type prefix: toolchain/test/coverage work is internal even when labeled "feat:", and a commit without a type prefix can still be a headline feature.`,
   ].join("\n");
 
   try {
@@ -358,10 +359,7 @@ async function main() {
   log(`\nCurrent version: ${currentVersion}`);
   log(`Commits in range (${lastStableTag ?? "initial"}..HEAD): ${commits.length}`);
 
-  // 5. changelog (built from the full range regardless of cycle state)
-  const changelog = buildChangelog(commits);
-
-  // 6. Determine baseVersion and whether this is a fresh or mid-cycle run.
+  // 5. Determine baseVersion and whether this is a fresh or mid-cycle run.
   //    Mid-cycle: last stable tag exists AND package.json version has already
   //    been bumped ahead of it (i.e. an RC cycle is in progress).
   let baseVersion: string;
@@ -384,9 +382,7 @@ async function main() {
     log(`${"=".repeat(50)}`);
   }
 
-  log(`\n${changelog}\n`);
-
-  // 7. Compute rc tag for this run.
+  // 6. Compute rc tag for this run.
   const existingRcTagsOut = (
     await $`git tag -l ${`v${baseVersion}-rc.*`}`.cwd(ROOT).quiet().text()
   ).trim();
@@ -397,6 +393,14 @@ async function main() {
 
   log(`Planned RC tag:   ${rcTag}`);
   log(`Target final tag: v${baseVersion}`);
+
+  // 7. Release notes (Claude, opus/max-effort/thinking) — generated BEFORE the
+  //    confirmation prompt so what you approve is exactly what ships as the
+  //    tag message / GitHub release body. Falls back to the mechanical
+  //    changelog on failure.
+  log(`\nGenerating release notes with Claude...`);
+  const tagMessage = await generateReleaseNotes(baseVersion, commits);
+  log(`\n${tagMessage}\n`);
 
   if (DRY_RUN) {
     log(`\n--dry-run: would${freshCycle ? " bump version files, commit chore: release v" + baseVersion + "," : ""} create tag ${rcTag}, push HEAD + ${rcTag}.`);
@@ -432,11 +436,7 @@ async function main() {
     await $`git commit -m ${`chore: release v${baseVersion}`}`.cwd(ROOT);
   }
 
-  // 11. annotated RC tag — release notes written by Claude (opus, max effort,
-  //     thinking); falls back to the mechanical changelog on failure.
-  log("Generating release notes with Claude...");
-  const tagMessage = await generateReleaseNotes(baseVersion, commits);
-  log(`\n${tagMessage}\n`);
+  // 11. annotated RC tag — message is the Claude release notes from step 7.
   // --cleanup=whitespace: default cleanup strips lines starting with "#",
   // which deletes the "### Features" markdown headings from the tag message.
   await $`git tag -a ${rcTag} --cleanup=whitespace -m ${tagMessage}`.cwd(ROOT);
