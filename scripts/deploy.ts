@@ -223,6 +223,7 @@ async function generateReleaseNotes(
     `- Do not include commit hashes, PR numbers, or a version heading.`,
     `- Skip internal-only noise (CI tweaks, release chores) unless user-relevant.`,
     `- Judge by user impact, not commit type prefix: toolchain/test/coverage work is internal even when labeled "feat:", and a commit without a type prefix can still be a headline feature.`,
+    `- A feature shipped behind a feature flag that is OFF by default is NOT yet user-facing — do not list it under "### Features". If worth a mention, note it briefly under an experimental/upcoming line; otherwise omit it.`,
   ].join("\n");
 
   try {
