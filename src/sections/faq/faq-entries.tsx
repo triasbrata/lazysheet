@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LockIcon, LinuxMark, TerminalIcon } from '#/components/site/icons'
+import { LockIcon, LinuxMark, TerminalIcon, AutoUpdateIcon, DatabaseIcon, FormulaIcon } from '#/components/site/icons'
 import { CopyCommand } from '#/features/faq/copy-command'
 import { compareVersions } from '#/lib/version'
 
@@ -76,6 +76,68 @@ export function useFaqEntries(activeTag: string): FaqEntry[] {
 
           <p className="mt-4 text-sm text-on-surface-variant">
             {t('faq.appimageAnswerPost')}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'auto-update',
+      version: 'v0.5.0',
+      icon: AutoUpdateIcon,
+      question: t('faq.autoUpdateQuestion'),
+      body: (
+        <>
+          <p className="mb-4 text-on-surface-variant">
+            {t('faq.autoUpdateAnswerPre')}
+          </p>
+          <p className="mt-4 text-sm text-on-surface-variant">
+            {t('faq.autoUpdateAnswerPost')}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'appimage-v5',
+      version: 'v0.5.0',
+      icon: LinuxMark,
+      question: t('faq.appimageV5Question'),
+      body: (
+        <>
+          <p className="mb-4 text-on-surface-variant">
+            {t('faq.appimageV5AnswerPre')}
+          </p>
+          <CopyCommand command={'./LazySheet_0.5.0_amd64.AppImage --appimage-extract && rm -f squashfs-root/usr/lib/libwayland-*.so* squashfs-root/usr/lib/libEGL*.so* && ./squashfs-root/AppRun'} />
+          <p className="mt-4 text-sm text-on-surface-variant">
+            {t('faq.appimageV5AnswerPost')}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'sql-export',
+      version: 'v0.5.0',
+      icon: DatabaseIcon,
+      question: t('faq.sqlExportQuestion'),
+      body: (
+        <>
+          <p className="mb-4 text-on-surface-variant">
+            {t('faq.sqlExportAnswerPre')}
+          </p>
+          <p className="mt-4 text-sm text-on-surface-variant">
+            {t('faq.sqlExportAnswerPost')}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'formulas',
+      version: 'v0.5.0',
+      icon: FormulaIcon,
+      question: t('faq.formulasQuestion'),
+      body: (
+        <>
+          <p className="mb-4 text-on-surface-variant">
+            {t('faq.formulasAnswerPre')}
           </p>
         </>
       ),

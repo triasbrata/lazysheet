@@ -21,10 +21,15 @@ function TileHarness({ activeTag }: { activeTag: string }) {
 }
 
 describe('useBentoTiles', () => {
-  it('returns 12 tiles', () => {
+  it('returns 11 tiles', () => {
     renderWithI18n(<TileHarness activeTag="v0.4.0" />)
     const el = screen.getByTestId('count')
-    expect(Number(el.getAttribute('data-count'))).toBe(12)
+    expect(Number(el.getAttribute('data-count'))).toBe(11)
+  })
+
+  it('v0.4.0 does NOT have tile-resize (resize is a v0.5.0 feature)', () => {
+    renderWithI18n(<TileHarness activeTag="v0.4.0" />)
+    expect(screen.queryByTestId('tile-resize')).toBeNull()
   })
 
   it('has a tile with id group-by', () => {
@@ -95,7 +100,7 @@ describe('useBentoTiles', () => {
     }
   })
 
-  it('returns 12 tiles for a future tag (v9.9.9) — highest defined <= active resolves to v0.4.0', () => {
+  it('returns 12 tiles for a future tag (v9.9.9) — highest defined <= active resolves to v0.5.0', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
     function Capture() {
@@ -107,7 +112,7 @@ describe('useBentoTiles', () => {
     expect(tiles.length).toBe(12)
   })
 
-  it('returns 12 tiles for a tag below all defined (v0.0.1) — falls back to min = v0.4.0', () => {
+  it('returns 11 tiles for a tag below all defined (v0.0.1) — falls back to min = v0.4.0', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
     function Capture() {
@@ -116,6 +121,75 @@ describe('useBentoTiles', () => {
     }
     renderWithI18n(<Capture />)
 
-    expect(tiles.length).toBe(12)
+    expect(tiles.length).toBe(11)
+  })
+
+  it('returns 12 tiles for v0.5.0', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    const el = screen.getByTestId('count')
+    expect(Number(el.getAttribute('data-count'))).toBe(12)
+  })
+
+  it('v0.5.0 has tile-zoom', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-zoom')).toBeTruthy()
+  })
+
+  it('v0.5.0 has tile-formula', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-formula')).toBeTruthy()
+  })
+
+  it('v0.5.0 has tile-copyAsQuery (hero, replaces group-by)', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-copyAsQuery')).toBeTruthy()
+  })
+
+  it('v0.5.0 no longer has tile-sqlExport (merged into copyAsQuery)', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.queryByTestId('tile-sqlExport')).toBeNull()
+  })
+
+  it('v0.5.0 carries group-by as a normal feature (demoted from hero)', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-group-by')).toBeTruthy()
+  })
+
+  it('v0.5.0 carries 4 main v0.4.0 features (group-by, command, filters, copy)', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-group-by')).toBeTruthy()
+    expect(screen.getByTestId('tile-command')).toBeTruthy()
+    expect(screen.getByTestId('tile-filters')).toBeTruthy()
+    expect(screen.getByTestId('tile-copy')).toBeTruthy()
+  })
+
+  it('copyAsQuery render() returns INSERT/UPDATE/UPSERT chips', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.5.0')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    const cq = tiles.find((t) => t.id === 'copyAsQuery')
+    expect(cq).toBeDefined()
+    expect(typeof cq!.render).toBe('function')
+
+    const { container } = renderWithI18n(<>{cq!.render!()}</>)
+    const text = container.textContent ?? ''
+    expect(text).toContain('INSERT')
+    expect(text).toContain('UPDATE')
+    expect(text).toContain('UPSERT')
+  })
+
+  it('v0.5.0 has tile-autoUpdate', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-autoUpdate')).toBeTruthy()
+  })
+
+  it('v0.5.0 has tile-resize (resize introduced in v0.5.0)', () => {
+    renderWithI18n(<TileHarness activeTag="v0.5.0" />)
+    expect(screen.getByTestId('tile-resize')).toBeTruthy()
   })
 })

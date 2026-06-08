@@ -47,7 +47,8 @@
     },
     "command": {
       "title": "Command Palette",
-      "description": "Cmd+K to jump to any cell reference or run an action — keyboard-first navigation."
+      "description": "Cmd+K to jump to any cell reference or run an action — keyboard-first navigation.",
+      "descriptionV5": "Cmd+K to jump to any cell or run an action — now with ⌘O to open a file and ⌘W to close the sheet."
     },
     "virtualized": {
       "title": "Virtualized Rendering",
@@ -80,6 +81,23 @@
     "native": {
       "title": "Native macOS Integration",
       "description": "Drag & drop, 'Open With', and Recent Files support built in."
+    },
+    "zoom": {
+      "title": "Zoom 50–200%",
+      "description": "Scale the grid with ⌘+scroll, keyboard, or the status bar — icons and padding scale to match."
+    },
+    "formula": {
+      "title": "Cell formulas",
+      "description": "Write formulas in cells and copy them between cells."
+    },
+    "autoUpdate": {
+      "title": "Automatic updates",
+      "description": "Stay current automatically — LazySheet updates itself over the air."
+    },
+    "copyAsQuery": {
+      "title": "Copy as Query",
+      "description": "Copy any selection as a ready-to-run SQL query — INSERT, UPDATE, or UPSERT.",
+      "mediaAlt": "Copying a selection as an SQL UPSERT query"
     }
   },
   "faq": {
@@ -95,6 +113,18 @@
     "appimageQuestion": "AppImage shows a blank window on Fedora or Arch?",
     "appimageAnswerPre": "The AppImage up to v0.4.0 bundled graphics libraries (libwayland/libEGL) that clash with the system's Mesa drivers, so WebKit crashes at startup. On Fedora, the easiest fix is to install the .rpm package instead. To keep using the affected AppImage, extract it and remove the conflicting libraries:",
     "appimageAnswerPost": "This is fixed in releases after v0.4.0 — downloading the latest AppImage also resolves it.",
+    "autoUpdateQuestion": "How do updates work?",
+    "autoUpdateAnswerPre": "LazySheet updates itself automatically over the air using the built-in Tauri updater — you'll be prompted when a new version is ready.",
+    "autoUpdateAnswerPost": "No manual download needed; just relaunch when prompted.",
+    "appimageV5Question": "AppImage shows a blank window on Linux (v0.5.0)?",
+    "appimageV5AnswerPre": "This is fixed in v0.5.0 — the bundled libwayland/libEGL are stripped at build, so downloading the latest AppImage resolves it. If you still hit it on an older download, extract and prune manually:",
+    "appimageV5AnswerPost": "Then run ./squashfs-root/AppRun.",
+    "sqlExportQuestion": "How do I export my sheet to SQL?",
+    "sqlExportAnswerPre": "Open the Export to SQL modal and choose INSERT, UPDATE, or UPSERT — LazySheet generates the statements for the selected rows.",
+    "sqlExportAnswerPost": "Copy the generated SQL straight into your database client.",
+    "formulasQuestion": "Can I use formulas in cells?",
+    "formulasAnswerPre": "Yes — cell formulas are supported in v0.5.0, and you can copy a formula from one cell to another.",
+    "formulasAnswerPost": "",
     "copy": "Copy",
     "copied": "Copied",
     "copyAria": "Copy command"

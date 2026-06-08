@@ -96,7 +96,7 @@ describe('resolveVersion', () => {
 
 describe('activeVersionFromRelease', () => {
   it('returns FALLBACK_RELEASE.tag when release is null', () => {
-    expect(activeVersionFromRelease(null)).toBe('v0.4.0')
+    expect(activeVersionFromRelease(null)).toBe('v0.5.0')
   })
 
   it('returns the release tag when a release object is provided', () => {
