@@ -257,13 +257,22 @@ if (!bunVi["resetModules"]) {
 
 if (!bunVi["importFresh"]) {
   bunVi["importFresh"] = async function importFresh<T = unknown>(specifier: string): Promise<T> {
-    // preload.ts lives at <repo>/src/test/ → "../.." resolves to <repo>/
-    const repoRoot = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
+    const { fileURLToPath } = require("node:url") as typeof import("node:url");
+    const { join } = require("node:path") as typeof import("node:path");
+    // preload.ts lives at <repo>/src/test/ → "../.." resolves to <repo>/.
+    // fileURLToPath gives a real OS path (handles Windows "D:\" drive letters);
+    // URL.pathname would yield "/D:/..." which Bun.resolveSync cannot resolve.
+    const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
     const expanded = specifier.startsWith("@/")
-      ? `${repoRoot}/src/${specifier.slice(2)}`
+      ? join(repoRoot, "src", specifier.slice(2))
       : specifier;
     const resolved = Bun.resolveSync(expanded, repoRoot);
-    return import(resolved + "?reset=" + _resetCounter) as Promise<T>;
+    // Import the bare absolute path + cache-busting query (NOT a file:// URL —
+    // bun keys file:// imports by pathname and drops the query, returning the
+    // stale cached module). Forward-slash so a Windows "D:\..." path is a valid
+    // import specifier.
+    const spec = resolved.replace(/\\/g, "/");
+    return import(spec + "?reset=" + _resetCounter) as Promise<T>;
   };
 }
 
