@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useEditBuffer } from "@/hooks/useEditBuffer";
-import type { CellValue } from "@/lib/types";
+import type { CellModel, CellValue } from "@/lib/types";
 
 describe("useEditBuffer", () => {
   describe("initial state", () => {
@@ -326,6 +326,99 @@ describe("useEditBuffer", () => {
       expect(result.current.isDirty).toBe(false);
       expect(result.current.dirtyCount).toBe(0);
       expect(result.current.editsForSave()).toEqual([]);
+    });
+  });
+
+  describe("restore()", () => {
+    it("restore with a CellModel sets the edit and dirtyCount increments", () => {
+      const { result } = renderHook(() => useEditBuffer());
+      const cell: CellModel = { v: { t: "Text", c: "restored" } };
+
+      act(() => {
+        result.current.restore("Sheet1", 2, 3, cell);
+      });
+
+      expect(result.current.getEdit("Sheet1", 2, 3)).toEqual(cell);
+      expect(result.current.dirtyCount).toBe(1);
+    });
+
+    it("restore with a CellModel overwrites an existing edit", () => {
+      const { result } = renderHook(() => useEditBuffer());
+      const original: CellModel = { v: { t: "Text", c: "original" } };
+      const restored: CellModel = { v: { t: "Text", c: "restored" } };
+
+      act(() => {
+        result.current.setEdit("Sheet1", 0, 0, original.v);
+      });
+      act(() => {
+        result.current.restore("Sheet1", 0, 0, restored);
+      });
+
+      expect(result.current.getEdit("Sheet1", 0, 0)).toEqual(restored);
+      expect(result.current.dirtyCount).toBe(1);
+    });
+
+    it("restore undefined on an existing edit removes it and cleans up sheet map when empty", () => {
+      const { result } = renderHook(() => useEditBuffer());
+
+      act(() => {
+        result.current.setEdit("Sheet1", 1, 1, { t: "Integer", c: 42 });
+      });
+      expect(result.current.dirtyCount).toBe(1);
+
+      act(() => {
+        result.current.restore("Sheet1", 1, 1, undefined);
+      });
+
+      expect(result.current.getEdit("Sheet1", 1, 1)).toBeUndefined();
+      expect(result.current.dirtyCount).toBe(0);
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it("restore undefined on a sheet with multiple edits removes only the target cell", () => {
+      const { result } = renderHook(() => useEditBuffer());
+
+      act(() => {
+        result.current.setEdit("Sheet1", 0, 0, { t: "Text", c: "a" });
+        result.current.setEdit("Sheet1", 0, 1, { t: "Text", c: "b" });
+      });
+      expect(result.current.dirtyCount).toBe(2);
+
+      act(() => {
+        result.current.restore("Sheet1", 0, 0, undefined);
+      });
+
+      expect(result.current.getEdit("Sheet1", 0, 0)).toBeUndefined();
+      expect(result.current.getEdit("Sheet1", 0, 1)).toEqual({ v: { t: "Text", c: "b" } });
+      expect(result.current.dirtyCount).toBe(1);
+    });
+
+    it("restore undefined on an absent cell is a no-op (no throw, dirtyCount stays 0)", () => {
+      const { result } = renderHook(() => useEditBuffer());
+
+      expect(() => {
+        act(() => {
+          result.current.restore("Sheet1", 5, 5, undefined);
+        });
+      }).not.toThrow();
+
+      expect(result.current.dirtyCount).toBe(0);
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it("restore undefined on absent cell in a sheet with other edits leaves other edits intact", () => {
+      const { result } = renderHook(() => useEditBuffer());
+
+      act(() => {
+        result.current.setEdit("Sheet1", 0, 0, { t: "Text", c: "x" });
+      });
+
+      act(() => {
+        result.current.restore("Sheet1", 9, 9, undefined);
+      });
+
+      expect(result.current.dirtyCount).toBe(1);
+      expect(result.current.getEdit("Sheet1", 0, 0)).toBeDefined();
     });
   });
 });
