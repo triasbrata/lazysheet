@@ -24,6 +24,7 @@ interface TitleBarProps {
   onCopyFile?: () => void;
   onCopyFilePath?: () => void;
   onDragOut?: () => void;
+  dirty?: boolean;
 }
 
 export function TitleBar({
@@ -34,6 +35,7 @@ export function TitleBar({
   onCopyFile,
   onCopyFilePath,
   onDragOut,
+  dirty,
 }: TitleBarProps) {
   const { t } = useTranslation();
   const platform = getPlatform();
@@ -73,6 +75,16 @@ export function TitleBar({
         >
           {fileName ?? t("common.appName")}
         </span>
+
+        {dirty && (
+          <span
+            data-testid="titlebar-dirty"
+            className="text-muted-foreground"
+            title="Unsaved changes"
+          >
+            •
+          </span>
+        )}
 
         {filePath && (
           <DropdownMenu>

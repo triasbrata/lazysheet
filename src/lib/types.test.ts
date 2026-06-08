@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cellText, numericValue } from "@/lib/types";
+import { cellText, numericValue, editKey, coerceInput, isWritableFormat } from "@/lib/types";
 import type { CellModel, CellValue } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -193,5 +193,129 @@ describe("numericValue", () => {
   it("Text with multiple consecutive spaces → still parsed", () => {
     // spaces are stripped → "98550"
     expect(numericValue({ t: "Text", c: "9 8 5 5 0" })).toBe(98550);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// editKey
+// ---------------------------------------------------------------------------
+
+describe("editKey", () => {
+  it("returns row,col as a comma-separated string", () => {
+    expect(editKey(3, 4)).toBe("3,4");
+    expect(editKey(0, 0)).toBe("0,0");
+    expect(editKey(100, 200)).toBe("100,200");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// coerceInput
+// ---------------------------------------------------------------------------
+
+describe("coerceInput", () => {
+  it('"" → Empty', () => {
+    expect(coerceInput("")).toEqual({ t: "Empty" });
+  });
+
+  it('"0" → Integer 0', () => {
+    expect(coerceInput("0")).toEqual({ t: "Integer", c: 0 });
+  });
+
+  it('"-5" → Integer -5', () => {
+    expect(coerceInput("-5")).toEqual({ t: "Integer", c: -5 });
+  });
+
+  it('"42" → Integer 42', () => {
+    expect(coerceInput("42")).toEqual({ t: "Integer", c: 42 });
+  });
+
+  it('"3.14" → Number', () => {
+    expect(coerceInput("3.14")).toEqual({ t: "Number", c: 3.14 });
+  });
+
+  it('"1e3" → Number', () => {
+    expect(coerceInput("1e3")).toEqual({ t: "Number", c: 1000 });
+  });
+
+  it('"-0.5" → Number', () => {
+    expect(coerceInput("-0.5")).toEqual({ t: "Number", c: -0.5 });
+  });
+
+  it('"TRUE" → Bool true', () => {
+    expect(coerceInput("TRUE")).toEqual({ t: "Bool", c: true });
+  });
+
+  it('"true" → Bool true (case-insensitive)', () => {
+    expect(coerceInput("true")).toEqual({ t: "Bool", c: true });
+  });
+
+  it('"FALSE" → Bool false', () => {
+    expect(coerceInput("FALSE")).toEqual({ t: "Bool", c: false });
+  });
+
+  it('"False" → Bool false (case-insensitive)', () => {
+    expect(coerceInput("False")).toEqual({ t: "Bool", c: false });
+  });
+
+  it('"abc" → Text', () => {
+    expect(coerceInput("abc")).toEqual({ t: "Text", c: "abc" });
+  });
+
+  it('"=A1" → Text (formulas not parsed in v1)', () => {
+    expect(coerceInput("=A1")).toEqual({ t: "Text", c: "=A1" });
+  });
+
+  it('"5a" → Text', () => {
+    expect(coerceInput("5a")).toEqual({ t: "Text", c: "5a" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isWritableFormat
+// ---------------------------------------------------------------------------
+
+describe("isWritableFormat", () => {
+  it("undefined → false", () => {
+    expect(isWritableFormat(undefined)).toBe(false);
+  });
+
+  it("null → false", () => {
+    expect(isWritableFormat(null)).toBe(false);
+  });
+
+  it('"" → false', () => {
+    expect(isWritableFormat("")).toBe(false);
+  });
+
+  it("xlsx → true", () => {
+    expect(isWritableFormat("/a/b.xlsx")).toBe(true);
+  });
+
+  it("XLSM (uppercase ext) → true", () => {
+    expect(isWritableFormat(".XLSM")).toBe(true);
+  });
+
+  it("csv → true", () => {
+    expect(isWritableFormat("file.csv")).toBe(true);
+  });
+
+  it("tsv → true", () => {
+    expect(isWritableFormat("file.tsv")).toBe(true);
+  });
+
+  it("txt → true", () => {
+    expect(isWritableFormat("file.txt")).toBe(true);
+  });
+
+  it("xls → false (read-only format)", () => {
+    expect(isWritableFormat("file.xls")).toBe(false);
+  });
+
+  it("ods → false", () => {
+    expect(isWritableFormat("file.ods")).toBe(false);
+  });
+
+  it("no extension → false", () => {
+    expect(isWritableFormat("noext")).toBe(false);
   });
 });

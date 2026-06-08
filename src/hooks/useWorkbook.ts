@@ -76,6 +76,21 @@ export function useWorkbook() {
     [workbook, activeSheet],
   );
 
+  // Re-read the currently-active sheet from disk. Used after a write-back save
+  // so the in-memory rows reflect what was just persisted (switchSheet no-ops on
+  // the same sheet, so it can't be reused for this).
+  const reloadActiveSheet = useCallback(async () => {
+    if (!workbook || !activeSheet) return;
+    setError(null);
+    try {
+      const sheet = await loadSheetApi(activeSheet.name);
+      setActiveSheet(sheet);
+    } catch (e) {
+      const msg = typeof e === "string" ? e : (e as Error).message ?? String(e);
+      setError(msg);
+    }
+  }, [workbook, activeSheet]);
+
   const close = useCallback(() => {
     setWorkbook(null);
     setActiveSheet(null);
@@ -89,6 +104,7 @@ export function useWorkbook() {
     error,
     open,
     switchSheet,
+    reloadActiveSheet,
     close,
     recents: loadRecents,
   };

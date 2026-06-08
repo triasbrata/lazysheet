@@ -24,6 +24,7 @@ import {
   pickFile,
   isSupportedFile,
   openExternal,
+  saveEdits,
 } from "@/lib/tauri-api";
 
 const mockInvoke = vi.mocked(invoke);
@@ -230,6 +231,21 @@ describe("openExternal", () => {
 
     expect(mockOpenUrl).toHaveBeenCalledOnce();
     expect(mockOpenUrl).toHaveBeenCalledWith("https://example.com");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveEdits
+// ---------------------------------------------------------------------------
+describe("saveEdits", () => {
+  it("invokes save_edits with the given edits array and resolves", async () => {
+    mockInvoke.mockResolvedValueOnce(undefined);
+
+    const edits = [{ sheet_name: "S", row: 1, col: 2, value: { t: "Text", c: "hi" } as const }];
+    await saveEdits(edits);
+
+    expect(mockInvoke).toHaveBeenCalledOnce();
+    expect(mockInvoke).toHaveBeenCalledWith("save_edits", { edits });
   });
 });
 

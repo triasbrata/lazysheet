@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { cellText, type CellModel, type SheetModel } from "@/lib/types";
 import { Cell } from "./Cell";
+import { CellEditor } from "./CellEditor";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -120,6 +121,13 @@ interface GridProps {
   // Grid zoom factor (0.5–2.0). 1 = 100%. Multiplies the dimension pipeline at render.
   zoom?: number;
   onZoomChange?: (next: number) => void;
+  // Inline cell editing
+  editEnabled?: boolean;
+  editingCell?: { row: number; col: number } | null;
+  getEditedCell?: (row: number, col: number) => CellModel | undefined;
+  onEditStart?: (row: number, col: number) => void;
+  onEditCommit?: (row: number, col: number, raw: string, nav: "down" | "right" | "none") => void;
+  onEditCancel?: () => void;
 }
 
 type DragMode = "cell" | "rowHeader" | "colHeader";
@@ -162,6 +170,12 @@ export function Grid({
   onCopyQuery,
   zoom = 1,
   onZoomChange,
+  editEnabled,
+  editingCell,
+  getEditedCell,
+  onEditStart,
+  onEditCommit,
+  onEditCancel,
 }: GridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalRows = sheet.rows.length;
@@ -503,6 +517,13 @@ export function Grid({
     zoomRef.current = zoom;
   }, [zoom]);
 
+  // ── Buffered cell lookup — edited cell takes precedence over sheet data ───
+  const cellAt = useCallback(
+    (r: number, c: number): CellModel | undefined =>
+      getEditedCell?.(r, c) ?? sheet.rows[r]?.[c],
+    [getEditedCell, sheet],
+  );
+
   // ── Ctrl+wheel / pinch zoom ───────────────────────────────────────────────
   // macOS translates touchpad pinch into `wheel` events with ctrlKey=true, so
   // this ONE native listener covers both Ctrl+scroll and pinch-to-zoom. It must
@@ -780,6 +801,27 @@ export function Grid({
     [stopAutoScroll],
   );
 
+  // ── Body double-click — enters inline edit mode ─────────────────────────
+  const handleBodyDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!editEnabled) return;
+      const tgt = e.target as HTMLElement | null;
+      if (!tgt) return;
+      // Only data cells (not header/gutter) are editable
+      const cellEl = tgt.closest<HTMLElement>("[data-r][data-c]");
+      if (!cellEl) return;
+      const r = parseInt(cellEl.getAttribute("data-r")!, 10);
+      const c = parseInt(cellEl.getAttribute("data-c")!, 10);
+      if (Number.isNaN(r) || Number.isNaN(c)) return;
+      // Guard: must be within data bounds (not a header/gutter pseudo-cell)
+      if (r < 0 || r >= totalRows || c < 0 || c >= totalCols) return;
+      // Resolve to merge anchor
+      const resolved = resolveActiveCoords(merges, r, c);
+      onEditStart?.(resolved.row, resolved.col);
+    },
+    [editEnabled, totalRows, totalCols, merges, onEditStart],
+  );
+
   // ── Header click handlers ───────────────────────────────────────────────
   const handleColHeaderPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>, col: number) => {
@@ -1009,6 +1051,13 @@ export function Grid({
         return;
       }
 
+      // F2 — enter edit mode on the anchor cell
+      if (editEnabled && e.key === "F2" && selection && !editingCell) {
+        e.preventDefault();
+        onEditStart?.(selection.anchor.row, selection.anchor.col);
+        return;
+      }
+
       const navKeys = new Set([
         "ArrowUp",
         "ArrowDown",
@@ -1123,6 +1172,10 @@ export function Grid({
       setSingleCell,
       emit,
       stopAutoScroll,
+      editEnabled,
+      editingCell,
+      selection,
+      onEditStart,
     ],
   );
 
@@ -1499,6 +1552,7 @@ export function Grid({
               onPointerCancel={endDrag}
               onLostPointerCapture={endDrag}
               onContextMenuCapture={handleContextMenuCapture}
+              onDoubleClick={handleBodyDoubleClick}
               style={{
                 height: totalBodyHeight,
                 width: bodyWidth,
@@ -1552,7 +1606,6 @@ export function Grid({
           {/* Row map */}
           {virtualRows.map((vr) => {
             const rowIdx = visibleRowIndices[vr.index];
-            const row = sheet.rows[rowIdx];
             const rowInSel =
               expandedBounds &&
               rowIdx >= expandedBounds.r1 &&
@@ -1614,7 +1667,7 @@ export function Grid({
                     return (
                       <Cell
                         key={colIdx}
-                        cell={row?.[colIdx]}
+                        cell={cellAt(rowIdx, colIdx)}
                         width={w}
                         spanWidth={w}
                         minHeight={vr.size}
@@ -1657,7 +1710,7 @@ export function Grid({
                   return (
                     <Cell
                       key={colIdx}
-                      cell={row?.[colIdx]}
+                      cell={cellAt(rowIdx, colIdx)}
                       width={widths[colIdx]}
                       minHeight={vr.size}
                       highlight={cellHighlight(rowIdx, colIdx)}
@@ -1695,6 +1748,34 @@ export function Grid({
             measurements={measurements}
             leftOffset={rowNumColWidth}
           />
+
+          {/* Inline cell editor — rendered when editEnabled and editingCell is set */}
+          {(() => {
+            if (!editEnabled || !editingCell) return null;
+            const { row: er, col: ec } = editingCell;
+            const vpos = visiblePos.get(er);
+            if (vpos === undefined) return null;
+            const meas = measurements[vpos];
+            if (!meas) return null;
+            const editorTop = meas.start;
+            const editorHeight = meas.size;
+            const editorLeft = rowNumColWidth + (cumColX[ec] ?? 0);
+            const editorWidth = widths[ec] ?? 0;
+            const rawCell = cellAt(er, ec);
+            const initialText = rawCell ? cellText(rawCell) : "";
+            return (
+              <CellEditor
+                key={`${er}:${ec}`}
+                initialText={initialText}
+                left={editorLeft}
+                top={editorTop}
+                width={editorWidth}
+                height={editorHeight}
+                onCommit={(raw, nav) => onEditCommit?.(er, ec, raw, nav)}
+                onCancel={() => onEditCancel?.()}
+              />
+            );
+          })()}
             </div>
           </ContextMenuTrigger>
           <GridContextMenuContent

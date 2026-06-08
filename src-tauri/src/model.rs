@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Clone, Debug)]
 pub struct WorkbookModel {
@@ -37,7 +37,7 @@ pub struct CellModel {
     pub f: Option<String>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(tag = "t", content = "c")]
 pub enum CellValue {
     Empty,

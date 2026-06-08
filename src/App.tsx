@@ -24,12 +24,24 @@ import {
   ResizeDialog,
   type SizeDialogState,
 } from "@/components/ResizeDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useWorkbook } from "@/hooks/useWorkbook";
+import { useEditBuffer } from "@/hooks/useEditBuffer";
 import { useFileEvents } from "@/hooks/useFileEvents";
 import { useFileState } from "@/hooks/useFileState";
-import { pickFile } from "@/lib/tauri-api";
+import { pickFile, saveEdits } from "@/lib/tauri-api";
 import { readText } from "tauri-plugin-clipboard-api";
-import { cellText } from "@/lib/types";
+import { cellText, coerceInput, isWritableFormat } from "@/lib/types";
+import { flags } from "@/lib/feature-flags";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   copyFilePath,
   copyFileToClipboard,
@@ -137,10 +149,71 @@ function App() {
   const fileState = useFileState(wb.workbook?.path ?? null);
   const headerRows = fileState.headerRows;
 
+  const editBuffer = useEditBuffer();
+  const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
+  const activeSheetName = wb.activeSheet?.name ?? "";
+  const editEnabled = flags.inlineEdit && isWritableFormat(wb.workbook?.path);
+  const getEditedCell = useCallback(
+    (row: number, col: number) => editBuffer.getEdit(activeSheetName, row, col),
+    [editBuffer, activeSheetName],
+  );
+
   const [filters, setFilters] = useState<Record<string, SheetFilters>>({});
+
+  const handleEditStart = useCallback(
+    (row: number, col: number) => {
+      if (editEnabled) setEditingCell({ row, col });
+    },
+    [editEnabled],
+  );
+
+  const handleEditCommit = useCallback(
+    (row: number, col: number, raw: string, nav: "down" | "right" | "none") => {
+      editBuffer.setEdit(activeSheetName, row, col, coerceInput(raw));
+      setEditingCell(null);
+      if (nav === "none") return;
+      const maxRow = (wb.activeSheet?.rows.length ?? 1) - 1;
+      const maxCol = (wb.activeSheet?.max_col ?? 1) - 1;
+      let nr = row;
+      let nc = col;
+      if (nav === "down") nr = Math.min(row + 1, maxRow);
+      if (nav === "right") nc = Math.min(col + 1, maxCol);
+      setSelection({
+        anchor: { row: nr, col: nc },
+        focus: { row: nr, col: nc },
+        mode: "cell",
+        nonce: Date.now(),
+      });
+    },
+    [editBuffer, activeSheetName, wb.activeSheet],
+  );
+
+  const handleEditCancel = useCallback(() => {
+    setEditingCell(null);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!editBuffer.isDirty) return;
+    try {
+      await saveEdits(editBuffer.editsForSave());
+      // Re-read from disk so in-memory rows match what was saved, THEN drop the
+      // overlay buffer — otherwise display falls back to the stale parsed rows.
+      await wb.reloadActiveSheet();
+      editBuffer.clearAll();
+      toast.success("Saved");
+    } catch (e) {
+      const msg = typeof e === "string" ? e : (e as Error).message ?? String(e);
+      const friendly = msg.includes("unsupported_format")
+        ? "This file type can't be saved. Save as .xlsx."
+        : msg;
+      toast.error(friendly);
+    }
+  }, [editBuffer, wb]);
 
   const open = useCallback(
     async (path: string) => {
+      editBuffer.clearAll();
+      setEditingCell(null);
       try {
         await wb.open(path);
         setRecents(wb.recents());
@@ -149,7 +222,7 @@ function App() {
         toast.error("Failed to open file", { description: msg });
       }
     },
-    [wb],
+    [wb, editBuffer],
   );
 
   const handlePick = useCallback(async () => {
@@ -164,7 +237,9 @@ function App() {
     setFindOpen(false);
     setFindQuery("");
     setSummaryPanelOpen(false);
-  }, [wb]);
+    editBuffer.clearAll();
+    setEditingCell(null);
+  }, [wb, editBuffer]);
 
   const handleSelectionChange = useCallback(
     (next: Selection, _scroll: "none" | "ifNeeded" | "center") => {
@@ -481,11 +556,37 @@ function App() {
         } else {
           toast.message("Select a range (≥2 cols × ≥2 rows) first");
         }
+      } else if (k === "s" && !e.shiftKey && flags.inlineEdit) {
+        e.preventDefault();
+        void handleSave();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset]);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset, handleSave]);
+
+  const allowCloseRef = useRef(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  useEffect(() => {
+    if (!flags.inlineEdit) return;
+    let unlisten: (() => void) | undefined;
+    let active = true;
+    getCurrentWindow().onCloseRequested((ev) => {
+      // Already confirmed, or nothing unsaved → let the close proceed.
+      if (allowCloseRef.current || !editBuffer.isDirty) return;
+      ev.preventDefault();
+      setCloseConfirmOpen(true); // show in-app modal instead of window.confirm
+    }).then((fn) => { if (active) unlisten = fn; else fn(); });
+    return () => { active = false; unlisten?.(); };
+  }, [editBuffer.isDirty]);
+
+  const handleConfirmClose = useCallback(() => {
+    allowCloseRef.current = true;
+    setCloseConfirmOpen(false);
+    // Re-issue close; the guard above now lets it through. close() uses the
+    // already-granted core:window:allow-close (no destroy permission needed).
+    void getCurrentWindow().close();
+  }, []);
 
   const handleGoto = useCallback(
     (ref: string): string | null => {
@@ -601,9 +702,8 @@ function App() {
     setFindOpen(false);
   }, []);
 
-  const activeSheetName = wb.activeSheet?.name ?? null;
   const headerRow =
-    activeSheetName !== null ? headerRows[activeSheetName] ?? null : null;
+    activeSheetName !== "" ? headerRows[activeSheetName] ?? null : null;
   const activeFilters = activeSheetName ? filters[activeSheetName] ?? {} : {};
 
   const handleMarkAsHeader = useCallback(
@@ -1291,6 +1391,7 @@ function App() {
         onCopyFile={handleCopyFile}
         onCopyFilePath={handleCopyFilePath}
         onDragOut={handleDragOut}
+        dirty={editBuffer.isDirty}
       />
 
       {wb.loading && (
@@ -1333,6 +1434,12 @@ function App() {
               onCopyQuery={handleCopyQuery}
               zoom={zoom}
               onZoomChange={handleZoomChange}
+              editEnabled={editEnabled}
+              editingCell={editingCell}
+              getEditedCell={getEditedCell}
+              onEditStart={handleEditStart}
+              onEditCommit={handleEditCommit}
+              onEditCancel={handleEditCancel}
             />
           )}
           <StatusBar
@@ -1402,6 +1509,32 @@ function App() {
         onConfirm={handleQueryConfirm}
         onCancel={handleQueryCancel}
       />
+      <Dialog
+        open={closeConfirmOpen}
+        onOpenChange={(o) => !o && setCloseConfirmOpen(false)}
+      >
+        <DialogContent className="sm:max-w-sm" data-testid="close-confirm-dialog">
+          <DialogHeader>
+            <DialogTitle>Unsaved changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved edits. Close without saving? Your changes will be
+              lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmClose}
+              data-testid="close-confirm-btn"
+            >
+              Close without saving
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -60,4 +60,5 @@ export function parseFlag(raw: string | undefined, defaultValue = true): boolean
  */
 export const flags = {
   multiLang: parseFlag((import.meta as any).env?.VITE_FF_MULTI_LANG, false),
+  inlineEdit: parseFlag((import.meta as any).env?.VITE_FF_INLINE_EDIT, false),
 } as const satisfies Readonly<Record<string, boolean>>;

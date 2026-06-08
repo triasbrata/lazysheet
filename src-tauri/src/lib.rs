@@ -2,6 +2,7 @@ mod commands;
 mod model;
 mod parser;
 mod state;
+mod writer;
 
 use std::path::Path;
 use state::{OpenFile, PendingFiles};
@@ -80,6 +81,7 @@ pub fn run() {
             commands::open_workbook,
             commands::load_sheet,
             commands::take_pending_files,
+            commands::save_edits,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

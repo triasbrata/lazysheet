@@ -124,6 +124,51 @@ function parseNumericText(raw: string): number | null {
 }
 
 /**
+ * Returns a stable string key for a (row, col) pair, used to identify an
+ * active edit cell without allocating a heap object.
+ */
+export function editKey(row: number, col: number): string {
+  return `${row},${col}`;
+}
+
+/**
+ * Coerce raw user-input text into the most appropriate CellValue variant.
+ *
+ * Rules (checked in order):
+ *   1. "" → Empty
+ *   2. Matches /^-?\d+$/ → Integer (parseInt)
+ *   3. Finite float (Number(raw) is finite and non-NaN, trimmed non-empty) → Number
+ *   4. "TRUE" / "FALSE" (case-insensitive) → Bool
+ *   5. Anything else → Text (including "=…" formulas — not parsed in v1)
+ */
+export function coerceInput(raw: string): CellValue {
+  if (raw === "") return { t: "Empty" };
+  if (/^-?\d+$/.test(raw)) return { t: "Integer", c: parseInt(raw, 10) };
+  const trimmed = raw.trim();
+  if (trimmed !== "" && !Number.isNaN(Number(raw)) && Number.isFinite(Number(raw))) {
+    return { t: "Number", c: Number(raw) };
+  }
+  const upper = raw.toUpperCase();
+  if (upper === "TRUE") return { t: "Bool", c: true };
+  if (upper === "FALSE") return { t: "Bool", c: false };
+  return { t: "Text", c: raw };
+}
+
+/**
+ * Returns true if `path` has a file extension that the app can write back to.
+ * Writable extensions: xlsx, xlsm, csv, tsv, txt.
+ * Returns false for undefined/null/empty paths, paths without an extension,
+ * and any other extension (e.g. xls, ods).
+ */
+export function isWritableFormat(path?: string | null): boolean {
+  if (!path) return false;
+  const dot = path.lastIndexOf(".");
+  if (dot === -1) return false;
+  const ext = path.slice(dot + 1).toLowerCase();
+  return ext === "xlsx" || ext === "xlsm" || ext === "csv" || ext === "tsv" || ext === "txt";
+}
+
+/**
  * Numeric value of a cell, coercing numeric-looking Text (e.g. xlsx exports
  * that store "135000" or "98,550" as formatted text) into a real number.
  * Returns null for empty/whitespace/non-numeric/non-finite cells — those are

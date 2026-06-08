@@ -4,6 +4,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { SheetModel, WorkbookModel } from "@/lib/types";
+import type { CellEditDTO } from "@/hooks/useEditBuffer";
 
 export const SUPPORTED_EXTS = ["xlsx", "xlsm", "xls", "csv", "tsv"] as const;
 
@@ -57,4 +58,8 @@ export function isSupportedFile(path: string): boolean {
 
 export async function openExternal(url: string): Promise<void> {
   await openUrl(url);
+}
+
+export async function saveEdits(edits: CellEditDTO[]): Promise<void> {
+  return invoke<void>("save_edits", { edits });
 }

@@ -8,6 +8,8 @@ interface ImportMetaEnv {
    */
   /** default OFF; set "true" to enable multi-language (language toggle + browser language detection). */
   readonly VITE_FF_MULTI_LANG?: string;
+  /** default OFF; set "true" to enable inline cell editing. */
+  readonly VITE_FF_INLINE_EDIT?: string;
 }
 
 interface ImportMeta {

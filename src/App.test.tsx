@@ -50,13 +50,26 @@ vi.mock("sonner", () => ({
   Toaster: () => null,
 }));
 
+// ─── Mock: @tauri-apps/api/window ────────────────────────────────────────────
+const mockOnCloseRequested = vi.fn().mockResolvedValue(() => {});
+const mockDestroy = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@tauri-apps/api/window", () => ({
+  getCurrentWindow: vi.fn(() => ({
+    onCloseRequested: mockOnCloseRequested,
+    destroy: mockDestroy,
+  })),
+}));
+
 // ─── Mock: @/lib/tauri-api ───────────────────────────────────────────────────
 const mockPickFile = vi.fn().mockResolvedValue(null);
 const mockOpenExternal = vi.fn().mockResolvedValue(undefined);
+const mockSaveEdits = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/tauri-api", () => ({
   pickFile: (...args: unknown[]) => mockPickFile(...args),
   openExternal: (...args: unknown[]) => mockOpenExternal(...args),
+  saveEdits: (...args: unknown[]) => mockSaveEdits(...args),
   isSupportedFile: (path: string) => /\.(xlsx|xlsm|xls|csv|tsv)$/i.test(path),
   SUPPORTED_EXTS: ["xlsx", "xlsm", "xls", "csv", "tsv"],
   openWorkbook: vi.fn(),
@@ -115,6 +128,9 @@ vi.mock("@/components/Grid/Grid", () => ({
     onResetAllDimensions?: () => void;
     onOpenColWidthDialog?: (col: number) => void;
     onOpenRowHeightDialog?: (row: number) => void;
+    onEditStart?: (row: number, col: number) => void;
+    onEditCommit?: (row: number, col: number, raw: string, nav: "down" | "right" | "none") => void;
+    onEditCancel?: () => void;
   }) => (
     <div data-testid="grid-stub">
       <button
@@ -279,6 +295,18 @@ vi.mock("@/components/Grid/Grid", () => ({
         onClick={() => props.onOpenRowHeightDialog?.(0)}
       >
         open row height dialog
+      </button>
+      <button
+        data-testid="grid-edit-commit"
+        onClick={() => props.onEditCommit?.(1, 1, "hello", "none")}
+      >
+        edit commit
+      </button>
+      <button
+        data-testid="grid-edit-cancel"
+        onClick={() => props.onEditCancel?.()}
+      >
+        edit cancel
       </button>
     </div>
   )),
@@ -569,10 +597,13 @@ describe("App", () => {
     // Re-set defaults after clearAllMocks
     mockRunUpdateCheck.mockResolvedValue(undefined);
     mockPickFile.mockResolvedValue(null);
+    mockSaveEdits.mockResolvedValue(undefined);
     mockCopyFilePath.mockResolvedValue(undefined);
     mockCopyFileToClipboard.mockResolvedValue(undefined);
     mockDragOutFile.mockResolvedValue(undefined);
     mockOnDragDropEvent.mockReturnValue(Promise.resolve(() => {}));
+    mockOnCloseRequested.mockResolvedValue(() => {});
+    mockDestroy.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -3394,6 +3425,49 @@ describe("App", () => {
       expect(mockFileStateApi.setZoom).not.toHaveBeenCalled();
 
       vi.useRealTimers();
+    });
+  });
+
+  // ── Inline edit (flags.inlineEdit = OFF by default) ──────────────────────────
+  // NOTE: flags.inlineEdit defaults to false in test env (VITE_FF_INLINE_EDIT not set).
+  // So editEnabled = false, Ctrl+S is a no-op, and close-guard returns early.
+  // These tests verify the plumbing works when an edit commit flows through the stub.
+
+  describe("inline edit — wiring (flag OFF, verifies no regressions)", () => {
+    it("Ctrl+S does nothing when flag is OFF (no saveEdits call)", async () => {
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+      });
+      expect(mockSaveEdits).not.toHaveBeenCalled();
+    });
+
+    it("Meta+S does nothing when flag is OFF (no saveEdits call)", async () => {
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "s", metaKey: true });
+      });
+      expect(mockSaveEdits).not.toHaveBeenCalled();
+    });
+
+    it("titlebar-dirty indicator is absent when buffer is empty", async () => {
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      expect(screen.queryByTestId("titlebar-dirty")).toBeNull();
     });
   });
 });

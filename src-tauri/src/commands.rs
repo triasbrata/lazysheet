@@ -4,6 +4,14 @@ use crate::state::{OpenFile, PendingFiles};
 use std::path::PathBuf;
 use tauri::State;
 
+#[derive(serde::Deserialize)]
+pub struct CellEdit {
+    pub sheet_name: String,
+    pub row: usize,
+    pub col: usize,
+    pub value: crate::model::CellValue,
+}
+
 #[tauri::command]
 pub async fn open_workbook(
     path: String,
@@ -44,4 +52,20 @@ pub async fn load_sheet(
 pub fn take_pending_files(pending: State<'_, PendingFiles>) -> Vec<String> {
     let mut guard = pending.0.lock().unwrap();
     std::mem::take(&mut *guard)
+}
+
+#[tauri::command]
+pub async fn save_edits(
+    edits: Vec<CellEdit>,
+    open_file: State<'_, OpenFile>,
+) -> Result<(), String> {
+    let path = open_file
+        .0
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("No file open")?;
+    tauri::async_runtime::spawn_blocking(move || crate::writer::save_edits_to_path(&path, &edits))
+        .await
+        .map_err(|e| format!("Task join error: {e}"))?
 }

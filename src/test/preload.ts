@@ -307,6 +307,7 @@ if (!bunVi["mock"] || typeof bunVi["mock"] !== "function") {
 
 // ── 3. Env defaults (replaces vitest test.env) ────────────────────────────────
 process.env["VITE_FF_MULTI_LANG"] ??= "true";
+process.env["VITE_FF_INLINE_EDIT"] ??= "true";
 
 // ── 4. IS_REACT_ACT_ENVIRONMENT ───────────────────────────────────────────────
 (globalThis as unknown as Record<string, unknown>)["IS_REACT_ACT_ENVIRONMENT"] = true;

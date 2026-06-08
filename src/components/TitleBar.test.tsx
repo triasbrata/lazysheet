@@ -222,6 +222,32 @@ describe("TitleBar — VITE_FF_MULTI_LANG feature flag", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Dirty indicator
+// ---------------------------------------------------------------------------
+describe("TitleBar — dirty indicator", () => {
+  it("shows titlebar-dirty dot when dirty={true}", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} dirty={true} />
+    );
+    expect(screen.getByTestId("titlebar-dirty")).toBeInTheDocument();
+  });
+
+  it("does not show titlebar-dirty dot when dirty={false}", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} dirty={false} />
+    );
+    expect(screen.queryByTestId("titlebar-dirty")).toBeNull();
+  });
+
+  it("does not show titlebar-dirty dot when dirty prop is omitted", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
+    );
+    expect(screen.queryByTestId("titlebar-dirty")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Platform-conditional padding + WindowControls
 // ---------------------------------------------------------------------------
 describe("TitleBar — platform-conditional layout", () => {
