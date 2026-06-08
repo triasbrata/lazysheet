@@ -40,7 +40,7 @@ import { useFileEvents } from "@/hooks/useFileEvents";
 import { useFileState } from "@/hooks/useFileState";
 import { pickFile, saveEdits } from "@/lib/tauri-api";
 import { readText } from "tauri-plugin-clipboard-api";
-import { cellText, coerceInput, isWritableFormat } from "@/lib/types";
+import { cellText, coerceInput, isWritableFormat, type CellModel, type CellValue } from "@/lib/types";
 import { flags } from "@/lib/feature-flags";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
@@ -110,6 +110,12 @@ const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
   plain: "plain text",
 };
 
+/** Structural equality for cell values (tagged union), order-independent. */
+function sameCellValue(a: CellValue, b: CellValue): boolean {
+  if (a.t !== b.t) return false;
+  return "c" in a && "c" in b ? a.c === b.c : true;
+}
+
 function findNextAfterAnchor(
   matches: GridMatch[],
   anchor: { row: number; col: number },
@@ -172,17 +178,51 @@ function App() {
     [editEnabled],
   );
 
+  // Always-current pointer to the active sheet. An undo/redo command captured at
+  // edit time must read the LIVE base rows when it later runs: a save replaces the
+  // sheet object (reloadActiveSheet → setActiveSheet(newSheet)), so a closure that
+  // captured `wb` would see the pre-save rows and mis-decide the undo.
+  const activeSheetRef = useRef(wb.activeSheet);
+  activeSheetRef.current = wb.activeSheet;
+
+  // Apply an undo/redo target to a cell. Dedups against the LIVE base row value at
+  // execution time: if the target equals what's already on disk (e.g. undoing the
+  // only edit before any save), drop the overlay so the cell goes clean instead of
+  // staying dirty with a redundant overlay; otherwise set the overlay so the cell
+  // is reverted even when the base rows changed under it (e.g. after a save+reload).
+  const restoreCell = useCallback(
+    (sheet: string, row: number, col: number, cell: CellModel) => {
+      const live = activeSheetRef.current;
+      const base = live?.name === sheet ? live.rows[row]?.[col] : undefined;
+      const baseV: CellValue = base?.v ?? { t: "Empty" };
+      if (sameCellValue(baseV, cell.v)) {
+        editBuffer.restore(sheet, row, col, undefined);
+      } else {
+        editBuffer.restore(sheet, row, col, cell);
+      }
+    },
+    [editBuffer],
+  );
+
   const handleEditCommit = useCallback(
     (row: number, col: number, raw: string, nav: "down" | "right" | "none") => {
       const sheet = activeSheetName;
-      const before = editBuffer.getEdit(sheet, row, col);
-      const after: { v: ReturnType<typeof coerceInput> } = { v: coerceInput(raw) };
+      // Capture the cell as currently DISPLAYED (overlay if present, else the base
+      // row value), not just the overlay. After a save, reloadActiveSheet() rewrites
+      // the base rows to the saved value and clearAll() drops the overlay; an undo
+      // that only deleted the overlay would then fall back to the new base and appear
+      // to do nothing. The `{ t: "Empty" }` fallback represents an originally-empty
+      // cell so undo can force it back to empty after a save.
+      const before: CellModel =
+        editBuffer.getEdit(sheet, row, col) ??
+        wb.activeSheet?.rows[row]?.[col] ?? { v: { t: "Empty" } };
+      const after: CellModel = { v: coerceInput(raw) };
       editBuffer.setEdit(sheet, row, col, after.v);
       if (undoOn) {
         history.push({
           label: "Edit cell",
-          undo: () => editBuffer.restore(sheet, row, col, before),
-          redo: () => editBuffer.restore(sheet, row, col, after),
+          undo: () => restoreCell(sheet, row, col, before),
+          redo: () => restoreCell(sheet, row, col, after),
         });
       }
       setEditingCell(null);
@@ -200,7 +240,7 @@ function App() {
         nonce: Date.now(),
       });
     },
-    [editBuffer, activeSheetName, wb.activeSheet, undoOn, history],
+    [editBuffer, activeSheetName, wb.activeSheet, undoOn, history, restoreCell],
   );
 
   const handleEditCancel = useCallback(() => {
@@ -628,9 +668,11 @@ function App() {
   const handleConfirmClose = useCallback(() => {
     allowCloseRef.current = true;
     setCloseConfirmOpen(false);
-    // Re-issue close; the guard above now lets it through. close() uses the
-    // already-granted core:window:allow-close (no destroy permission needed).
-    void getCurrentWindow().close();
+    // Force-close. close() re-emits onCloseRequested (the same event we just
+    // preventDefault-ed), so it would loop back through the guard instead of
+    // actually closing the window. destroy() tears the window down directly,
+    // bypassing the close-requested cycle. Needs core:window:allow-destroy.
+    void getCurrentWindow().destroy();
   }, []);
 
   const handleGoto = useCallback(

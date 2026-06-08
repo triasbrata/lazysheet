@@ -467,6 +467,7 @@ let mockWorkbookState: {
   switchSheet: ReturnType<typeof vi.fn>;
   close: ReturnType<typeof vi.fn>;
   recents: ReturnType<typeof vi.fn>;
+  reloadActiveSheet: ReturnType<typeof vi.fn>;
 };
 
 vi.mock("@/hooks/useWorkbook", () => ({
@@ -554,6 +555,7 @@ function resetMockWorkbookState(
     switchSheet: vi.fn().mockResolvedValue(undefined),
     close: vi.fn(),
     recents: vi.fn().mockReturnValue([]),
+    reloadActiveSheet: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -3468,6 +3470,100 @@ describe("App", () => {
         renderWithProviders(<App />);
       });
       expect(screen.queryByTestId("titlebar-dirty")).toBeNull();
+    });
+  });
+
+  // Regression: undo must still revert a cell AFTER the edit was saved. handleSave
+  // reloads the base rows to the saved value and clears the overlay; an undo that
+  // only deleted the overlay would fall back to the new base and do nothing. The fix
+  // restores the captured original value as an overlay, so the cell goes dirty again.
+  describe("inline edit — undo after save (flags ON)", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    });
+
+    it("undo restores a cell even after the edit was saved", async () => {
+      vi.stubEnv("VITE_FF_INLINE_EDIT", "true");
+      vi.stubEnv("VITE_FF_UNDO", "true");
+      vi.resetModules();
+
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      // Simulate the real save: reloadActiveSheet replaces the sheet object with a
+      // fresh one read from disk (setActiveSheet(newSheet)) — it does NOT mutate the
+      // old object. The undo command must read this live sheet, not the one captured
+      // at edit time, or it sees stale base rows and fails to revert.
+      const reloadActiveSheet = vi.fn(async () => {
+        const reloaded = makeSheet();
+        reloaded.rows[1][1] = { v: { t: "Text", c: "hello" } };
+        mockWorkbookState.activeSheet = reloaded;
+      });
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet, reloadActiveSheet });
+
+      const { default: AppFresh } = await import("./App");
+      await act(async () => {
+        renderWithProviders(<AppFresh />);
+      });
+
+      // Commit an edit to cell (1,1) (base was Number 100 → "hello").
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("grid-edit-commit"));
+      });
+      expect(screen.getByTestId("titlebar-dirty")).toBeInTheDocument();
+
+      // Save: writes, reloads base rows to "hello", clears the overlay → clean.
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+      });
+      await waitFor(() => expect(reloadActiveSheet).toHaveBeenCalled());
+      expect(screen.queryByTestId("titlebar-dirty")).toBeNull();
+
+      // Undo after save reverts the cell: base now holds the saved value, so undo
+      // re-creates an overlay with the original value → dirty indicator returns.
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+      });
+      expect(screen.getByTestId("titlebar-dirty")).toBeInTheDocument();
+    });
+
+    it("confirming close on unsaved changes destroys the window", async () => {
+      vi.stubEnv("VITE_FF_INLINE_EDIT", "true");
+      vi.resetModules();
+
+      // Capture the onCloseRequested handler so we can simulate the OS close event.
+      let closeHandler: ((ev: { preventDefault: () => void }) => void) | undefined;
+      mockOnCloseRequested.mockImplementation((cb: typeof closeHandler) => {
+        closeHandler = cb;
+        return Promise.resolve(() => {});
+      });
+
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+
+      const { default: AppFresh } = await import("./App");
+      await act(async () => {
+        renderWithProviders(<AppFresh />);
+      });
+
+      // Make the buffer dirty so the close guard intercepts.
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("grid-edit-commit"));
+      });
+
+      // Simulate the OS close request → in-app confirm dialog appears.
+      await act(async () => {
+        closeHandler?.({ preventDefault: () => {} });
+      });
+      expect(screen.getByTestId("close-confirm-dialog")).toBeInTheDocument();
+
+      // Confirming must force-close via destroy() (close() would loop back through
+      // the same close-requested guard and never actually close).
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("close-confirm-btn"));
+      });
+      expect(mockDestroy).toHaveBeenCalled();
     });
   });
 });
