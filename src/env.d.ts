@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_FF_MULTI_LANG?: string;
   /** default OFF; set "true" to enable inline cell editing. */
   readonly VITE_FF_INLINE_EDIT?: string;
+  /** default OFF; set "true" to enable session-scoped undo/redo. */
+  readonly VITE_FF_UNDO?: string;
 }
 
 interface ImportMeta {

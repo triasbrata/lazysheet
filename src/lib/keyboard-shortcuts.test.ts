@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shouldCloseSheet, shouldOpenFile, shouldZoomIn, shouldZoomOut, shouldZoomReset } from "./keyboard-shortcuts";
+import { shouldCloseSheet, shouldOpenFile, shouldZoomIn, shouldZoomOut, shouldZoomReset, shouldUndo, shouldRedo } from "./keyboard-shortcuts";
 
 describe("shouldCloseSheet", () => {
   it("returns true for Cmd+W with hasWorkbook=true", () => {
@@ -163,5 +163,84 @@ describe("shouldZoomReset", () => {
   it("returns false for meta+'='", () => {
     const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "=" } as unknown as KeyboardEvent;
     expect(shouldZoomReset(e)).toBe(false);
+  });
+});
+
+describe("shouldUndo", () => {
+  it("returns true for cmd+z (meta)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(true);
+  });
+
+  it("returns true for ctrl+z", () => {
+    const e = { metaKey: false, ctrlKey: true, shiftKey: false, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(true);
+  });
+
+  it("returns false for cmd+shift+z (that is redo)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: true, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(false);
+  });
+
+  it("returns false for cmd+y", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "y" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(false);
+  });
+
+  it("returns false for plain z (no modifier)", () => {
+    const e = { metaKey: false, ctrlKey: false, shiftKey: false, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(false);
+  });
+
+  it("returns false for cmd+f", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "f" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(false);
+  });
+
+  it("returns true for uppercase Z with meta (case-insensitive)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "Z" } as unknown as KeyboardEvent;
+    expect(shouldUndo(e)).toBe(true);
+  });
+});
+
+describe("shouldRedo", () => {
+  it("returns true for cmd+shift+z (meta)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: true, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(true);
+  });
+
+  it("returns true for ctrl+shift+z", () => {
+    const e = { metaKey: false, ctrlKey: true, shiftKey: true, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(true);
+  });
+
+  it("returns true for cmd+y (Windows redo)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "y" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(true);
+  });
+
+  it("returns true for ctrl+y", () => {
+    const e = { metaKey: false, ctrlKey: true, shiftKey: false, key: "y" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(true);
+  });
+
+  it("returns false for cmd+z (that is undo)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(false);
+  });
+
+  it("returns false for plain z (no modifier)", () => {
+    const e = { metaKey: false, ctrlKey: false, shiftKey: false, key: "z" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(false);
+  });
+
+  it("returns false for cmd+f", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "f" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(false);
+  });
+
+  it("returns false for cmd+shift+y (shift+y not a redo combo)", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: true, key: "y" } as unknown as KeyboardEvent;
+    expect(shouldRedo(e)).toBe(false);
   });
 });

@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useWorkbook } from "@/hooks/useWorkbook";
 import { useEditBuffer } from "@/hooks/useEditBuffer";
+import { useUndoHistory } from "@/hooks/useUndoHistory";
 import { useFileEvents } from "@/hooks/useFileEvents";
 import { useFileState } from "@/hooks/useFileState";
 import { pickFile, saveEdits } from "@/lib/tauri-api";
@@ -72,6 +73,8 @@ import {
   shouldZoomIn,
   shouldZoomOut,
   shouldZoomReset,
+  shouldUndo,
+  shouldRedo,
 } from "@/lib/keyboard-shortcuts";
 import { clampZoom, stepZoom } from "@/lib/zoom";
 import {
@@ -150,6 +153,8 @@ function App() {
   const headerRows = fileState.headerRows;
 
   const editBuffer = useEditBuffer();
+  const history = useUndoHistory();
+  const undoOn = flags.undo;
   const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
   const activeSheetName = wb.activeSheet?.name ?? "";
   const editEnabled = flags.inlineEdit && isWritableFormat(wb.workbook?.path);
@@ -169,7 +174,17 @@ function App() {
 
   const handleEditCommit = useCallback(
     (row: number, col: number, raw: string, nav: "down" | "right" | "none") => {
-      editBuffer.setEdit(activeSheetName, row, col, coerceInput(raw));
+      const sheet = activeSheetName;
+      const before = editBuffer.getEdit(sheet, row, col);
+      const after: { v: ReturnType<typeof coerceInput> } = { v: coerceInput(raw) };
+      editBuffer.setEdit(sheet, row, col, after.v);
+      if (undoOn) {
+        history.push({
+          label: "Edit cell",
+          undo: () => editBuffer.restore(sheet, row, col, before),
+          redo: () => editBuffer.restore(sheet, row, col, after),
+        });
+      }
       setEditingCell(null);
       if (nav === "none") return;
       const maxRow = (wb.activeSheet?.rows.length ?? 1) - 1;
@@ -185,7 +200,7 @@ function App() {
         nonce: Date.now(),
       });
     },
-    [editBuffer, activeSheetName, wb.activeSheet],
+    [editBuffer, activeSheetName, wb.activeSheet, undoOn, history],
   );
 
   const handleEditCancel = useCallback(() => {
@@ -213,6 +228,7 @@ function App() {
   const open = useCallback(
     async (path: string) => {
       editBuffer.clearAll();
+      history.clear();
       setEditingCell(null);
       try {
         await wb.open(path);
@@ -222,7 +238,7 @@ function App() {
         toast.error("Failed to open file", { description: msg });
       }
     },
-    [wb, editBuffer],
+    [wb, editBuffer, history],
   );
 
   const handlePick = useCallback(async () => {
@@ -238,8 +254,9 @@ function App() {
     setFindQuery("");
     setSummaryPanelOpen(false);
     editBuffer.clearAll();
+    history.clear();
     setEditingCell(null);
-  }, [wb, editBuffer]);
+  }, [wb, editBuffer, history]);
 
   const handleSelectionChange = useCallback(
     (next: Selection, _scroll: "none" | "ifNeeded" | "center") => {
@@ -493,8 +510,21 @@ function App() {
     setSummaryPanelOpen(false);
   }, []);
 
+  // ── Zoom helpers ─────────────────────────────────────────────────────────
+  // Immediate zoom apply: bypasses the 250ms debounce (used by undo/redo).
+  const applyZoomImmediate = useCallback((v: number) => {
+    const clamped = clampZoom(v);
+    setZoom(clamped);
+    if (zoomPersistTimerRef.current !== null) {
+      window.clearTimeout(zoomPersistTimerRef.current);
+      zoomPersistTimerRef.current = null;
+    }
+    fileState.setZoom(clamped);
+  }, [fileState]);
+
   // ── Zoom handlers ────────────────────────────────────────────────────────
   const handleZoomChange = useCallback((next: number) => {
+    const before = zoomLiveRef.current;
     const clamped = clampZoom(next);
     setZoom(clamped);
     if (zoomPersistTimerRef.current !== null) {
@@ -504,7 +534,14 @@ function App() {
       zoomPersistTimerRef.current = null;
       fileState.setZoom(clamped);
     }, 250);
-  }, [fileState]);
+    if (undoOn && clamped !== before) {
+      history.push({
+        label: "Zoom",
+        undo: () => applyZoomImmediate(before),
+        redo: () => applyZoomImmediate(clamped),
+      });
+    }
+  }, [fileState, undoOn, history, applyZoomImmediate]);
 
   const handleZoomIn = useCallback(() => {
     handleZoomChange(stepZoom(zoomLiveRef.current, 1));
@@ -535,6 +572,14 @@ function App() {
         if (shouldZoomOut(e))   { e.preventDefault(); handleZoomOut(); return; }
         if (shouldZoomReset(e)) { e.preventDefault(); handleZoomReset(); return; }
       }
+      if (undoOn && wb.workbook && !editingCell) {
+        const tag = (e.target as HTMLElement | null)?.tagName;
+        const inEditable = tag === "INPUT" || tag === "TEXTAREA" || ((e.target as HTMLElement | null)?.isContentEditable ?? false);
+        if (!inEditable) {
+          if (shouldRedo(e)) { e.preventDefault(); history.redo(); return; }
+          if (shouldUndo(e)) { e.preventDefault(); history.undo(); return; }
+        }
+      }
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
       const k = e.key.toLowerCase();
@@ -563,7 +608,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset, handleSave]);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset, handleSave, undoOn, history, editingCell]);
 
   const allowCloseRef = useRef(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -709,21 +754,32 @@ function App() {
   const handleMarkAsHeader = useCallback(
     (row: number | null) => {
       if (!activeSheetName) return;
-      fileState.setHeader(activeSheetName, row);
+      const sheet = activeSheetName;
+      const before = headerRows[sheet] ?? null;
+      fileState.setHeader(sheet, row);
+      if (undoOn) {
+        history.push({
+          label: "Mark header",
+          undo: () => fileState.setHeader(sheet, before),
+          redo: () => fileState.setHeader(sheet, row),
+        });
+      }
       toast.success(
         row === null
           ? "Header row unmarked"
           : `Row ${row + 1} marked as header`,
       );
     },
-    [activeSheetName, fileState],
+    [activeSheetName, fileState, headerRows, undoOn, history],
   );
 
   const handleColumnFilterChange = useCallback(
     (colAnchor: number, filter: ColumnFilter) => {
       if (!activeSheetName) return;
       const sheet = wb.activeSheet;
-      const prevSheetFilters = filters[activeSheetName] ?? {};
+      const sheetName = activeSheetName;
+      const before = filters[sheetName];
+      const prevSheetFilters = filters[sheetName] ?? {};
       const wasActive = hasActiveFilters(prevSheetFilters);
 
       const isInactive =
@@ -733,7 +789,20 @@ function App() {
       else nextSheetFilters[colAnchor] = filter;
       const nowActive = hasActiveFilters(nextSheetFilters);
 
-      setFilters((prev) => ({ ...prev, [activeSheetName]: nextSheetFilters }));
+      setFilters((prev) => ({ ...prev, [sheetName]: nextSheetFilters }));
+
+      if (undoOn) {
+        history.push({
+          label: "Filter",
+          undo: () => setFilters((prev) => {
+            const n = { ...prev };
+            if (before === undefined) delete n[sheetName];
+            else n[sheetName] = before;
+            return n;
+          }),
+          redo: () => setFilters((prev) => ({ ...prev, [sheetName]: nextSheetFilters })),
+        });
+      }
 
       if (!wasActive && nowActive && sheet) {
         const hasMerges = buildMergedRowSet(sheet.merges).size > 0;
@@ -745,7 +814,7 @@ function App() {
         }
       }
     },
-    [activeSheetName, filters, wb.activeSheet, headerRow],
+    [activeSheetName, filters, wb.activeSheet, headerRow, undoOn, history],
   );
 
   // ── Resize: overrides + stale-prompt state ────────────────────────────────
@@ -842,17 +911,41 @@ function App() {
   const handleColResize = useCallback(
     (col: number, width: number) => {
       if (!activeSheetName || !activeSheet) return;
-      fileState.setColWidth(activeSheetName, activeSheet, col, width);
+      const sheet = activeSheetName;
+      const sh = activeSheet;
+      const before = fileState.getColOverrides(sheet, sh)?.[col];
+      fileState.setColWidth(sheet, sh, col, width);
+      if (undoOn) {
+        history.push({
+          label: "Resize column",
+          undo: () => before === undefined
+            ? fileState.resetColWidth(sheet, col)
+            : fileState.setColWidth(sheet, sh, col, before),
+          redo: () => fileState.setColWidth(sheet, sh, col, width),
+        });
+      }
     },
-    [activeSheetName, activeSheet, fileState],
+    [activeSheetName, activeSheet, fileState, undoOn, history],
   );
 
   const handleRowResize = useCallback(
     (row: number, height: number) => {
       if (!activeSheetName || !activeSheet) return;
-      fileState.setRowHeight(activeSheetName, activeSheet, row, height);
+      const sheet = activeSheetName;
+      const sh = activeSheet;
+      const before = fileState.getRowOverrides(sheet, sh)?.[row];
+      fileState.setRowHeight(sheet, sh, row, height);
+      if (undoOn) {
+        history.push({
+          label: "Resize row",
+          undo: () => before === undefined
+            ? fileState.resetRowHeight(sheet, row)
+            : fileState.setRowHeight(sheet, sh, row, before),
+          redo: () => fileState.setRowHeight(sheet, sh, row, height),
+        });
+      }
     },
-    [activeSheetName, activeSheet, fileState],
+    [activeSheetName, activeSheet, fileState, undoOn, history],
   );
 
   const handleColReset = useCallback(

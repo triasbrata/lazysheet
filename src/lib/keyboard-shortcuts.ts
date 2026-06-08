@@ -34,3 +34,20 @@ export function shouldZoomReset(e: KeyboardEvent): boolean {
   if (e.key !== "0") return false;
   return true;
 }
+
+export function shouldUndo(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  if (e.key.toLowerCase() !== "z") return false;
+  if (e.shiftKey) return false;
+  return true;
+}
+
+export function shouldRedo(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  const k = e.key.toLowerCase();
+  if (k === "z" && e.shiftKey) return true;
+  if (k === "y" && !e.shiftKey) return true;
+  return false;
+}
