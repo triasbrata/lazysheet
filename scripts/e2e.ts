@@ -8,14 +8,14 @@
  * which could not run on macOS.
  *
  * Steps:
- *   1. bun install             frontend deps
+ *   1. bun install             frontend deps (vite / vitest)
  *   2. e2e:fixtures            generate multi.xlsx, legacy.xls
  *   3. VITE_E2E build:web      istanbul-instrumented static frontend
  *   4. cargo build (debug)     app + webdriver plugin (cfg(debug_assertions))
- *   5. bun install (e2e)       wdio
+ *   5. bun install (e2e)       wdio + nyc
  *   6. wdio run                xvfb-run on Linux; direct on macOS/Windows
- *   7. bun test --coverage     unit coverage (lcov)
- *   8. coverage-merge.ts       merge + HARD GATE: frontend lines >= 95%
+ *   7. vitest --coverage       unit coverage
+ *   8. merge + HARD GATE       frontend line coverage must be >= 95%
  *   9. cargo llvm-cov report   backend coverage (report-only, best-effort)
  *
  * Prerequisites (installed once):
@@ -25,7 +25,7 @@
  */
 import { $ } from "bun";
 import { resolve } from "node:path";
-import { writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, writeFileSync } from "node:fs";
 
 const ROOT = resolve(import.meta.dirname!, "..");
 const E2E = resolve(ROOT, "e2e");
@@ -138,12 +138,20 @@ if (wdioFailed) {
   die(`E2E specs failed — see report above; full wdio output: ${wdioLogPath}`);
 }
 
-log("Collecting unit coverage (bun test)");
+log("Collecting unit coverage (vitest)");
 await $`bun run test:coverage`.cwd(ROOT);
+
+const unitSrc = resolve(ROOT, "coverage/unit/coverage-final.json");
+const unitDst = resolve(ROOT, ".nyc_output/unit-final.json");
+if (existsSync(unitSrc)) {
+  copyFileSync(unitSrc, unitDst);
+} else {
+  log("⚠ unit coverage file missing — gate will use e2e coverage only.");
+}
 
 log("Merging coverage + enforcing 95% frontend line gate");
 try {
-  await $`bun run scripts/coverage-merge.ts`.cwd(ROOT);
+  await $`bun run coverage`.cwd(E2E);
 } catch {
   die("Frontend line coverage below 95% — gate failed (no release).");
 }

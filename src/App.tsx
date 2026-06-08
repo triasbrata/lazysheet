@@ -349,7 +349,7 @@ function App() {
   // from prod). Lets WebdriverIO open a file via the REAL backend (no native dialog)
   // and read the clipboard for copy assertions. See e2e/ and .rpi/e2e-webdriver/.
   useEffect(() => {
-    if (!(import.meta as any).env?.VITE_E2E) return;
+    if (!import.meta.env.VITE_E2E) return;
     window.__E2E__ = {
       open: (path: string) => open(path),
       readClipboard: () => readText(),

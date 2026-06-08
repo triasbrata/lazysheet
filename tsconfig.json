@@ -20,8 +20,7 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "vitest": ["./src/test/vitest-shim.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
