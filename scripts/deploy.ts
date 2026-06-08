@@ -91,7 +91,7 @@ const TYPE_HEADINGS: Record<string, string> = {
 
 /** Merge commits and the prior release-bump commit are noise in a summary. */
 function isNoiseCommit(subject: string): boolean {
-  if (/^Merge (pull request|branch|remote)/i.test(subject)) return true;
+  if (/^Merge /i.test(subject)) return true;
   if (/^chore(\([^)]*\))?:\s*release\b/i.test(subject)) return true;
   return false;
 }
@@ -437,7 +437,9 @@ async function main() {
   log("Generating release notes with Claude...");
   const tagMessage = await generateReleaseNotes(baseVersion, commits);
   log(`\n${tagMessage}\n`);
-  await $`git tag -a ${rcTag} -m ${tagMessage}`.cwd(ROOT);
+  // --cleanup=whitespace: default cleanup strips lines starting with "#",
+  // which deletes the "### Features" markdown headings from the tag message.
+  await $`git tag -a ${rcTag} --cleanup=whitespace -m ${tagMessage}`.cwd(ROOT);
 
   // 12. push commit (harmless no-op if HEAD is already up to date) + rc tag
   await $`git push origin HEAD`.cwd(ROOT);
