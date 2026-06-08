@@ -1,3 +1,22 @@
+## v0.5.0 (2026-06-06)
+
+- **Automatic updates** — The app now checks for and installs updates over-the-air via the Tauri updater, so you stay current without manual downloads.
+- **Spreadsheet zoom** — Zoom from 50% to 200% using Ctrl+scroll, keyboard shortcuts, or the status bar control, with the funnel icon and padding scaling cleanly at every level.
+- **SQL export** — Export data as SQL through a new modal supporting INSERT, UPDATE, and UPSERT statements.
+- **Cell formulas** — Cells now support formulas, including copying formulas between cells.
+- **Multi-language support** — Added English, Indonesian, Chinese, and Spanish translations across the app, filters, context menus, and summary panel.
+- **New keyboard shortcuts** — ⌘O / Ctrl+O opens the file picker (now promoted to the top of the command palette), and ⌘W / Ctrl+W closes the current sheet.
+
+- **Opening files from the OS** — Files opened from your operating system (double-click or "Open with") now load correctly on all platforms.
+- **Linux startup crash** — Removed bundled libwayland/libEGL from the AppImage to fix an EGL crash on Fedora.
+- **Filtered grid rendering** — Corrected row rendering and the selection frame when a filter is active.
+- **Funnel header height** — Funnel header row height is now preserved when reopening the same file.
+- **Group-by aggregation** — Numeric text is now coerced so group-by results aggregate correctly in xlsx exports.
+
+- **Multi-language is now disabled by default.** Enable it at build time via the `VITE_FF_MULTI_LANG` flag.
+
+---
+
 ## v0.4.0 (2026-06-01)
 
 - Adjust macOS traffic light position and refine command palette subtitles
