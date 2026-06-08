@@ -47,7 +47,8 @@
     },
     "command": {
       "title": "命令面板",
-      "description": "Cmd+K 跳转到任意单元格引用或执行操作——以键盘为主的导航方式。"
+      "description": "Cmd+K 跳转到任意单元格引用或执行操作——以键盘为主的导航方式。",
+      "descriptionV5": "Cmd+K 跳转到任意单元格或执行操作——现在还支持 ⌘O 打开文件、⌘W 关闭工作表。"
     },
     "virtualized": {
       "title": "虚拟化渲染",
@@ -80,6 +81,23 @@
     "native": {
       "title": "原生 macOS 集成",
       "description": "内置拖放、“打开方式”和最近文件支持。"
+    },
+    "zoom": {
+      "title": "缩放 50–200%",
+      "description": "通过 ⌘+滚轮、键盘或状态栏缩放网格——图标和内边距同步调整。"
+    },
+    "formula": {
+      "title": "单元格公式",
+      "description": "在单元格中编写公式并在单元格之间复制。"
+    },
+    "autoUpdate": {
+      "title": "自动更新",
+      "description": "LazySheet 通过网络自我更新，自动保持最新版本。"
+    },
+    "copyAsQuery": {
+      "title": "复制为查询",
+      "description": "将任意选区复制为可直接运行的 SQL 查询——INSERT、UPDATE 或 UPSERT。",
+      "mediaAlt": "将选区复制为 SQL UPSERT 查询"
     }
   },
   "faq": {
@@ -97,7 +115,19 @@
     "appimageAnswerPost": "此问题已在 v0.4.0 之后的版本中修复——下载最新的 AppImage 同样可以解决该问题。",
     "copy": "复制",
     "copied": "已复制",
-    "copyAria": "复制命令"
+    "copyAria": "复制命令",
+    "autoUpdateQuestion": "更新是如何工作的？",
+    "autoUpdateAnswerPre": "LazySheet 使用内置的 Tauri 更新器通过网络自动更新——当新版本准备好时，您将收到提示。",
+    "autoUpdateAnswerPost": "无需手动下载；提示时重新启动即可。",
+    "appimageV5Question": "AppImage 在 Linux 上显示空白窗口（v0.5.0）？",
+    "appimageV5AnswerPre": "此问题已在 v0.5.0 中修复——捆绑的 libwayland/libEGL 在构建时已剥离，因此下载最新的 AppImage 即可解决。如果在旧版本下载中仍遇到此问题，请手动提取并删除：",
+    "appimageV5AnswerPost": "然后运行 ./squashfs-root/AppRun。",
+    "sqlExportQuestion": "如何将工作表导出为 SQL？",
+    "sqlExportAnswerPre": "打开导出为 SQL 模态框，选择 INSERT、UPDATE 或 UPSERT——LazySheet 为所选行生成语句。",
+    "sqlExportAnswerPost": "将生成的 SQL 直接复制到您的数据库客户端。",
+    "formulasQuestion": "我可以在单元格中使用公式吗？",
+    "formulasAnswerPre": "可以——v0.5.0 支持单元格公式，您可以将公式从一个单元格复制到另一个单元格。",
+    "formulasAnswerPost": ""
   },
   "footer": {
     "tagline": "© 2026 LazySheet. 为速度而生。"

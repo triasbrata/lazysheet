@@ -83,15 +83,23 @@ describe('useFaqEntries — version filtering', () => {
       // entry is rendered, confirming it is included at this version
       expect(screen.getByTestId('question-appimage-egl')).toBeTruthy()
     })
+
+    it('v0.5.0-only entries are NOT present at v0.4.0', () => {
+      renderWithI18n(<Probe tag="v0.4.0" />)
+      expect(screen.queryByTestId('question-sql-export')).toBeNull()
+      expect(screen.queryByTestId('question-auto-update')).toBeNull()
+      expect(screen.queryByTestId('question-appimage-v5')).toBeNull()
+      expect(screen.queryByTestId('question-formulas')).toBeNull()
+    })
   })
 
   describe('activeTag v9.9.9 (far future — all entries <= active)', () => {
-    it('returns 3 entries', () => {
+    it('returns 7 entries', () => {
       renderWithI18n(<Probe tag="v9.9.9" />)
-      expect(screen.getByTestId('count').textContent).toBe('3')
+      expect(screen.getByTestId('count').textContent).toBe('7')
     })
 
-    it('all three question texts are visible', () => {
+    it('all three original question texts are visible', () => {
       renderWithI18n(<Probe tag="v9.9.9" />)
       expect(
         screen.getByText(
@@ -103,6 +111,62 @@ describe('useFaqEntries — version filtering', () => {
       ).toBeTruthy()
       expect(
         screen.getByText('AppImage shows a blank window on Fedora or Arch?'),
+      ).toBeTruthy()
+    })
+  })
+
+  describe('activeTag v0.5.0', () => {
+    it('returns 7 entries', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByTestId('count').textContent).toBe('7')
+    })
+
+    it('question-auto-update is present', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByTestId('question-auto-update')).toBeTruthy()
+    })
+
+    it('question-appimage-v5 is present', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByTestId('question-appimage-v5')).toBeTruthy()
+    })
+
+    it('question-sql-export is present', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByTestId('question-sql-export')).toBeTruthy()
+    })
+
+    it('question-formulas is present', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByTestId('question-formulas')).toBeTruthy()
+    })
+
+    it('auto-update question text matches', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByText('How do updates work?')).toBeTruthy()
+    })
+
+    it('appimage-v5 question text matches', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByText('AppImage shows a blank window on Linux (v0.5.0)?')).toBeTruthy()
+    })
+
+    it('sql-export question text matches', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByText('How do I export my sheet to SQL?')).toBeTruthy()
+    })
+
+    it('formulas question text matches', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(screen.getByText('Can I use formulas in cells?')).toBeTruthy()
+    })
+
+    it('appimage-v5 CopyCommand contains LazySheet_0.5.0_amd64.AppImage', () => {
+      renderWithI18n(<Probe tag="v0.5.0" />)
+      expect(
+        screen.getByText(
+          './LazySheet_0.5.0_amd64.AppImage --appimage-extract && rm -f squashfs-root/usr/lib/libwayland-*.so* squashfs-root/usr/lib/libEGL*.so* && ./squashfs-root/AppRun',
+        ),
       ).toBeTruthy()
     })
   })

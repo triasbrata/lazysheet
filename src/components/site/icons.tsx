@@ -25,6 +25,10 @@ import {
   faUpRightAndDownLeftFromCenter,
   faKeyboard,
   faObjectGroup,
+  faMagnifyingGlassPlus,
+  faSuperscript,
+  faDatabase,
+  faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons'
 
 type IconProps = { className?: string; style?: CSSProperties }
@@ -57,6 +61,10 @@ export const PinIcon = make(faThumbtack)
 export const ResizeIcon = make(faUpRightAndDownLeftFromCenter)
 export const KeyboardIcon = make(faKeyboard)
 export const GroupIcon = make(faObjectGroup)
+export const ZoomIcon = make(faMagnifyingGlassPlus)
+export const FormulaIcon = make(faSuperscript)
+export const DatabaseIcon = make(faDatabase)
+export const AutoUpdateIcon = make(faArrowsRotate)
 
 // File-format marks
 export const ExcelIcon = make(faFileExcel)

@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "app:deploy": "npm run build && wrangler deploy"
+    "app:deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.26.0",
@@ -59,10 +59,8 @@
     "vitest": "^4.1.5",
     "wrangler": "^4.70.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
-  }
+  "trustedDependencies": [
+    "esbuild",
+    "lightningcss"
+  ]
 }

@@ -47,7 +47,8 @@
     },
     "command": {
       "title": "Palet Perintah",
-      "description": "Cmd+K untuk melompat ke referensi sel mana pun atau menjalankan tindakan — navigasi yang mengutamakan keyboard."
+      "description": "Cmd+K untuk melompat ke referensi sel mana pun atau menjalankan tindakan — navigasi yang mengutamakan keyboard.",
+      "descriptionV5": "Cmd+K untuk lompat ke sel mana pun atau jalankan aksi — kini dengan ⌘O untuk buka file dan ⌘W untuk tutup lembar."
     },
     "virtualized": {
       "title": "Rendering Tervirtualisasi",
@@ -80,6 +81,23 @@
     "native": {
       "title": "Integrasi macOS Asli",
       "description": "Seret & lepas, 'Buka Dengan', dan dukungan File Terbaru sudah tersedia."
+    },
+    "zoom": {
+      "title": "Zoom 50–200%",
+      "description": "Skala grid dengan ⌘+scroll, keyboard, atau bilah status — ikon dan padding ikut menyesuaikan."
+    },
+    "formula": {
+      "title": "Rumus sel",
+      "description": "Tulis rumus di sel dan salin antar sel."
+    },
+    "autoUpdate": {
+      "title": "Pembaruan otomatis",
+      "description": "Selalu terkini secara otomatis — LazySheet memperbarui dirinya sendiri melalui udara."
+    },
+    "copyAsQuery": {
+      "title": "Salin sebagai Query",
+      "description": "Salin pilihan apa pun sebagai query SQL siap pakai — INSERT, UPDATE, atau UPSERT.",
+      "mediaAlt": "Menyalin pilihan sebagai query SQL UPSERT"
     }
   },
   "faq": {
@@ -95,6 +113,18 @@
     "appimageQuestion": "AppImage menampilkan jendela kosong di Fedora atau Arch?",
     "appimageAnswerPre": "AppImage hingga v0.4.0 menyertakan pustaka grafis (libwayland/libEGL) yang bertentangan dengan driver Mesa sistem, sehingga WebKit crash saat startup. Di Fedora, solusi termudah adalah memasang paket .rpm sebagai gantinya. Untuk tetap menggunakan AppImage yang terpengaruh, ekstrak dan hapus pustaka yang bertentangan:",
     "appimageAnswerPost": "Masalah ini telah diperbaiki pada rilis setelah v0.4.0 — mengunduh AppImage terbaru juga menyelesaikannya.",
+    "autoUpdateQuestion": "Bagaimana pembaruan bekerja?",
+    "autoUpdateAnswerPre": "LazySheet memperbarui dirinya sendiri secara otomatis melalui udara menggunakan pembaruan Tauri bawaan — Anda akan diberitahu ketika versi baru siap.",
+    "autoUpdateAnswerPost": "Tidak perlu mengunduh secara manual; cukup luncurkan ulang saat diminta.",
+    "appimageV5Question": "AppImage menampilkan jendela kosong di Linux (v0.5.0)?",
+    "appimageV5AnswerPre": "Ini telah diperbaiki di v0.5.0 — libwayland/libEGL yang terbundel dihapus saat build, sehingga mengunduh AppImage terbaru sudah menyelesaikannya. Jika masih terjadi pada unduhan lama, ekstrak dan hapus secara manual:",
+    "appimageV5AnswerPost": "Kemudian jalankan ./squashfs-root/AppRun.",
+    "sqlExportQuestion": "Bagaimana cara mengekspor lembar saya ke SQL?",
+    "sqlExportAnswerPre": "Buka modal Ekspor ke SQL dan pilih INSERT, UPDATE, atau UPSERT — LazySheet menghasilkan pernyataan untuk baris yang dipilih.",
+    "sqlExportAnswerPost": "Salin SQL yang dihasilkan langsung ke klien database Anda.",
+    "formulasQuestion": "Bisakah saya menggunakan rumus di sel?",
+    "formulasAnswerPre": "Ya — rumus sel didukung di v0.5.0, dan Anda dapat menyalin rumus dari satu sel ke sel lainnya.",
+    "formulasAnswerPost": "",
     "copy": "Salin",
     "copied": "Disalin",
     "copyAria": "Salin perintah"

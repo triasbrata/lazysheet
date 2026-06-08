@@ -47,7 +47,8 @@
     },
     "command": {
       "title": "Paleta de Comandos",
-      "description": "Cmd+K para ir a cualquier referencia de celda o ejecutar una acción — navegación orientada al teclado."
+      "description": "Cmd+K para ir a cualquier referencia de celda o ejecutar una acción — navegación orientada al teclado.",
+      "descriptionV5": "Cmd+K para saltar a cualquier celda o ejecutar una acción — ahora con ⌘O para abrir un archivo y ⌘W para cerrar la hoja."
     },
     "virtualized": {
       "title": "Renderizado Virtualizado",
@@ -80,6 +81,23 @@
     "native": {
       "title": "Integración Nativa con macOS",
       "description": "Arrastrar y soltar, 'Abrir con' y soporte de Archivos Recientes integrado."
+    },
+    "zoom": {
+      "title": "Zoom 50–200%",
+      "description": "Escala la cuadrícula con ⌘+scroll, teclado o la barra de estado — los iconos y el relleno se ajustan."
+    },
+    "formula": {
+      "title": "Fórmulas de celda",
+      "description": "Escribe fórmulas en celdas y cópialas entre celdas."
+    },
+    "autoUpdate": {
+      "title": "Actualizaciones automáticas",
+      "description": "Mantente actualizado automáticamente — LazySheet se actualiza solo por el aire."
+    },
+    "copyAsQuery": {
+      "title": "Copiar como consulta",
+      "description": "Copia cualquier selección como una consulta SQL lista para usar: INSERT, UPDATE o UPSERT.",
+      "mediaAlt": "Copiar una selección como una consulta SQL UPSERT"
     }
   },
   "faq": {
@@ -95,6 +113,18 @@
     "appimageQuestion": "¿El AppImage muestra una ventana en blanco en Fedora o Arch?",
     "appimageAnswerPre": "El AppImage hasta v0.4.0 incluía bibliotecas gráficas (libwayland/libEGL) que entran en conflicto con los controladores Mesa del sistema, por lo que WebKit falla al iniciar. En Fedora, la solución más sencilla es instalar el paquete .rpm en su lugar. Para seguir usando el AppImage afectado, extráelo y elimina las bibliotecas en conflicto:",
     "appimageAnswerPost": "Esto se corrigió en las versiones posteriores a v0.4.0 — descargar el AppImage más reciente también lo resuelve.",
+    "autoUpdateQuestion": "¿Cómo funcionan las actualizaciones?",
+    "autoUpdateAnswerPre": "LazySheet se actualiza automáticamente por el aire usando el actualizador Tauri integrado — se te notificará cuando una nueva versión esté lista.",
+    "autoUpdateAnswerPost": "No se necesita descarga manual; solo reinicia cuando se te indique.",
+    "appimageV5Question": "¿El AppImage muestra una ventana en blanco en Linux (v0.5.0)?",
+    "appimageV5AnswerPre": "Esto está corregido en v0.5.0 — las libwayland/libEGL incluidas se eliminan al compilar, por lo que descargar el AppImage más reciente lo resuelve. Si aún ocurre con una descarga antigua, extrae y elimina manualmente:",
+    "appimageV5AnswerPost": "Luego ejecuta ./squashfs-root/AppRun.",
+    "sqlExportQuestion": "¿Cómo exporto mi hoja a SQL?",
+    "sqlExportAnswerPre": "Abre el modal Exportar a SQL y elige INSERT, UPDATE o UPSERT — LazySheet genera las sentencias para las filas seleccionadas.",
+    "sqlExportAnswerPost": "Copia el SQL generado directamente en tu cliente de base de datos.",
+    "formulasQuestion": "¿Puedo usar fórmulas en celdas?",
+    "formulasAnswerPre": "Sí — las fórmulas de celda son compatibles en v0.5.0, y puedes copiar una fórmula de una celda a otra.",
+    "formulasAnswerPost": "",
     "copy": "Copiar",
     "copied": "Copiado",
     "copyAria": "Copiar comando"

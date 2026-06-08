@@ -4,14 +4,14 @@ import { groupByOS } from './releases'
 
 describe('FALLBACK_RELEASE', () => {
   it('has a tag and all 5 assets classify', () => {
-    expect(FALLBACK_RELEASE.tag).toBe('v0.4.0')
+    expect(FALLBACK_RELEASE.tag).toBe('v0.5.0')
     expect(FALLBACK_RELEASE.assets).toHaveLength(5)
   })
 
   it('every asset has a direct download URL (not the releases page)', () => {
     for (const a of FALLBACK_RELEASE.assets) {
       expect(a.url).toMatch(
-        /^https:\/\/github\.com\/triasbrata\/lazysheet\/releases\/download\/v0\.4\.0\//,
+        /^https:\/\/github\.com\/triasbrata\/lazysheet\/releases\/download\/v0\.5\.0\//,
       )
       expect(a.url.endsWith(a.name)).toBe(true)
     }
@@ -22,7 +22,7 @@ describe('FALLBACK_RELEASE', () => {
     expect(mac).toBeDefined()
     expect(mac).toMatchObject({ os: 'macOS', arch: 'arm64', format: 'dmg' })
     expect(mac!.url).toBe(
-      'https://github.com/triasbrata/lazysheet/releases/download/v0.4.0/LazySheet_0.4.0_aarch64.dmg',
+      'https://github.com/triasbrata/lazysheet/releases/download/v0.5.0/LazySheet_0.5.0_aarch64.dmg',
     )
   })
 
