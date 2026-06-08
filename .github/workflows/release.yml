@@ -78,7 +78,35 @@ jobs:
           git -c http.https://github.com/.extraheader= \
             push lazysheet "HEAD:${DEFAULT_BRANCH}"
 
+  # Unit tests run first, on every platform, as a cheap gate. Builds are
+  # expensive (Rust compile + bundling), so we don't want to start them and
+  # then have one OS abort because its tests failed — run tests across all
+  # three OSes up front, and only build once they're all green.
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Run tests
+        run: bun run test
+
   build:
+    needs: [test]
     strategy:
       fail-fast: false
       matrix:
@@ -129,9 +157,6 @@ jobs:
 
       - name: Install frontend dependencies
         run: bun install
-
-      - name: Run tests
-        run: bun run test
 
       - name: Build application
         uses: tauri-apps/tauri-action@v0
