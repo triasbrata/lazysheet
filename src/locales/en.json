@@ -5,7 +5,7 @@
   "theme": { "toggle": "Toggle theme", "light": "Light", "dark": "Dark", "system": "System" },
   "language": { "toggle": "Change language" },
   "statusbar": { "selectionSize_one": "{{rows}}R × {{cols}}C · {{count}} cell", "selectionSize_other": "{{rows}}R × {{cols}}C · {{count}} cells", "activeCell": "Active cell", "analyze": "Analyze", "summaryTitle": "Group-by summary ({{shortcut}})", "zoomIn": "Zoom in", "zoomOut": "Zoom out", "zoomReset": "Reset zoom to 100%" },
-  "command": { "paletteTitle": "Command Palette", "searchRecent": "Search recent files…", "typeCommand": "Type a command…", "cellRefPlaceholder": "Cell reference (e.g. A1, B12, AB45)", "noRecent": "No recent files.", "noMatch": "No commands match.", "gotoHelp": "Press Enter to jump. Esc to back.", "sectionCommands": "Commands", "sectionRecent": "Recent Files", "openFile": "Open file…", "openFileSub": "Browse (.xlsx, .csv…)", "goto": "Goto", "gotoSub": "Jump to cell (e.g. A1, B12)", "summarize": "Summarize selection", "summarizeSub": "Group-by", "copyFile": "Copy file", "copyFileSub": "Copy .xlsx to clipboard", "copyFilePath": "Copy file path", "copyFilePathSub": "Copy path as text", "checkUpdates": "Check for Updates" },
+  "command": { "paletteTitle": "Command Palette", "searchRecent": "Search recent files…", "typeCommand": "Type a command…", "cellRefPlaceholder": "Cell reference (e.g. A1, B12, AB45)", "noRecent": "No recent files.", "noMatch": "No commands match.", "gotoHelp": "Press Enter to jump. Esc to back.", "sectionCommands": "Commands", "sectionRecent": "Recent Files", "openFile": "Open file…", "openFileSub": "Browse (.xlsx, .csv…)", "goto": "Goto", "gotoSub": "Jump to cell (e.g. A1, B12)", "summarize": "Summarize selection", "summarizeSub": "Group-by", "copyFile": "Copy file", "copyFileSub": "Copy .xlsx to clipboard", "copyFilePath": "Copy file path", "copyFilePathSub": "Copy path as text", "checkUpdates": "Check for Updates", "openWorkspace": "Open workspaces panel", "openSettings": "Open settings" },
   "find": { "placeholder": "Find in sheet…", "ariaFind": "Find in sheet", "ariaPrev": "Previous match", "ariaNext": "Next match", "ariaClose": "Close find", "position": "{{current}} of {{total}}", "matches_one": "{{count}} match", "matches_other": "{{count}} matches", "noMatches": "No matches" },
   "app": {
     "failedToOpen": "Failed to open file",
@@ -142,6 +142,41 @@
     "subtotalsVisibleOnlyTitle": "Subtotal values reflect the visible leaves only",
     "valueFallback": "Value",
     "countColumn": "N"
+  },
+  "workspace": {
+    "title": "Workspaces",
+    "toggle": "Toggle workspaces panel",
+    "new": "New workspace",
+    "newPlaceholder": "Workspace name",
+    "create": "Create",
+    "empty": "No workspaces yet",
+    "addFile": "Add file",
+    "addCurrent": "Add current file",
+    "addBrowse": "Browse…",
+    "removeFile": "Remove from workspace",
+    "rename": "Rename",
+    "delete": "Delete workspace",
+    "fileCount": "{{count}} files",
+    "addWorkspace": "Add workspace",
+    "confirmCreate": "Confirm",
+    "confirmDeleteTitle": "Delete workspace?",
+    "confirmDeleteDesc": "\"{{name}}\" will be removed. The file references are deleted, but the files themselves stay on disk. This cannot be undone.",
+    "confirmDelete": "Delete",
+    "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Settings",
+    "askBeforeClose": "Ask before closing a sheet",
+    "askBeforeCloseDesc": "When closing a file not in any workspace, ask which workspace to add it to.",
+    "done": "Done"
+  },
+  "addToWs": {
+    "title": "Add to workspace?",
+    "desc": "\"{{fileName}}\" is not in any workspace. Add it before closing?",
+    "choose": "Choose workspace",
+    "createNew": "Create new workspace",
+    "skip": "Skip",
+    "add": "Add & close"
   },
   "updater": {
     "upToDate": "You're on the latest version",

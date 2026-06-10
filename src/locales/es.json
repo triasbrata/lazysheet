@@ -5,7 +5,7 @@
   "theme": { "toggle": "Cambiar tema", "light": "Claro", "dark": "Oscuro", "system": "Sistema" },
   "language": { "toggle": "Cambiar idioma" },
   "statusbar": { "selectionSize_one": "{{rows}}F × {{cols}}C · {{count}} celda", "selectionSize_other": "{{rows}}F × {{cols}}C · {{count}} celdas", "activeCell": "Celda activa", "analyze": "Analizar", "summaryTitle": "Resumen por grupos ({{shortcut}})", "zoomIn": "Acercar", "zoomOut": "Alejar", "zoomReset": "Restablecer zoom al 100%" },
-  "command": { "paletteTitle": "Paleta de comandos", "searchRecent": "Buscar archivos recientes…", "typeCommand": "Escribe un comando…", "cellRefPlaceholder": "Referencia de celda (p. ej. A1, B12, AB45)", "noRecent": "No hay archivos recientes.", "noMatch": "Ningún comando coincide.", "gotoHelp": "Pulsa Enter para saltar. Esc para volver.", "sectionCommands": "Comandos", "sectionRecent": "Archivos recientes", "openFile": "Abrir archivo…", "openFileSub": "Explorar (.xlsx, .csv…)", "goto": "Ir a", "gotoSub": "Saltar a celda (p. ej. A1, B12)", "summarize": "Resumir selección", "summarizeSub": "Agrupar por", "copyFile": "Copiar archivo", "copyFileSub": "Copiar .xlsx al portapapeles", "copyFilePath": "Copiar ruta del archivo", "copyFilePathSub": "Copiar ruta como texto", "checkUpdates": "Buscar actualizaciones" },
+  "command": { "paletteTitle": "Paleta de comandos", "searchRecent": "Buscar archivos recientes…", "typeCommand": "Escribe un comando…", "cellRefPlaceholder": "Referencia de celda (p. ej. A1, B12, AB45)", "noRecent": "No hay archivos recientes.", "noMatch": "Ningún comando coincide.", "gotoHelp": "Pulsa Enter para saltar. Esc para volver.", "sectionCommands": "Comandos", "sectionRecent": "Archivos recientes", "openFile": "Abrir archivo…", "openFileSub": "Explorar (.xlsx, .csv…)", "goto": "Ir a", "gotoSub": "Saltar a celda (p. ej. A1, B12)", "summarize": "Resumir selección", "summarizeSub": "Agrupar por", "copyFile": "Copiar archivo", "copyFileSub": "Copiar .xlsx al portapapeles", "copyFilePath": "Copiar ruta del archivo", "copyFilePathSub": "Copiar ruta como texto", "checkUpdates": "Buscar actualizaciones", "openWorkspace": "Abrir panel de espacios de trabajo", "openSettings": "Abrir configuración" },
   "find": { "placeholder": "Buscar en la hoja…", "ariaFind": "Buscar en la hoja", "ariaPrev": "Coincidencia anterior", "ariaNext": "Coincidencia siguiente", "ariaClose": "Cerrar búsqueda", "position": "{{current}} de {{total}}", "matches_one": "{{count}} coincidencia", "matches_other": "{{count}} coincidencias", "noMatches": "Sin coincidencias" },
   "app": {
     "failedToOpen": "No se pudo abrir el archivo",
@@ -142,6 +142,41 @@
     "subtotalsVisibleOnlyTitle": "Los valores de subtotal reflejan solo las hojas visibles",
     "valueFallback": "Valor",
     "countColumn": "N"
+  },
+  "workspace": {
+    "title": "Espacios de trabajo",
+    "toggle": "Mostrar/ocultar panel de espacios de trabajo",
+    "new": "Nuevo espacio de trabajo",
+    "newPlaceholder": "Nombre del espacio de trabajo",
+    "create": "Crear",
+    "empty": "Sin espacios de trabajo aún",
+    "addFile": "Agregar archivo",
+    "addCurrent": "Agregar archivo actual",
+    "addBrowse": "Explorar…",
+    "removeFile": "Eliminar del espacio de trabajo",
+    "rename": "Renombrar",
+    "delete": "Eliminar espacio de trabajo",
+    "fileCount": "{{count}} archivos",
+    "addWorkspace": "Agregar espacio de trabajo",
+    "confirmCreate": "Confirmar",
+    "confirmDeleteTitle": "¿Eliminar espacio de trabajo?",
+    "confirmDeleteDesc": "\"{{name}}\" será eliminado. Las referencias de archivos se borran, pero los archivos en sí permanecen en el disco. Esta acción no se puede deshacer.",
+    "confirmDelete": "Eliminar",
+    "cancel": "Cancelar"
+  },
+  "settings": {
+    "title": "Configuración",
+    "askBeforeClose": "Preguntar antes de cerrar una hoja",
+    "askBeforeCloseDesc": "Al cerrar un archivo que no está en ningún espacio de trabajo, preguntar a cuál agregarlo.",
+    "done": "Listo"
+  },
+  "addToWs": {
+    "title": "¿Agregar al espacio de trabajo?",
+    "desc": "\"{{fileName}}\" no está en ningún espacio de trabajo. ¿Agregarlo antes de cerrar?",
+    "choose": "Elegir espacio de trabajo",
+    "createNew": "Crear nuevo espacio de trabajo",
+    "skip": "Omitir",
+    "add": "Agregar y cerrar"
   },
   "updater": {
     "upToDate": "Estás en la última versión",

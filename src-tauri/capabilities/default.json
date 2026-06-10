@@ -28,6 +28,11 @@
     "core:window:allow-is-maximized",
     "core:window:allow-close",
     "core:window:allow-destroy",
-    "os:default"
+    "os:default",
+    "fs:allow-write-text-file",
+    "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive"
   ]
 }

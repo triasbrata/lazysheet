@@ -20,7 +20,8 @@
     "e2e:dev:build-app": "cargo build --manifest-path src-tauri/Cargo.toml --features webdriver-dev",
     "e2e:run": "cd e2e && bun run test",
     "e2e:full:run": "bun run e2e:build-app && bun run e2e:run",
-    "test:e2e": "bun run scripts/e2e.ts"
+    "test:e2e": "bun run scripts/e2e.ts",
+    "showcase": "bash scripts/showcase/run-showcase.sh"
   },
   "dependencies": {
     "@crabnebula/tauri-plugin-drag": "^2",
@@ -48,6 +49,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^15.0.0",
+    "react-resizable-panels": "^2.1.9",
     "shadcn": "^4.7.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",

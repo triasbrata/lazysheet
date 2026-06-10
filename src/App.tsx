@@ -70,6 +70,7 @@ import { renderNodeToPngBlob } from "@/lib/copy-as-image";
 import {
   shouldCloseSheet,
   shouldOpenFile,
+  shouldOpenSettings,
   shouldZoomIn,
   shouldZoomOut,
   shouldZoomReset,
@@ -99,6 +100,16 @@ import {
   stripExt,
 } from "@/lib/sql-pref";
 import { QueryModal, type QueryModalState, type QueryConfirm } from "@/components/QueryModal";
+import { WorkspacePanel } from "@/components/WorkspacePanel";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { SettingsModal } from "@/components/SettingsModal";
+import { AddToWorkspaceDialog, type AddToWorkspaceState } from "@/components/AddToWorkspaceDialog";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useSettings } from "@/hooks/useSettings";
 
 const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
   inline: "markdown",
@@ -170,6 +181,12 @@ function App() {
   );
 
   const [filters, setFilters] = useState<Record<string, SheetFilters>>({});
+
+  const ws = useWorkspaces();
+  const appSettings = useSettings();
+  const [workspacePanelOpen, setWorkspacePanelOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [addToWsState, setAddToWsState] = useState<AddToWorkspaceState>(null);
 
   const handleEditStart = useCallback(
     (row: number, col: number) => {
@@ -286,7 +303,7 @@ function App() {
     if (p) open(p);
   }, [open]);
 
-  const handleClose = useCallback(() => {
+  const doClose = useCallback(() => {
     wb.close();
     setRecents(wb.recents());
     setSelection(null);
@@ -297,6 +314,40 @@ function App() {
     history.clear();
     setEditingCell(null);
   }, [wb, editBuffer, history]);
+
+  const handleClose = useCallback(() => {
+    const w = wb.workbook;
+    if (appSettings.settings.askBeforeClose && w && !ws.isInAnyWorkspace(w.path)) {
+      setAddToWsState({ path: w.path, fileName: w.file_name });
+      return;
+    }
+    doClose();
+  }, [wb.workbook, appSettings.settings.askBeforeClose, ws, doClose]);
+
+  const handleConfirmAddToWs = useCallback((id: string) => {
+    if (addToWsState) ws.addFile(id, addToWsState);
+    setAddToWsState(null);
+    doClose();
+  }, [addToWsState, ws, doClose]);
+
+  const handleCreateAndAddToWs = useCallback((name: string) => {
+    const id = ws.create(name);
+    if (addToWsState) ws.addFile(id, addToWsState);
+    setAddToWsState(null);
+    doClose();
+  }, [addToWsState, ws, doClose]);
+
+  const handleSkipAddToWs = useCallback(() => {
+    setAddToWsState(null);
+    doClose();
+  }, [doClose]);
+
+  const handleBrowseAdd = useCallback(async (workspaceId: string) => {
+    const p = await pickFile();
+    if (!p) return;
+    const fileName = p.split(/[\\/]/).pop() ?? p;
+    ws.addFile(workspaceId, { path: p, fileName });
+  }, [ws]);
 
   const handleSelectionChange = useCallback(
     (next: Selection, _scroll: "none" | "ifNeeded" | "center") => {
@@ -605,6 +656,11 @@ function App() {
       if (shouldOpenFile(e)) {
         e.preventDefault();
         handlePick();
+        return;
+      }
+      if (shouldOpenSettings(e)) {
+        e.preventDefault();
+        setSettingsOpen(true);
         return;
       }
       if (wb.workbook) {
@@ -1527,6 +1583,7 @@ function App() {
         onCopyFilePath={handleCopyFilePath}
         onDragOut={handleDragOut}
         dirty={editBuffer.isDirty}
+        onToggleWorkspace={() => setWorkspacePanelOpen(o => !o)}
       />
 
       {wb.loading && (
@@ -1535,73 +1592,109 @@ function App() {
         </div>
       )}
 
-      {!wb.workbook ? (
-        <Welcome onOpen={open} recents={recents} dragOver={dragOver} />
-      ) : (
-        <>
-          {wb.activeSheet && (
-            <Grid
-              sheet={wb.activeSheet}
-              selection={selection}
-              matches={findActive ? matches : undefined}
-              onSelectionChange={handleSelectionChange}
-              headerRow={headerRow}
-              onMarkHeader={handleMarkAsHeader}
-              defaultCopyFormat={defaultCopyFormat}
-              onCopyFormat={handleCopyFormat}
-              onSetDefaultFormat={handleSetDefaultFormat}
-              onCopyDefault={handleCopyDefault}
-              onSummarize={handleOpenSummary}
-              canSummarize={summaryEligible}
-              colOverrides={colOverrides}
-              rowOverrides={rowOverrides}
-              resizeDisabled={resizeDisabled}
-              onColResize={handleColResize}
-              onRowResize={handleRowResize}
-              onColReset={handleColReset}
-              onRowReset={handleRowReset}
-              onResetAllDimensions={handleResetAllDimensions}
-              onOpenColWidthDialog={handleOpenColWidthDialog}
-              onOpenRowHeightDialog={handleOpenRowHeightDialog}
-              filters={activeFilters}
-              onColumnFilterChange={handleColumnFilterChange}
-              canCopyQuery
-              onCopyQuery={handleCopyQuery}
-              zoom={zoom}
-              onZoomChange={handleZoomChange}
-              editEnabled={editEnabled}
-              editingCell={editingCell}
-              getEditedCell={getEditedCell}
-              onEditStart={handleEditStart}
-              onEditCommit={handleEditCommit}
-              onEditCancel={handleEditCancel}
-            />
+      <ResizablePanelGroup
+        direction="horizontal"
+        autoSaveId="lazysheet:workspace-layout"
+        className="min-h-0 flex-1"
+      >
+        <ResizablePanel id="main" order={1} defaultSize={78} minSize={30} className="flex min-w-0 flex-col">
+          {!wb.workbook ? (
+            <Welcome onOpen={open} recents={recents} dragOver={dragOver} />
+          ) : (
+            <>
+              {wb.activeSheet && (
+                <Grid
+                  sheet={wb.activeSheet}
+                  selection={selection}
+                  matches={findActive ? matches : undefined}
+                  onSelectionChange={handleSelectionChange}
+                  headerRow={headerRow}
+                  onMarkHeader={handleMarkAsHeader}
+                  defaultCopyFormat={defaultCopyFormat}
+                  onCopyFormat={handleCopyFormat}
+                  onSetDefaultFormat={handleSetDefaultFormat}
+                  onCopyDefault={handleCopyDefault}
+                  onSummarize={handleOpenSummary}
+                  canSummarize={summaryEligible}
+                  colOverrides={colOverrides}
+                  rowOverrides={rowOverrides}
+                  resizeDisabled={resizeDisabled}
+                  onColResize={handleColResize}
+                  onRowResize={handleRowResize}
+                  onColReset={handleColReset}
+                  onRowReset={handleRowReset}
+                  onResetAllDimensions={handleResetAllDimensions}
+                  onOpenColWidthDialog={handleOpenColWidthDialog}
+                  onOpenRowHeightDialog={handleOpenRowHeightDialog}
+                  filters={activeFilters}
+                  onColumnFilterChange={handleColumnFilterChange}
+                  canCopyQuery
+                  onCopyQuery={handleCopyQuery}
+                  zoom={zoom}
+                  onZoomChange={handleZoomChange}
+                  editEnabled={editEnabled}
+                  editingCell={editingCell}
+                  getEditedCell={getEditedCell}
+                  onEditStart={handleEditStart}
+                  onEditCommit={handleEditCommit}
+                  onEditCancel={handleEditCancel}
+                />
+              )}
+              <StatusBar
+                sheet={wb.activeSheet}
+                selection={selection}
+                canSummarize={summaryEligible}
+                onOpenSummary={handleOpenSummary}
+                zoom={zoom}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                onZoomReset={handleZoomReset}
+              />
+              {summaryPanelOpen && wb.activeSheet && selection && (
+                <SummaryPanel
+                  sheet={wb.activeSheet}
+                  selection={selection}
+                  headerRow={headerRow}
+                  onClose={handleCloseSummary}
+                />
+              )}
+              <SheetTabs
+                sheets={wb.workbook.sheets}
+                activeName={wb.activeSheet?.name ?? ""}
+                onSwitch={handleSwitchSheet}
+              />
+            </>
           )}
-          <StatusBar
-            sheet={wb.activeSheet}
-            selection={selection}
-            canSummarize={summaryEligible}
-            onOpenSummary={handleOpenSummary}
-            zoom={zoom}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onZoomReset={handleZoomReset}
-          />
-          {summaryPanelOpen && wb.activeSheet && selection && (
-            <SummaryPanel
-              sheet={wb.activeSheet}
-              selection={selection}
-              headerRow={headerRow}
-              onClose={handleCloseSummary}
-            />
-          )}
-          <SheetTabs
-            sheets={wb.workbook.sheets}
-            activeName={wb.activeSheet?.name ?? ""}
-            onSwitch={handleSwitchSheet}
-          />
-        </>
-      )}
+        </ResizablePanel>
+        {workspacePanelOpen && (
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel
+              id="workspace"
+              order={2}
+              defaultSize={22}
+              minSize={15}
+              maxSize={50}
+              className="min-w-0"
+            >
+              <WorkspacePanel
+                open={workspacePanelOpen}
+                workspaces={ws.workspaces}
+                currentFile={wb.workbook ? { path: wb.workbook.path, fileName: wb.workbook.file_name } : null}
+                recents={recents.map(r => ({ path: r.path, fileName: r.fileName }))}
+                onCreate={ws.create}
+                onRename={ws.rename}
+                onDelete={ws.remove}
+                onToggleCollapse={ws.toggleCollapse}
+                onAddFile={ws.addFile}
+                onRemoveFile={ws.removeFile}
+                onOpenFile={(p) => { open(p); }}
+                onBrowseAdd={handleBrowseAdd}
+              />
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
 
       <FindBar
         open={findActive}
@@ -1630,6 +1723,8 @@ function App() {
         onPickFile={handlePick}
         currentPath={filePath}
         onCheckUpdates={handleCheckUpdates}
+        onOpenWorkspace={() => setWorkspacePanelOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <ResizeDialog
@@ -1670,6 +1765,19 @@ function App() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={appSettings.settings}
+        onChangeAskBeforeClose={appSettings.setAskBeforeClose}
+      />
+      <AddToWorkspaceDialog
+        state={addToWsState}
+        workspaces={ws.workspaces}
+        onConfirm={handleConfirmAddToWs}
+        onCreateAndAdd={handleCreateAndAddToWs}
+        onSkip={handleSkipAddToWs}
+      />
     </div>
   );
 }

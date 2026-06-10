@@ -108,6 +108,79 @@ vi.mock("@/lib/copy-format-pref", () => ({
   readStoredDefaultCopyFormat: vi.fn().mockReturnValue("inline"),
 }));
 
+// ─── Mock: @/lib/settings-pref ───────────────────────────────────────────────
+const mockReadStoredSettings = vi.fn().mockResolvedValue({ askBeforeClose: false });
+const mockWriteStoredSettings = vi.fn();
+
+vi.mock("@/lib/settings-pref", async (orig) => ({
+  ...(await orig<typeof import("@/lib/settings-pref")>()),
+  readStoredSettings: (...args: unknown[]) => mockReadStoredSettings(...args),
+  writeStoredSettings: (...args: unknown[]) => mockWriteStoredSettings(...args),
+}));
+
+// ─── Mock: @/lib/workspace-store ──────────────────────────────────────────────
+const mockReadWorkspaces = vi.fn().mockResolvedValue([]);
+const mockWriteWorkspaces = vi.fn();
+
+vi.mock("@/lib/workspace-store", async (orig) => ({
+  ...(await orig<typeof import("@/lib/workspace-store")>()),
+  readWorkspaces: (...args: unknown[]) => mockReadWorkspaces(...args),
+  writeWorkspaces: (...args: unknown[]) => mockWriteWorkspaces(...args),
+}));
+
+// ─── Mock: WorkspacePanel ──────────────────────────────────────────────────────
+vi.mock("@/components/WorkspacePanel", () => ({
+  WorkspacePanel: vi.fn((props: { open: boolean; onClose: () => void }) => {
+    if (!props.open) return null;
+    return (
+      <div data-testid="workspace-panel">
+        <button data-testid="workspace-panel-close" onClick={props.onClose}>
+          close
+        </button>
+      </div>
+    );
+  }),
+}));
+
+// ─── Mock: SettingsModal ───────────────────────────────────────────────────────
+vi.mock("@/components/SettingsModal", () => ({
+  SettingsModal: vi.fn((props: { open: boolean; onOpenChange: (o: boolean) => void }) => {
+    if (!props.open) return null;
+    return (
+      <div data-testid="settings-modal">
+        <button data-testid="settings-modal-close" onClick={() => props.onOpenChange(false)}>
+          close
+        </button>
+      </div>
+    );
+  }),
+}));
+
+// ─── Mock: AddToWorkspaceDialog ────────────────────────────────────────────────
+vi.mock("@/components/AddToWorkspaceDialog", () => ({
+  AddToWorkspaceDialog: vi.fn((props: {
+    state: { path: string; fileName: string } | null;
+    onConfirm: (id: string) => void;
+    onCreateAndAdd: (name: string) => void;
+    onSkip: () => void;
+  }) => {
+    if (!props.state) return null;
+    return (
+      <div data-testid="add-to-workspace-dialog">
+        <button data-testid="add-to-ws-skip" onClick={props.onSkip}>
+          skip
+        </button>
+        <button data-testid="add-to-ws-confirm" onClick={() => props.onConfirm("ws-id-1")}>
+          confirm
+        </button>
+        <button data-testid="add-to-ws-create-and-add" onClick={() => props.onCreateAndAdd("New WS")}>
+          create and add
+        </button>
+      </div>
+    );
+  }),
+}));
+
 // ─── Mock: Heavy child components ─────────────────────────────────────────────
 // Mock Grid — too heavy (virtualizer, canvas, etc.)
 vi.mock("@/components/Grid/Grid", () => ({
@@ -606,6 +679,8 @@ describe("App", () => {
     mockOnDragDropEvent.mockReturnValue(Promise.resolve(() => {}));
     mockOnCloseRequested.mockResolvedValue(() => {});
     mockDestroy.mockResolvedValue(undefined);
+    mockReadStoredSettings.mockResolvedValue({ askBeforeClose: false });
+    mockReadWorkspaces.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -3564,6 +3639,163 @@ describe("App", () => {
         fireEvent.click(screen.getByTestId("close-confirm-btn"));
       });
       expect(mockDestroy).toHaveBeenCalled();
+    });
+  });
+
+  // ── Workspace close gating ───────────────────────────────────────────────────
+
+  describe("workspace close gating", () => {
+    it("setting OFF (default): close file immediately, no add-to-workspace dialog", async () => {
+      // askBeforeClose defaults to false — file should close immediately
+      mockReadStoredSettings.mockResolvedValue({ askBeforeClose: false });
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      // Trigger close via Ctrl+W
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "w", ctrlKey: true });
+      });
+
+      // Should have called close immediately — no dialog
+      expect(mockWorkbookState.close).toHaveBeenCalled();
+      expect(screen.queryByTestId("add-to-workspace-dialog")).not.toBeInTheDocument();
+    });
+
+    it("setting ON + file not in any workspace: shows add-to-workspace-dialog, file stays open", async () => {
+      // askBeforeClose = true, no workspaces
+      mockReadStoredSettings.mockResolvedValue({ askBeforeClose: true });
+      mockReadWorkspaces.mockResolvedValue([]);
+
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      // Wait for settings to hydrate
+      await waitFor(() => {});
+
+      // Trigger close via Ctrl+W
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "w", ctrlKey: true });
+      });
+
+      // Dialog should appear, file should NOT be closed
+      await waitFor(() => {
+        expect(screen.getByTestId("add-to-workspace-dialog")).toBeInTheDocument();
+      });
+      expect(mockWorkbookState.close).not.toHaveBeenCalled();
+    });
+
+    it("clicking Skip in add-to-workspace-dialog closes the file and hides dialog", async () => {
+      mockReadStoredSettings.mockResolvedValue({ askBeforeClose: true });
+      mockReadWorkspaces.mockResolvedValue([]);
+
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet);
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      await waitFor(() => {});
+
+      // Trigger close
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "w", ctrlKey: true });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId("add-to-workspace-dialog")).toBeInTheDocument();
+      });
+
+      // Click Skip
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("add-to-ws-skip"));
+      });
+
+      // Dialog gone, file closed
+      expect(screen.queryByTestId("add-to-workspace-dialog")).not.toBeInTheDocument();
+      expect(mockWorkbookState.close).toHaveBeenCalled();
+    });
+
+    it("setting ON + file already in a workspace: closes immediately, no dialog", async () => {
+      const filePath = "/test/file.xlsx";
+      mockReadStoredSettings.mockResolvedValue({ askBeforeClose: true });
+      // Return a workspace whose files include the opened file's path
+      mockReadWorkspaces.mockResolvedValue([
+        {
+          id: "ws-id-1",
+          name: "My Workspace",
+          files: [{ path: filePath, fileName: "file.xlsx", addedAt: Date.now() }],
+          createdAt: Date.now(),
+          collapsed: false,
+        },
+      ]);
+
+      const sheet = makeSheet();
+      const wb = makeWorkbook(sheet); // makeWorkbook uses "/test/file.xlsx"
+      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
+
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      // Wait for both settings and workspaces to hydrate
+      await waitFor(() => {});
+
+      // Trigger close
+      await act(async () => {
+        fireEvent.keyDown(window, { key: "w", ctrlKey: true });
+      });
+
+      // Should close immediately — no dialog
+      await waitFor(() => {
+        expect(mockWorkbookState.close).toHaveBeenCalled();
+      });
+      expect(screen.queryByTestId("add-to-workspace-dialog")).not.toBeInTheDocument();
+    });
+
+    it("does not render a settings button in the TitleBar (settings is command-palette only)", async () => {
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      expect(screen.queryByTestId("titlebar-settings")).not.toBeInTheDocument();
+    });
+
+    it("opens settings-modal on Cmd/Ctrl+, even with no file open", async () => {
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      expect(screen.queryByTestId("settings-modal")).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.keyDown(window, { key: ",", ctrlKey: true });
+      });
+
+      expect(screen.getByTestId("settings-modal")).toBeInTheDocument();
+    });
+
+    it("TitleBar workspace toggle shows workspace-panel", async () => {
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      const toggleBtn = screen.getByTestId("titlebar-workspace-toggle");
+      await act(async () => {
+        fireEvent.click(toggleBtn);
+      });
+
+      expect(screen.getByTestId("workspace-panel")).toBeInTheDocument();
     });
   });
 });
