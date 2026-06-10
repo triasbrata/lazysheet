@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shouldCloseSheet, shouldOpenFile, shouldZoomIn, shouldZoomOut, shouldZoomReset, shouldUndo, shouldRedo } from "./keyboard-shortcuts";
+import { shouldCloseSheet, shouldOpenFile, shouldOpenSettings, shouldZoomIn, shouldZoomOut, shouldZoomReset, shouldUndo, shouldRedo } from "./keyboard-shortcuts";
 
 describe("shouldCloseSheet", () => {
   it("returns true for Cmd+W with hasWorkbook=true", () => {
@@ -67,6 +67,33 @@ describe("shouldOpenFile", () => {
   it("returns true for meta + uppercase 'O'", () => {
     const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "O" } as unknown as KeyboardEvent;
     expect(shouldOpenFile(e)).toBe(true);
+  });
+});
+
+describe("shouldOpenSettings", () => {
+  it("returns true for meta+,", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "," } as unknown as KeyboardEvent;
+    expect(shouldOpenSettings(e)).toBe(true);
+  });
+
+  it("returns true for ctrl+,", () => {
+    const e = { metaKey: false, ctrlKey: true, shiftKey: false, key: "," } as unknown as KeyboardEvent;
+    expect(shouldOpenSettings(e)).toBe(true);
+  });
+
+  it("returns false for ',' with no modifier", () => {
+    const e = { metaKey: false, ctrlKey: false, shiftKey: false, key: "," } as unknown as KeyboardEvent;
+    expect(shouldOpenSettings(e)).toBe(false);
+  });
+
+  it("returns false for meta+shift+,", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: true, key: "," } as unknown as KeyboardEvent;
+    expect(shouldOpenSettings(e)).toBe(false);
+  });
+
+  it("returns false for meta+k", () => {
+    const e = { metaKey: true, ctrlKey: false, shiftKey: false, key: "k" } as unknown as KeyboardEvent;
+    expect(shouldOpenSettings(e)).toBe(false);
   });
 });
 

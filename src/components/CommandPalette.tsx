@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, Sigma } from "lucide-react";
+import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, PanelRight, Settings, Sigma } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,8 @@ interface CommandPaletteProps {
   onPickFile?: () => void;
   currentPath?: string | null;
   onCheckUpdates?: () => void;
+  onOpenWorkspace?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export function CommandPalette({
@@ -57,6 +59,8 @@ export function CommandPalette({
   onPickFile,
   currentPath,
   onCheckUpdates,
+  onOpenWorkspace,
+  onOpenSettings,
 }: CommandPaletteProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -104,8 +108,44 @@ export function CommandPalette({
       });
     }
 
+    // File-independent commands — available even on the Welcome screen (no file open).
+    const globalItems: CommandItem[] = [
+      ...(onOpenWorkspace
+        ? [
+            {
+              id: "workspace",
+              label: t("command.openWorkspace"),
+              icon: PanelRight,
+              run: () => {
+                onOpenChange(false);
+                onOpenWorkspace();
+              },
+            },
+          ]
+        : []),
+      ...(onOpenSettings
+        ? [
+            {
+              id: "settings",
+              label: t("command.openSettings"),
+              icon: Settings,
+              run: () => {
+                onOpenChange(false);
+                onOpenSettings();
+              },
+            },
+          ]
+        : []),
+    ];
+
     if (!hasFile) {
-      return [{ title: t("command.sectionRecent"), items: [openFileItem, ...fileItems].filter(Boolean) as CommandItem[] }];
+      const sections: Section[] = [
+        { title: t("command.sectionRecent"), items: [openFileItem, ...fileItems].filter(Boolean) as CommandItem[] },
+      ];
+      if (globalItems.length > 0) {
+        sections.push({ title: t("command.sectionCommands"), items: globalItems });
+      }
+      return sections;
     }
 
     const cmdItems: CommandItem[] = [
@@ -172,6 +212,7 @@ export function CommandPalette({
             },
           ]
         : []),
+      ...globalItems,
     ];
 
     const commands = openFileItem ? [openFileItem, ...cmdItems] : cmdItems;
@@ -193,6 +234,8 @@ export function CommandPalette({
     onCopyFile,
     onCopyFilePath,
     onCheckUpdates,
+    onOpenWorkspace,
+    onOpenSettings,
   ]);
 
   const filteredSections = useMemo<Section[]>(() => {

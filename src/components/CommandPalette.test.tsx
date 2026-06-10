@@ -125,6 +125,30 @@ describe("CommandPalette", () => {
       );
       expect(screen.getByText("Open file…")).toBeInTheDocument();
     });
+
+    it("shows Open workspaces panel command when onOpenWorkspace provided", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenWorkspace: vi.fn() })} />
+      );
+      expect(screen.getByText("Open workspaces panel")).toBeInTheDocument();
+    });
+
+    it("hides Open workspaces panel command when onOpenWorkspace is absent", () => {
+      renderWithProviders(<CommandPalette {...makeProps()} />);
+      expect(screen.queryByText("Open workspaces panel")).not.toBeInTheDocument();
+    });
+
+    it("shows Open settings command when onOpenSettings provided", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenSettings: vi.fn() })} />
+      );
+      expect(screen.getByText("Open settings")).toBeInTheDocument();
+    });
+
+    it("hides Open settings command when onOpenSettings is absent", () => {
+      renderWithProviders(<CommandPalette {...makeProps()} />);
+      expect(screen.queryByText("Open settings")).not.toBeInTheDocument();
+    });
   });
 
   describe("mode=root with hasFile=false", () => {
@@ -151,6 +175,33 @@ describe("CommandPalette", () => {
       expect(
         screen.getByPlaceholderText("Search recent files…")
       ).toBeInTheDocument();
+    });
+
+    it("shows Open settings command when hasFile=false (Welcome screen)", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false, onOpenSettings: vi.fn() })} />
+      );
+      expect(screen.getByText("Commands")).toBeInTheDocument();
+      expect(screen.getByText("Open settings")).toBeInTheDocument();
+    });
+
+    it("runs onOpenSettings from Welcome screen and closes palette", async () => {
+      const onOpenSettings = vi.fn();
+      const onOpenChange = vi.fn();
+      const user = userEvent.setup();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false, onOpenSettings, onOpenChange })} />
+      );
+      await user.click(screen.getByText("Open settings"));
+      expect(onOpenSettings).toHaveBeenCalledOnce();
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("shows Open workspaces panel command when hasFile=false", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false, onOpenWorkspace: vi.fn() })} />
+      );
+      expect(screen.getByText("Open workspaces panel")).toBeInTheDocument();
     });
   });
 
@@ -224,6 +275,30 @@ describe("CommandPalette", () => {
       );
       await user.click(screen.getByText("Check for Updates"));
       expect(onCheckUpdates).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("clicking onOpenWorkspace item calls onOpenWorkspace and closes palette", async () => {
+      const user = userEvent.setup();
+      const onOpenWorkspace = vi.fn();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenWorkspace, onOpenChange })} />
+      );
+      await user.click(screen.getByText("Open workspaces panel"));
+      expect(onOpenWorkspace).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("clicking onOpenSettings item calls onOpenSettings and closes palette", async () => {
+      const user = userEvent.setup();
+      const onOpenSettings = vi.fn();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenSettings, onOpenChange })} />
+      );
+      await user.click(screen.getByText("Open settings"));
+      expect(onOpenSettings).toHaveBeenCalledTimes(1);
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 

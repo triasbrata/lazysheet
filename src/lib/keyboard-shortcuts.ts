@@ -14,6 +14,14 @@ export function shouldOpenFile(e: KeyboardEvent): boolean {
   return true;
 }
 
+export function shouldOpenSettings(e: KeyboardEvent): boolean {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return false;
+  if (e.key !== ",") return false;
+  if (e.shiftKey) return false;
+  return true;
+}
+
 export function shouldZoomIn(e: KeyboardEvent): boolean {
   const mod = e.metaKey || e.ctrlKey;
   if (!mod) return false;
