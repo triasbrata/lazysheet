@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderWithProviders, screen, userEvent, fireEvent } from "@/test/render";
 import { CommandPalette } from "./CommandPalette";
 import type { PaletteMode } from "./CommandPalette";
@@ -22,6 +22,11 @@ function makeProps(overrides: Partial<Parameters<typeof CommandPalette>[0]> = {}
     ...overrides,
   } satisfies Parameters<typeof CommandPalette>[0];
 }
+
+afterEach(() => {
+  document.documentElement.removeAttribute("data-theme");
+  document.documentElement.classList.remove("light", "dark");
+});
 
 describe("CommandPalette", () => {
   describe("visibility", () => {
@@ -125,6 +130,21 @@ describe("CommandPalette", () => {
       );
       expect(screen.getByText("Open file…")).toBeInTheDocument();
     });
+
+    it("shows Change theme command", () => {
+      renderWithProviders(<CommandPalette {...makeProps()} />);
+      expect(screen.getByText("Change theme")).toBeInTheDocument();
+    });
+
+    it("clicking Change theme calls onModeChange with 'theme'", async () => {
+      const user = userEvent.setup();
+      const onModeChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onModeChange })} />
+      );
+      await user.click(screen.getByText("Change theme"));
+      expect(onModeChange).toHaveBeenCalledWith("theme");
+    });
   });
 
   describe("mode=root with hasFile=false", () => {
@@ -151,6 +171,13 @@ describe("CommandPalette", () => {
       expect(
         screen.getByPlaceholderText("Search recent files…")
       ).toBeInTheDocument();
+    });
+
+    it("shows Change theme command when hasFile=false", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false })} />
+      );
+      expect(screen.getByText("Change theme")).toBeInTheDocument();
     });
   });
 
@@ -457,6 +484,103 @@ describe("CommandPalette", () => {
     it("shows 'Type a command…' placeholder in root+hasFile mode", () => {
       renderWithProviders(<CommandPalette {...makeProps()} />);
       expect(screen.getByPlaceholderText("Type a command…")).toBeInTheDocument();
+    });
+  });
+
+  describe("mode=theme", () => {
+    it("renders known palette items: Palenight, Light, Dark, System", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      expect(screen.getByText("Palenight")).toBeInTheDocument();
+      expect(screen.getByText("Light")).toBeInTheDocument();
+      expect(screen.getByText("Dark")).toBeInTheDocument();
+      expect(screen.getByText("System")).toBeInTheDocument();
+    });
+
+    it("shows Theme section header", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      expect(screen.getByText("Theme")).toBeInTheDocument();
+    });
+
+    it("shows searchTheme placeholder", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      expect(screen.getByPlaceholderText("Search themes…")).toBeInTheDocument();
+    });
+
+    it("filters theme items by query: typing 'palenight' shows Palenight", async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      const input = screen.getByPlaceholderText("Search themes…");
+      await user.type(input, "palenight");
+      expect(screen.getByText("Palenight")).toBeInTheDocument();
+      expect(screen.queryByText("Oceanic")).not.toBeInTheDocument();
+    });
+
+    it("filters theme items: non-matching query hides items", async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      const input = screen.getByPlaceholderText("Search themes…");
+      await user.type(input, "zzznomatch999");
+      expect(screen.queryByText("Palenight")).not.toBeInTheDocument();
+      expect(screen.queryByText("Light")).not.toBeInTheDocument();
+    });
+
+    it("shows noMatch message when theme query has no results", async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      const input = screen.getByPlaceholderText("Search themes…");
+      await user.type(input, "zzznomatch999");
+      expect(screen.getByText("No commands match.")).toBeInTheDocument();
+    });
+
+    it("clicking Palenight calls onOpenChange(false) and applies the theme to documentElement", async () => {
+      const user = userEvent.setup();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme", onOpenChange })} />
+      );
+      await user.click(screen.getByText("Palenight"));
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(document.documentElement.getAttribute("data-theme")).toBe("palenight");
+    });
+
+    it("shows theme mode badge button", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme" })} />
+      );
+      expect(screen.getByRole("button", { name: /theme/i })).toBeInTheDocument();
+    });
+
+    it("Escape in theme mode calls onModeChange('root')", () => {
+      const onModeChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme", onModeChange })} />
+      );
+      const input = screen.getByPlaceholderText("Search themes…");
+      fireEvent.keyDown(input, { key: "Escape" });
+      expect(onModeChange).toHaveBeenCalledWith("root");
+    });
+
+    it("Enter in theme mode runs the active theme item", () => {
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme", onOpenChange })} />
+      );
+      const input = screen.getByPlaceholderText("Search themes…");
+      fireEvent.keyDown(input, { key: "Enter" });
+      // First item is "Light" — running it should call onOpenChange(false)
+      expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 });

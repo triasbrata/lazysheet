@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ModeToggle } from "@/components/mode-toggle";
+import { ThemePicker } from "@/components/theme-picker";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { flags } from "@/lib/feature-flags";
 import { getPlatform } from "@/lib/platform";
@@ -124,7 +124,7 @@ export function TitleBar({
 
       <div className="flex shrink-0 items-center gap-0.5">
         {flags.multiLang && <LanguageToggle />}
-        <ModeToggle />
+        <ThemePicker />
 
         {fileName && onClose && (
           <Button

@@ -2,10 +2,10 @@
   "common": { "appName": "LazySheet", "openingEllipsis": "正在打开…", "ok": "确定", "cancel": "取消", "truncatedSuffix": "（已截断）" },
   "welcome": { "title": "打开电子表格", "dropHint": "将文件拖放到此处，或浏览打开", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "打开文件", "recent": "最近" },
   "titlebar": { "dragFileOut": "将文件拖出", "fileActions": "文件操作", "fileActionsLabel": "文件操作", "copyFile": "复制文件", "copyFilePath": "复制文件路径", "searchCommands": "搜索命令…", "openCommandCenter": "打开命令中心（{{shortcut}}）", "minimize": "最小化", "maximize": "最大化", "restore": "还原", "closeWindow": "关闭" },
-  "theme": { "toggle": "切换主题", "light": "浅色", "dark": "深色", "system": "跟随系统" },
+  "theme": { "toggle": "切换主题", "light": "浅色", "dark": "深色", "system": "跟随系统", "customize": "自定义" },
   "language": { "toggle": "切换语言" },
   "statusbar": { "selectionSize_other": "{{rows}}行 × {{cols}}列 · {{count}} 个单元格", "activeCell": "活动单元格", "analyze": "分析", "summaryTitle": "分组汇总（{{shortcut}}）", "zoomIn": "放大", "zoomOut": "缩小", "zoomReset": "将缩放重置为 100%" },
-  "command": { "paletteTitle": "命令面板", "searchRecent": "搜索最近文件…", "typeCommand": "输入命令…", "cellRefPlaceholder": "单元格引用（如 A1、B12、AB45）", "noRecent": "没有最近文件。", "noMatch": "没有匹配的命令。", "gotoHelp": "按 Enter 跳转，按 Esc 返回。", "sectionCommands": "命令", "sectionRecent": "最近文件", "openFile": "打开文件…", "openFileSub": "浏览（.xlsx、.csv…）", "goto": "跳转", "gotoSub": "跳转到单元格（如 A1、B12）", "summarize": "汇总所选内容", "summarizeSub": "分组", "copyFile": "复制文件", "copyFileSub": "将 .xlsx 复制到剪贴板", "copyFilePath": "复制文件路径", "copyFilePathSub": "以文本形式复制路径", "checkUpdates": "检查更新" },
+  "command": { "paletteTitle": "命令面板", "searchRecent": "搜索最近文件…", "typeCommand": "输入命令…", "cellRefPlaceholder": "单元格引用（如 A1、B12、AB45）", "noRecent": "没有最近文件。", "noMatch": "没有匹配的命令。", "gotoHelp": "按 Enter 跳转，按 Esc 返回。", "sectionCommands": "命令", "sectionRecent": "最近文件", "openFile": "打开文件…", "openFileSub": "浏览（.xlsx、.csv…）", "goto": "跳转", "gotoSub": "跳转到单元格（如 A1、B12）", "summarize": "汇总所选内容", "summarizeSub": "分组", "copyFile": "复制文件", "copyFileSub": "将 .xlsx 复制到剪贴板", "copyFilePath": "复制文件路径", "copyFilePathSub": "以文本形式复制路径", "checkUpdates": "检查更新", "changeTheme": "更改主题", "changeThemeSub": "切换调色板", "searchTheme": "搜索主题…", "sectionTheme": "主题" },
   "find": { "placeholder": "在工作表中查找…", "ariaFind": "在工作表中查找", "ariaPrev": "上一个匹配项", "ariaNext": "下一个匹配项", "ariaClose": "关闭查找", "position": "第 {{current}} 个，共 {{total}} 个", "matches_other": "{{count}} 个匹配项", "noMatches": "无匹配项" },
   "app": {
     "failedToOpen": "打开文件失败",
