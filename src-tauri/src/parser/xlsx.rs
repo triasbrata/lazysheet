@@ -27,12 +27,7 @@ pub fn parse(
     path_str: String,
     file_name: String,
 ) -> Result<WorkbookModel, String> {
-    // lazy_read defers per-sheet XML deserialization — only the sheet we
-    // render is materialized below. read() would parse ALL sheets eagerly.
-    let t_read = std::time::Instant::now();
-    let mut book =
-        reader::xlsx::lazy_read(path).map_err(|e| format!("Failed to read xlsx: {e:?}"))?;
-    let read_ms = t_read.elapsed().as_millis();
+    let book = reader::xlsx::read(path).map_err(|e| format!("Failed to read xlsx: {e:?}"))?;
     let sheet_names: Vec<String> = book
         .get_sheet_collection_no_check()
         .iter()
@@ -52,18 +47,10 @@ pub fn parse(
         })
         .collect();
 
-    let t_deser = std::time::Instant::now();
-    book.read_sheet(0);
-    let deser_ms = t_deser.elapsed().as_millis();
     let first_sheet = book
         .get_sheet(&0)
         .ok_or_else(|| "Failed to access first sheet".to_string())?;
-    let t_transform = std::time::Instant::now();
     let active_sheet = parse_sheet(first_sheet)?;
-    eprintln!(
-        "[perf] xlsx open: read={read_ms}ms deserialize={deser_ms}ms transform={}ms",
-        t_transform.elapsed().as_millis()
-    );
 
     Ok(WorkbookModel {
         path: path_str,
@@ -74,18 +61,9 @@ pub fn parse(
 }
 
 pub fn parse_sheet_by_name(path: &Path, sheet_name: &str) -> Result<SheetModel, String> {
-    let mut book =
-        reader::xlsx::lazy_read(path).map_err(|e| format!("Failed to read xlsx: {e:?}"))?;
-    // Find the index manually — read_sheet_by_name unwrap-panics on a missing
-    // name, and get_sheet_by_name asserts the sheet is already deserialized.
-    let index = book
-        .get_sheet_collection_no_check()
-        .iter()
-        .position(|s| s.get_name() == sheet_name)
-        .ok_or_else(|| format!("Sheet '{sheet_name}' not found"))?;
-    book.read_sheet(index);
+    let book = reader::xlsx::read(path).map_err(|e| format!("Failed to read xlsx: {e:?}"))?;
     let sheet = book
-        .get_sheet(&index)
+        .get_sheet_by_name(sheet_name)
         .ok_or_else(|| format!("Sheet '{sheet_name}' not found"))?;
     parse_sheet(sheet)
 }
@@ -120,15 +98,10 @@ fn parse_sheet(sheet: &Worksheet) -> Result<SheetModel, String> {
     };
 
     // 0.0 = hidden (sentinel). Otherwise resolved pixels.
-    // Index dims by number once — a linear find per row/col is O(n*m).
-    let col_dims: std::collections::HashMap<u32, _> = sheet
-        .get_column_dimensions()
-        .iter()
-        .map(|d| (*d.get_col_num(), d))
-        .collect();
+    let col_dims = sheet.get_column_dimensions();
     let col_widths: Vec<f64> = (1..=max_col.max(1))
         .map(|c| {
-            let dim = col_dims.get(&(c as u32));
+            let dim = col_dims.iter().find(|d| *d.get_col_num() == c as u32);
             match dim {
                 Some(d) if *d.get_hidden() => 0.0,
                 Some(d) => {
@@ -141,14 +114,10 @@ fn parse_sheet(sheet: &Worksheet) -> Result<SheetModel, String> {
         })
         .collect();
 
-    let row_dim_list = sheet.get_row_dimensions();
-    let row_dims: std::collections::HashMap<u32, _> = row_dim_list
-        .iter()
-        .map(|d| (*d.get_row_num(), d))
-        .collect();
+    let row_dims = sheet.get_row_dimensions();
     let row_heights: Vec<f64> = (1..=max_row.max(1))
         .map(|r| {
-            let dim = row_dims.get(&(r as u32));
+            let dim = row_dims.iter().find(|d| *d.get_row_num() == r as u32);
             match dim {
                 Some(d) if *d.get_hidden() => 0.0,
                 Some(d) if *d.get_custom_height() => row_pt_to_px(*d.get_height()),
@@ -346,87 +315,6 @@ fn parse_cell_ref(s: &str) -> Option<(u32, u32)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// Build a 2-sheet workbook fixture on disk and return its path.
-    /// Sheet1: A1="hello". Sheet2: B2="world".
-    fn write_fixture(name: &str) -> std::path::PathBuf {
-        let mut book = umya_spreadsheet::new_file();
-        book.get_sheet_by_name_mut("Sheet1")
-            .unwrap()
-            .get_cell_mut("A1")
-            .set_value("hello");
-        let sheet2 = book.new_sheet("Sheet2").unwrap();
-        sheet2.get_cell_mut("B2").set_value("world");
-        let path = std::env::temp_dir().join(format!(
-            "lazysheet_test_{}_{}.xlsx",
-            name,
-            std::process::id()
-        ));
-        umya_spreadsheet::writer::xlsx::write(&book, &path).unwrap();
-        path
-    }
-
-    #[test]
-    fn lazy_parse_returns_all_summaries_and_first_sheet_content() {
-        let path = write_fixture("parse");
-        let wb = parse(&path, path.to_string_lossy().to_string(), "f.xlsx".into()).unwrap();
-        let _ = std::fs::remove_file(&path);
-
-        let names: Vec<&str> = wb.sheets.iter().map(|s| s.name.as_str()).collect();
-        assert_eq!(names, vec!["Sheet1", "Sheet2"]);
-        assert_eq!(wb.active_sheet.name, "Sheet1");
-        match &wb.active_sheet.rows[0][0].v {
-            CellValue::Text(t) => assert_eq!(t, "hello"),
-            other => panic!("expected Text(\"hello\"), got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn lazy_parse_sheet_by_name_loads_second_sheet() {
-        let path = write_fixture("by_name");
-        let sheet = parse_sheet_by_name(&path, "Sheet2").unwrap();
-        let _ = std::fs::remove_file(&path);
-
-        assert_eq!(sheet.name, "Sheet2");
-        match &sheet.rows[1][1].v {
-            CellValue::Text(t) => assert_eq!(t, "world"),
-            other => panic!("expected Text(\"world\"), got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn parse_sheet_by_name_missing_returns_err() {
-        let path = write_fixture("missing");
-        let err = parse_sheet_by_name(&path, "Nope").unwrap_err();
-        let _ = std::fs::remove_file(&path);
-        assert!(err.contains("not found"), "got: {err}");
-    }
-
-    #[test]
-    fn dims_resolved_from_hashmap_lookups() {
-        let mut book = umya_spreadsheet::new_file();
-        let sheet = book.get_sheet_by_name_mut("Sheet1").unwrap();
-        sheet.get_cell_mut("C3").set_value("x"); // extent: 3 cols, 3 rows
-        sheet.get_column_dimension_mut("A").set_width(10.0);
-        sheet.get_column_dimension_mut("B").set_hidden(true);
-        let row2 = sheet.get_row_dimension_mut(&2);
-        row2.set_height(30.0);
-        row2.set_custom_height(true);
-        let path = std::env::temp_dir()
-            .join(format!("lazysheet_test_dims_{}.xlsx", std::process::id()));
-        umya_spreadsheet::writer::xlsx::write(&book, &path).unwrap();
-
-        let model = parse_sheet_by_name(&path, "Sheet1").unwrap();
-        let _ = std::fs::remove_file(&path);
-
-        assert_eq!(model.col_widths[0], col_chars_to_px(10.0)); // custom width
-        assert_eq!(model.col_widths[1], 0.0); // hidden sentinel
-        assert_eq!(
-            model.col_widths[2],
-            col_chars_to_px(EXCEL_DEFAULT_COL_WIDTH_CHARS)
-        ); // default
-        assert_eq!(model.row_heights[1], row_pt_to_px(30.0)); // custom height
-    }
 
     #[test]
     fn col_default_width_843_to_59px() {

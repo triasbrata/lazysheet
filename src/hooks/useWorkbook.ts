@@ -42,16 +42,9 @@ export function useWorkbook() {
     setLoading(true);
     setError(null);
     try {
-      // invoke span = Rust parse + serde + IPC bridge + JSON parse in webview.
-      // Bridge share ≈ this minus the Rust-side [perf] total in the terminal.
-      const t0 = performance.now();
       const wb = await openWorkbookApi(path);
-      const t1 = performance.now();
       setWorkbook(wb);
       setActiveSheet(wb.active_sheet);
-      console.log(
-        `[perf] open invoke=${Math.round(t1 - t0)}ms state=${Math.round(performance.now() - t1)}ms`,
-      );
       pushRecent(wb.path, wb.file_name);
       return wb;
     } catch (e) {
