@@ -1,4 +1,4 @@
-import { X, Search, FileSpreadsheet, Files, ClipboardCopy } from "lucide-react";
+import { X, Search, FileSpreadsheet, Files, ClipboardCopy, PanelRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ interface TitleBarProps {
   onCopyFilePath?: () => void;
   onDragOut?: () => void;
   dirty?: boolean;
+  onToggleWorkspace?: () => void;
 }
 
 export function TitleBar({
@@ -36,6 +37,7 @@ export function TitleBar({
   onCopyFilePath,
   onDragOut,
   dirty,
+  onToggleWorkspace,
 }: TitleBarProps) {
   const { t } = useTranslation();
   const platform = getPlatform();
@@ -124,6 +126,18 @@ export function TitleBar({
 
       <div className="flex shrink-0 items-center gap-0.5">
         {flags.multiLang && <LanguageToggle />}
+        {onToggleWorkspace && (
+          <Button
+            onClick={onToggleWorkspace}
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            aria-label={t("workspace.toggle")}
+            data-testid="titlebar-workspace-toggle"
+          >
+            <PanelRight className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <ThemePicker />
 
         {fileName && onClose && (

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, Palette, Sigma } from "lucide-react";
+import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, Palette, PanelRight, Settings, Sigma } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,8 @@ interface CommandPaletteProps {
   onPickFile?: () => void;
   currentPath?: string | null;
   onCheckUpdates?: () => void;
+  onOpenWorkspace?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export function CommandPalette({
@@ -59,6 +61,8 @@ export function CommandPalette({
   onPickFile,
   currentPath,
   onCheckUpdates,
+  onOpenWorkspace,
+  onOpenSettings,
 }: CommandPaletteProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
@@ -115,11 +119,48 @@ export function CommandPalette({
       });
     }
 
+    // File-independent commands — available even on the Welcome screen (no file open).
+    const globalItems: CommandItem[] = [
+      ...(onOpenWorkspace
+        ? [
+            {
+              id: "workspace",
+              label: t("command.openWorkspace"),
+              icon: PanelRight,
+              run: () => {
+                onOpenChange(false);
+                onOpenWorkspace();
+              },
+            },
+          ]
+        : []),
+      ...(onOpenSettings
+        ? [
+            {
+              id: "settings",
+              label: t("command.openSettings"),
+              icon: Settings,
+              run: () => {
+                onOpenChange(false);
+                onOpenSettings();
+              },
+            },
+          ]
+        : []),
+    ];
+
     if (!hasFile) {
-      const recentItems = [openFileItem, ...fileItems].filter(Boolean) as CommandItem[];
-      // Append changeThemeItem so it's reachable in !hasFile mode.
-      // Note: the "No recent files" empty message is shown separately via showNoRecentMessage.
-      return [{ title: t("command.sectionRecent"), items: [...recentItems, changeThemeItem] }];
+      const sections: Section[] = [
+        { title: t("command.sectionRecent"), items: [openFileItem, ...fileItems].filter(Boolean) as CommandItem[] },
+      ];
+      // File-independent commands (workspace/settings) plus theme switching,
+      // reachable even on the Welcome screen. The "No recent files" empty
+      // message is shown separately via showNoRecentMessage.
+      const globals = [...globalItems, changeThemeItem];
+      if (globals.length > 0) {
+        sections.push({ title: t("command.sectionCommands"), items: globals });
+      }
+      return sections;
     }
 
     const cmdItems: CommandItem[] = [
@@ -187,6 +228,7 @@ export function CommandPalette({
           ]
         : []),
       changeThemeItem,
+      ...globalItems,
     ];
 
     const commands = openFileItem ? [openFileItem, ...cmdItems] : cmdItems;
@@ -209,6 +251,8 @@ export function CommandPalette({
     onCopyFilePath,
     onCheckUpdates,
     changeThemeItem,
+    onOpenWorkspace,
+    onOpenSettings,
   ]);
 
   const themeItems = useMemo<CommandItem[]>(() => {

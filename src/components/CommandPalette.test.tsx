@@ -145,16 +145,42 @@ describe("CommandPalette", () => {
       await user.click(screen.getByText("Change theme"));
       expect(onModeChange).toHaveBeenCalledWith("theme");
     });
+
+    it("shows Open workspaces panel command when onOpenWorkspace provided", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenWorkspace: vi.fn() })} />
+      );
+      expect(screen.getByText("Open workspaces panel")).toBeInTheDocument();
+    });
+
+    it("hides Open workspaces panel command when onOpenWorkspace is absent", () => {
+      renderWithProviders(<CommandPalette {...makeProps()} />);
+      expect(screen.queryByText("Open workspaces panel")).not.toBeInTheDocument();
+    });
+
+    it("shows Open settings command when onOpenSettings provided", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenSettings: vi.fn() })} />
+      );
+      expect(screen.getByText("Open settings")).toBeInTheDocument();
+    });
+
+    it("hides Open settings command when onOpenSettings is absent", () => {
+      renderWithProviders(<CommandPalette {...makeProps()} />);
+      expect(screen.queryByText("Open settings")).not.toBeInTheDocument();
+    });
   });
 
   describe("mode=root with hasFile=false", () => {
-    it("shows only Recent Files section when hasFile=false", () => {
+    it("shows Recent Files plus the always-available Change theme command when hasFile=false", () => {
       renderWithProviders(
         <CommandPalette {...makeProps({ hasFile: false })} />
       );
-      // Only Recent Files section, no Commands section
-      expect(screen.queryByText("Commands")).not.toBeInTheDocument();
+      // Recent Files section, plus a Commands section holding the global
+      // Change theme command (always reachable, even on the Welcome screen).
       expect(screen.getByText("Recent Files")).toBeInTheDocument();
+      expect(screen.getByText("Commands")).toBeInTheDocument();
+      expect(screen.getByText("Change theme")).toBeInTheDocument();
     });
 
     it("shows no-recent message when recents are empty and hasFile=false", () => {
@@ -178,6 +204,33 @@ describe("CommandPalette", () => {
         <CommandPalette {...makeProps({ hasFile: false })} />
       );
       expect(screen.getByText("Change theme")).toBeInTheDocument();
+    });
+
+    it("shows Open settings command when hasFile=false (Welcome screen)", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false, onOpenSettings: vi.fn() })} />
+      );
+      expect(screen.getByText("Commands")).toBeInTheDocument();
+      expect(screen.getByText("Open settings")).toBeInTheDocument();
+    });
+
+    it("runs onOpenSettings from Welcome screen and closes palette", async () => {
+      const onOpenSettings = vi.fn();
+      const onOpenChange = vi.fn();
+      const user = userEvent.setup();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false, onOpenSettings, onOpenChange })} />
+      );
+      await user.click(screen.getByText("Open settings"));
+      expect(onOpenSettings).toHaveBeenCalledOnce();
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("shows Open workspaces panel command when hasFile=false", () => {
+      renderWithProviders(
+        <CommandPalette {...makeProps({ hasFile: false, onOpenWorkspace: vi.fn() })} />
+      );
+      expect(screen.getByText("Open workspaces panel")).toBeInTheDocument();
     });
   });
 
@@ -251,6 +304,30 @@ describe("CommandPalette", () => {
       );
       await user.click(screen.getByText("Check for Updates"));
       expect(onCheckUpdates).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("clicking onOpenWorkspace item calls onOpenWorkspace and closes palette", async () => {
+      const user = userEvent.setup();
+      const onOpenWorkspace = vi.fn();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenWorkspace, onOpenChange })} />
+      );
+      await user.click(screen.getByText("Open workspaces panel"));
+      expect(onOpenWorkspace).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("clicking onOpenSettings item calls onOpenSettings and closes palette", async () => {
+      const user = userEvent.setup();
+      const onOpenSettings = vi.fn();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ onOpenSettings, onOpenChange })} />
+      );
+      await user.click(screen.getByText("Open settings"));
+      expect(onOpenSettings).toHaveBeenCalledTimes(1);
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 

@@ -237,6 +237,35 @@ describe("TitleBar — dirty indicator", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Workspace toggle button
+// ---------------------------------------------------------------------------
+describe("TitleBar — workspace toggle button", () => {
+  it("renders workspace toggle button when onToggleWorkspace is provided", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} onToggleWorkspace={vi.fn()} />
+    );
+    expect(screen.getByTestId("titlebar-workspace-toggle")).toBeInTheDocument();
+  });
+
+  it("calls onToggleWorkspace when workspace toggle button is clicked", async () => {
+    const onToggleWorkspace = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} onToggleWorkspace={onToggleWorkspace} />
+    );
+    await user.click(screen.getByTestId("titlebar-workspace-toggle"));
+    expect(onToggleWorkspace).toHaveBeenCalledOnce();
+  });
+
+  it("does not render workspace toggle button when onToggleWorkspace is not provided", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
+    );
+    expect(screen.queryByTestId("titlebar-workspace-toggle")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Platform-conditional padding + WindowControls
 // ---------------------------------------------------------------------------
 describe("TitleBar — platform-conditional layout", () => {
