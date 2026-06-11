@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -8,7 +9,47 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useTheme } from "@/components/theme-provider";
+import { THEME_PRESETS, getPreset } from "@/lib/themes";
 import type { AppSettings } from "@/lib/settings-pref";
+
+function SettingRow({
+  title,
+  description,
+  control,
+  htmlFor,
+}: {
+  title: string;
+  description: string;
+  control: ReactNode;
+  htmlFor?: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-3">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        {htmlFor ? (
+          <label htmlFor={htmlFor} className="text-sm font-medium">
+            {title}
+          </label>
+        ) : (
+          <span className="text-sm font-medium">{title}</span>
+        )}
+        <span className="text-xs text-muted-foreground">{description}</span>
+      </div>
+      <div className="shrink-0">{control}</div>
+    </div>
+  );
+}
 
 export interface SettingsModalProps {
   open: boolean;
@@ -24,6 +65,9 @@ export function SettingsModal({
   onChangeAskBeforeClose,
 }: SettingsModalProps) {
   const { t } = useTranslation();
+  const { theme, setTheme } = useTheme();
+
+  const palettePresets = THEME_PRESETS.filter((p) => p.palette);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -32,23 +76,73 @@ export function SettingsModal({
           <DialogTitle>{t("settings.title")}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 py-2">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="ask-before-close"
-              checked={settings.askBeforeClose}
-              onCheckedChange={(c) => onChangeAskBeforeClose(c === true)}
-            />
-            <label
-              htmlFor="ask-before-close"
-              className="flex flex-col gap-0.5 text-sm"
-            >
-              {t("settings.askBeforeClose")}
-              <span className="text-xs text-muted-foreground">
-                {t("settings.askBeforeCloseDesc")}
-              </span>
-            </label>
-          </div>
+        <div className="divide-y divide-border py-2">
+          <SettingRow
+            htmlFor="ask-before-close"
+            title={t("settings.askBeforeClose")}
+            description={t("settings.askBeforeCloseDesc")}
+            control={
+              <Checkbox
+                id="ask-before-close"
+                checked={settings.askBeforeClose}
+                onCheckedChange={(c) => onChangeAskBeforeClose(c === true)}
+              />
+            }
+          />
+
+          <SettingRow
+            title={t("settings.theme")}
+            description={t("settings.themeDesc")}
+            control={
+              <Select value={theme} onValueChange={(v) => setTheme(v)}>
+                <SelectTrigger
+                  data-testid="settings-theme-select"
+                  className="w-44"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectGroup>
+                    <SelectLabel>Default</SelectLabel>
+                    <SelectItem value="light" data-testid="theme-opt-light">
+                      <span
+                        className="mr-2 inline-block h-3 w-3 rounded-full border"
+                        style={{ backgroundColor: getPreset("light")!.swatch }}
+                      />
+                      {t("theme.light")}
+                    </SelectItem>
+                    <SelectItem value="dark" data-testid="theme-opt-dark">
+                      <span
+                        className="mr-2 inline-block h-3 w-3 rounded-full border"
+                        style={{ backgroundColor: getPreset("dark")!.swatch }}
+                      />
+                      {t("theme.dark")}
+                    </SelectItem>
+                    <SelectItem value="system" data-testid="theme-opt-system">
+                      {t("theme.system")}
+                    </SelectItem>
+                  </SelectGroup>
+                  <SelectSeparator />
+                  <SelectGroup>
+                    <SelectLabel>{t("theme.customize")}</SelectLabel>
+                    {palettePresets.map((preset) => (
+                      <SelectItem
+                        key={preset.id}
+                        value={preset.id}
+                        data-testid={`theme-opt-${preset.id}`}
+                      >
+                        <span
+                          className="mr-2 inline-block h-3 w-3 rounded-full border"
+                          style={{ backgroundColor: preset.swatch }}
+                        />
+                        {preset.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            }
+          />
         </div>
 
         <DialogFooter>

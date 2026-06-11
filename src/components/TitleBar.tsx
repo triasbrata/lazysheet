@@ -9,7 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemePicker } from "@/components/theme-picker";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { flags } from "@/lib/feature-flags";
 import { getPlatform } from "@/lib/platform";
@@ -138,8 +137,6 @@ export function TitleBar({
             <PanelRight className="h-3.5 w-3.5" />
           </Button>
         )}
-        <ThemePicker />
-
         {fileName && onClose && (
           <Button
             onClick={onClose}
