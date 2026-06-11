@@ -55,6 +55,17 @@ objc2-core-graphics = { version = "0.3", features = ["CGColor"] }
 [profile.dev.package."*"]
 opt-level = 3
 
+# Shrink the shipped binary: fat LTO + single codegen unit let the linker drop
+# far more dead code, `strip` removes symbols, and abort-on-panic drops the
+# unwinding machinery. opt-level "s" trades a sliver of speed for size; the
+# hot xlsx-parse path is dominated by IO/allocation, not codegen quality.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
 [features]
 # Embeds a W3C WebDriver server in the app (native WKWebView/WebKitGTK/WebView2)
 # so tauri-webdriver can drive it cross-platform. e2e builds only.
