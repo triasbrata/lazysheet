@@ -8,7 +8,8 @@
     "githubStarsAria": "{{count}} bintang GitHub",
     "version": "Versi",
     "versionAria": "Pilih versi",
-    "versionLatest": "terbaru"
+    "versionLatest": "terbaru",
+    "menuAria": "Buka menu"
   },
   "hero": {
     "iconAlt": "Ikon LazySheet",

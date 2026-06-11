@@ -131,7 +131,7 @@ function GuideStepRow({ step }: { step: GuideStep }) {
         </button>
       </DialogTrigger>
       <DialogContent className="max-w-[92vw] gap-0 overflow-hidden p-0 sm:max-w-[92vw]">
-        <div className="grid max-h-[88vh] grid-cols-1 md:grid-cols-[4fr_1fr]">
+        <div className="grid max-h-[88vh] grid-cols-1 lg:grid-cols-[4fr_1fr]">
           <div className="flex items-center justify-center bg-black/5 p-2 md:p-4">
             <img
               src={step.img}
@@ -156,7 +156,7 @@ function GuideStepRow({ step }: { step: GuideStep }) {
   )
 
   return (
-    <div className="grid items-center gap-8 md:grid-cols-2">
+    <div className="grid items-center gap-6 md:gap-8 md:grid-cols-2">
       {isEven ? (
         <>
           <div className="md:order-2">{textCol}</div>

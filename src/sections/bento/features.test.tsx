@@ -100,6 +100,38 @@ describe('useBentoTiles', () => {
     }
   })
 
+  it('v0.4.0 tile spans use xl: prefix (not md:) for col/row tokens', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.4.0')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    // At least one tile should have xl:col-start-
+    const hasXlColStart = tiles.some((t) => t.span.includes('xl:col-start-'))
+    expect(hasXlColStart).toBe(true)
+    // No tile should have md:col-start-
+    const hasMdColStart = tiles.some((t) => t.span.includes('md:col-start-'))
+    expect(hasMdColStart).toBe(false)
+  })
+
+  it('v0.5.0 tile spans use xl: prefix (not md:) for col/row tokens', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.5.0')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    const hasXlColStart = tiles.some((t) => t.span.includes('xl:col-start-'))
+    expect(hasXlColStart).toBe(true)
+    const hasMdColStart = tiles.some((t) => t.span.includes('md:col-start-'))
+    expect(hasMdColStart).toBe(false)
+  })
+
   it('returns 12 tiles for a future tag (v9.9.9) — highest defined <= active resolves to v0.5.0', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
