@@ -3,6 +3,8 @@ mod model;
 mod parser;
 mod state;
 mod writer;
+#[cfg(target_os = "macos")]
+mod macos;
 
 use std::path::Path;
 use state::{OpenFile, PendingFiles};
@@ -73,6 +75,11 @@ pub fn run() {
                 }
             }
 
+            #[cfg(target_os = "macos")]
+            if let Some(win) = app.get_webview_window("main") {
+                macos::apply_resize_pinning(&win);
+            }
+
             #[cfg(not(any(feature = "webdriver", feature = "webdriver-dev")))]
             let _ = app;
             Ok(())
@@ -82,6 +89,7 @@ pub fn run() {
             commands::load_sheet,
             commands::take_pending_files,
             commands::save_edits,
+            commands::set_native_background,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

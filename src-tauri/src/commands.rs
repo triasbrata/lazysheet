@@ -69,3 +69,17 @@ pub async fn save_edits(
         .await
         .map_err(|e| format!("Task join error: {e}"))?
 }
+
+#[tauri::command]
+pub fn set_native_background(
+    window: tauri::WebviewWindow,
+    r: u8,
+    g: u8,
+    b: u8,
+) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    crate::macos::set_background_color(&window, r, g, b);
+    #[cfg(not(target_os = "macos"))]
+    let _ = (window, r, g, b);
+    Ok(())
+}
