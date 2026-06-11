@@ -35,7 +35,7 @@ function SettingRow({
 }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3">
-      <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex min-w-0 max-w-[60%] flex-col gap-0.5">
         {htmlFor ? (
           <label htmlFor={htmlFor} className="text-sm font-medium">
             {title}
