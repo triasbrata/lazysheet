@@ -5,6 +5,7 @@ import {
   STORAGE_KEY,
   resolveBase,
 } from "@/lib/themes";
+import { syncNativeBackground } from "@/lib/native-window";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -51,6 +52,7 @@ export function ThemeProvider({
   // Apply theme whenever selection changes.
   useEffect(() => {
     applyTheme(theme);
+    syncNativeBackground();
   }, [theme]);
 
   // When "system" is active, follow live OS preference changes.
@@ -65,7 +67,10 @@ export function ThemeProvider({
       return;
     }
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => applyTheme("system");
+    const handler = () => {
+      applyTheme("system");
+      syncNativeBackground();
+    };
     mq.addEventListener("change", handler);
     return () => {
       mq.removeEventListener("change", handler);
