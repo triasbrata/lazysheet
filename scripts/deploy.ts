@@ -2,9 +2,11 @@
 /**
  * Local deploy script — RC-first flow.
  *
- * Flow: load .env -> build changelog from commits since last stable tag ->
+ * Flow: load .env -> build changelog from commits since last stable tag
+ * (folding in any pending RELEASE_NOTES_NEXT.md bullets) ->
  * ask Claude Code to decide the semantic version bump (fresh cycle only) ->
- * bump version files + commit "chore: release vX.Y.Z" (fresh cycle only) ->
+ * bump version files + prepend changelog-app.log + commit "chore: release
+ * vX.Y.Z" (fresh cycle only) ->
  * create annotated RC tag vX.Y.Z-rc.N (message = changelog) -> push.
  *
  * CI (release.yml) receives the RC tag, builds all platform artifacts,
@@ -32,6 +34,18 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname!, "..");
+/** Project changelog — gitignored (*.log), so it must be force-added. */
+const CHANGELOG_FILE = "changelog-app.log";
+/** Holding area for hand-written notes destined for the next release tag. */
+const PENDING_NOTES_FILE = "RELEASE_NOTES_NEXT.md";
+/** Empty-state RELEASE_NOTES_NEXT.md written after notes are consumed. */
+const PENDING_NOTES_TEMPLATE = `# Pending release notes (next tag)
+
+Add user-facing bullets here as you land changes. On the next
+\`bun run app:deploy\`, deploy.ts folds these into the generated release notes,
+then resets this file. (\`release.yml\` publishes the changelog from the tag
+annotation; changelog-app.log is the committed history.)
+`;
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has("--dry-run");
 const SKIP_CONFIRM = args.has("--yes") || args.has("-y");
@@ -198,13 +212,41 @@ async function decideBump(
 }
 
 /**
+ * Read RELEASE_NOTES_NEXT.md and return only the pending user-facing bullets:
+ * the instructional header block and any HTML comment blocks (engineering-only
+ * detail) are stripped. Returns "" when nothing actionable is pending.
+ */
+function readPendingNotes(): string {
+  const path = resolve(ROOT, PENDING_NOTES_FILE);
+  if (!existsSync(path)) return "";
+  const text = readFileSync(path, "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const lines = text.split("\n");
+  // Everything before the first content marker — an h2/h3 section heading or a
+  // bullet — is the "# " title and the instructional preamble; drop it. This
+  // is layout-agnostic (blank lines between title and prose don't matter).
+  const start = lines.findIndex((l) => /^(#{2,3}\s|-\s)/.test(l));
+  if (start === -1) return "";
+  const body = lines.slice(start).join("\n").trim();
+  // Only meaningful if there's at least one bullet to carry forward.
+  return /^-\s/m.test(body) ? body : "";
+}
+
+/** Reset RELEASE_NOTES_NEXT.md to its empty holding-area template. */
+function resetPendingNotes() {
+  writeFileSync(resolve(ROOT, PENDING_NOTES_FILE), PENDING_NOTES_TEMPLATE);
+}
+
+/**
  * Ask Claude Code (opus, max effort, thinking) to write the release notes
  * used as the annotated tag message — CI publishes it as the GitHub release
- * body. Falls back to the mechanical changelog if Claude's output is unusable.
+ * body. Any pending notes from RELEASE_NOTES_NEXT.md are handed to Claude as
+ * pre-written bullets that must be incorporated. Falls back to the mechanical
+ * changelog (plus the pending notes verbatim) if Claude's output is unusable.
  */
 async function generateReleaseNotes(
   version: string,
   commits: { subject: string; hash: string }[],
+  pendingNotes: string,
 ): Promise<string> {
   const subjects = commits
     .filter((c) => !isNoiseCommit(c.subject))
@@ -224,6 +266,13 @@ async function generateReleaseNotes(
     `- Skip internal-only noise (CI tweaks, release chores) unless user-relevant.`,
     `- Judge by user impact, not commit type prefix: toolchain/test/coverage work is internal even when labeled "feat:", and a commit without a type prefix can still be a headline feature.`,
     `- A feature shipped behind a feature flag that is OFF by default is NOT yet user-facing — do not list it under "### Features". If worth a mention, note it briefly under an experimental/upcoming line; otherwise omit it.`,
+    ...(pendingNotes
+      ? [
+          ``,
+          `Pre-written user-facing notes for this release (already polished — you MUST incorporate every bullet below, integrated under the appropriate "###" headings, rewording only for consistency):`,
+          pendingNotes,
+        ]
+      : []),
   ].join("\n");
 
   try {
@@ -234,7 +283,10 @@ async function generateReleaseNotes(
   } catch {
     log("⚠ Claude release notes generation failed — falling back to mechanical changelog.");
   }
-  return buildChangelog(commits, { withHash: false });
+  // Fallback: mechanical changelog, with pending notes appended verbatim so
+  // hand-written bullets are never dropped even when Claude is unavailable.
+  const mechanical = buildChangelog(commits, { withHash: false });
+  return pendingNotes ? `${mechanical}\n\n${pendingNotes}` : mechanical;
 }
 
 function bumpVersionFiles(newVersion: string) {
@@ -276,6 +328,27 @@ function bumpVersionFiles(newVersion: string) {
     );
     writeFileSync(lockPath, lockNew);
   }
+}
+
+/**
+ * Prepend a release entry to changelog-app.log, mirroring the format the
+ * release CI writes — "## <tag> (<date>)\n\n<body>\n\n---\n\n", newest on top.
+ * Idempotent: if an entry for this version already heads the file it's left
+ * untouched, so RC re-runs don't duplicate it (same guard as release.yml's
+ * `grep "^## ${FINAL_TAG} "`). Because the entry is committed here, the CI
+ * job finds it present and skips its own prepend — no double entry.
+ * The file is gitignored (*.log); callers must `git add -f` it.
+ */
+function prependChangelogEntry(version: string, body: string, date: string) {
+  const path = resolve(ROOT, CHANGELOG_FILE);
+  const existing = existsSync(path) ? readFileSync(path, "utf8") : "";
+  const guard = new RegExp(`^## v${version.replace(/\./g, "\\.")} `, "m");
+  if (guard.test(existing)) {
+    log(`changelog-app.log already has v${version} — leaving it untouched.`);
+    return;
+  }
+  writeFileSync(path, `## v${version} (${date})\n\n${body}\n\n---\n\n${existing}`);
+  log(`Prepended v${version} entry to changelog-app.log.`);
 }
 
 /**
@@ -399,12 +472,21 @@ async function main() {
   //    confirmation prompt so what you approve is exactly what ships as the
   //    tag message / GitHub release body. Falls back to the mechanical
   //    changelog on failure.
+  const pendingNotes = readPendingNotes();
+  if (pendingNotes) {
+    log(`Found pending notes in ${PENDING_NOTES_FILE} — folding into release notes.`);
+  }
+
   log(`\nGenerating release notes with Claude...`);
-  const tagMessage = await generateReleaseNotes(baseVersion, commits);
+  const tagMessage = await generateReleaseNotes(baseVersion, commits, pendingNotes);
   log(`\n${tagMessage}\n`);
 
+  // UTC date for the changelog heading — matches CI's `date -u +%Y-%m-%d`.
+  const releaseDate = new Date().toISOString().slice(0, 10);
+
   if (DRY_RUN) {
-    log(`\n--dry-run: would${freshCycle ? " bump version files, commit chore: release v" + baseVersion + "," : ""} create tag ${rcTag}, push HEAD + ${rcTag}.`);
+    const pendingPlan = pendingNotes ? `, reset ${PENDING_NOTES_FILE}` : "";
+    log(`\n--dry-run: would${freshCycle ? " bump version files, prepend changelog-app.log" + pendingPlan + ", commit chore: release v" + baseVersion + "," : ""} create tag ${rcTag}, push HEAD + ${rcTag}.`);
     log("--dry-run: no files changed, no tag created, no push.");
     return;
   }
@@ -427,13 +509,23 @@ async function main() {
     }
   }
 
-  // 10. Fresh cycle only: bump version files + commit.
+  // 10. Fresh cycle only: bump version files, prepend changelog, commit.
   //     The commit message uses the final version (no rc suffix) because
-  //     version files always hold the bare base version.
+  //     version files always hold the bare base version. The changelog entry
+  //     is prepended here (mirroring the CI format) and force-added since the
+  //     file is gitignored; CI then finds it present and skips its own write.
   if (freshCycle) {
     bumpVersionFiles(baseVersion);
+    prependChangelogEntry(baseVersion, tagMessage, releaseDate);
     await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock`
       .cwd(ROOT);
+    await $`git add -f ${CHANGELOG_FILE}`.cwd(ROOT);
+    // Pending notes are now baked into the tag message / changelog — reset the
+    // holding file so they don't leak into the next release target.
+    if (pendingNotes) {
+      resetPendingNotes();
+      await $`git add ${PENDING_NOTES_FILE}`.cwd(ROOT);
+    }
     await $`git commit -m ${`chore: release v${baseVersion}`}`.cwd(ROOT);
   }
 

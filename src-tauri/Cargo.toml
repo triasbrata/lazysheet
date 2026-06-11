@@ -48,6 +48,24 @@ objc2-app-kit = { version = "0.3", features = ["NSColor", "NSView", "NSWindow"] 
 objc2-quartz-core = { version = "0.3", features = ["CALayer", "objc2-core-graphics"] }
 objc2-core-graphics = { version = "0.3", features = ["CGColor"] }
 
+# Optimize dependencies even in dev builds. The app crate itself stays at
+# opt-level 0 (fast incremental compiles), but deps like umya-spreadsheet are
+# 10-15x faster when optimized — xlsx parse of a 71k-cell workbook drops from
+# ~1.05s (debug) to ~85ms. Deps compile once and stay cached.
+[profile.dev.package."*"]
+opt-level = 3
+
+# Shrink the shipped binary: fat LTO + single codegen unit let the linker drop
+# far more dead code, `strip` removes symbols, and abort-on-panic drops the
+# unwinding machinery. opt-level "s" trades a sliver of speed for size; the
+# hot xlsx-parse path is dominated by IO/allocation, not codegen quality.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
 [features]
 # Embeds a W3C WebDriver server in the app (native WKWebView/WebKitGTK/WebView2)
 # so tauri-webdriver can drive it cross-platform. e2e builds only.
