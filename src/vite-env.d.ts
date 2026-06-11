@@ -3,17 +3,6 @@
 interface ImportMetaEnv {
   /** Set to "true" only for e2e (WebDriver) builds. Enables the window.__E2E__ test hook. */
   readonly VITE_E2E?: string;
-
-  /**
-   * Build-time feature flags. Convention: VITE_FF_<NAME>. See src/lib/feature-flags.ts.
-   * Default polarity is per-flag (see parseFlag's defaultValue argument).
-   */
-  /** default OFF; set "true" to enable multi-language (language toggle + browser language detection). */
-  readonly VITE_FF_MULTI_LANG?: string;
-  /** default OFF; set "true" to enable inline cell editing. */
-  readonly VITE_FF_INLINE_EDIT?: string;
-  /** default OFF; set "true" to enable session-scoped undo/redo. */
-  readonly VITE_FF_UNDO?: string;
 }
 
 interface ImportMeta {

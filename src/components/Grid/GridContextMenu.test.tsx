@@ -597,6 +597,20 @@ describe("GridContextMenuContent", () => {
     });
   });
 
+  describe("i18n sanity checks", () => {
+    it("renders Autofit column width from contextMenu.autofitColumnWidth key (not raw key)", () => {
+      renderMenu({ type: "col", col: 0 }, { onAutofitCol: vi.fn() });
+      expect(screen.getByText("Autofit column width")).toBeInTheDocument();
+      expect(screen.queryByText("contextMenu.autofitColumnWidth")).toBeNull();
+    });
+
+    it("renders Mark as header from contextMenu.markAsHeader key (not raw key)", () => {
+      renderMenu({ type: "row", row: 2 }, { headerRow: null });
+      expect(screen.getByText("Mark as header")).toBeInTheDocument();
+      expect(screen.queryByText("contextMenu.markAsHeader")).toBeNull();
+    });
+  });
+
   describe("onPointerDownCapture on ContextMenuSubContent (line 248)", () => {
     // Line 248: The inner Markdown ContextMenuSubContent has onPointerDownCapture
     // that resets starRef.current = false. We open the Copy submenu then the

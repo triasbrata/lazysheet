@@ -8,6 +8,8 @@ export interface MarqueeProps {
   "data-testid"?: string;
   "data-tauri-drag-region"?: boolean | "";
   speedPxPerSec?: number;
+  /** When true, never animate — always render the static truncate branch. */
+  disabled?: boolean;
 }
 
 export function Marquee({
@@ -17,6 +19,7 @@ export function Marquee({
   "data-testid": dataTestId,
   "data-tauri-drag-region": dataTauriDragRegion,
   speedPxPerSec = 40,
+  disabled = false,
 }: MarqueeProps) {
   const containerRef = useRef<HTMLSpanElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
@@ -52,17 +55,17 @@ export function Marquee({
     ref: containerRef,
   };
 
-  if (overflow) {
+  if (overflow && !disabled) {
     return (
       <span {...outerProps}>
         <span
           className="inline-flex w-max animate-marquee"
           style={{ ["--marquee-duration"]: durationS + "s" } as React.CSSProperties}
         >
-          <span ref={measureRef} className="pr-8">
+          <span ref={measureRef} className="pr-8 pointer-events-none select-none">
             {text}
           </span>
-          <span aria-hidden className="pr-8">
+          <span aria-hidden className="pr-8 pointer-events-none select-none">
             {text}
           </span>
         </span>
@@ -72,7 +75,7 @@ export function Marquee({
 
   return (
     <span {...outerProps}>
-      <span ref={measureRef} className="block truncate">
+      <span ref={measureRef} className="block truncate pointer-events-none select-none">
         {text}
       </span>
     </span>

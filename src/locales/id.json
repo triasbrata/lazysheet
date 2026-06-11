@@ -1,12 +1,31 @@
 {
   "common": { "appName": "LazySheet", "openingEllipsis": "Membuka…", "ok": "OK", "cancel": "Batal", "truncatedSuffix": " (dipotong)" },
   "welcome": { "title": "Buka lembar kerja", "dropHint": "Letakkan berkas di sini, atau telusuri untuk membuka", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "Buka Berkas", "recent": "Terbaru" },
-  "titlebar": { "dragFileOut": "Seret berkas keluar", "fileActions": "Tindakan berkas", "fileActionsLabel": "Tindakan Berkas", "copyFile": "Salin berkas", "copyFilePath": "Salin jalur berkas", "searchCommands": "Cari perintah…", "openCommandCenter": "Buka pusat perintah ({{shortcut}})", "minimize": "Perkecil", "maximize": "Perbesar", "restore": "Pulihkan", "closeWindow": "Tutup" },
+  "titlebar": { "dragFileOut": "Seret berkas keluar", "fileActions": "Tindakan berkas", "fileActionsLabel": "Tindakan Berkas", "copyFile": "Salin berkas", "copyFilePath": "Salin jalur berkas", "searchCommands": "Cari perintah…", "openCommandCenter": "Buka pusat perintah ({{shortcut}})", "minimize": "Perkecil", "maximize": "Perbesar", "restore": "Pulihkan", "closeWindow": "Tutup", "unsavedChanges": "Perubahan belum disimpan", "closeFile": "Tutup berkas" },
   "theme": { "toggle": "Ganti tema", "light": "Terang", "dark": "Gelap", "system": "Sistem", "customize": "Palet Warna" },
   "language": { "toggle": "Ganti bahasa" },
   "statusbar": { "selectionSize_one": "{{rows}}B × {{cols}}K · {{count}} sel", "selectionSize_other": "{{rows}}B × {{cols}}K · {{count}} sel", "activeCell": "Sel aktif", "analyze": "Analisis", "summaryTitle": "Ringkasan kelompokkan ({{shortcut}})", "zoomIn": "Perbesar", "zoomOut": "Perkecil", "zoomReset": "Reset zoom ke 100%" },
   "command": { "paletteTitle": "Palet Perintah", "searchRecent": "Cari berkas terbaru…", "typeCommand": "Ketik perintah…", "cellRefPlaceholder": "Referensi sel (mis. A1, B12, AB45)", "noRecent": "Tidak ada berkas terbaru.", "noMatch": "Tidak ada perintah yang cocok.", "gotoHelp": "Tekan Enter untuk melompat. Esc untuk kembali.", "sectionCommands": "Perintah", "sectionRecent": "Berkas Terbaru", "openFile": "Buka berkas…", "openFileSub": "Telusuri (.xlsx, .csv…)", "goto": "Lompat ke", "gotoSub": "Lompat ke sel (mis. A1, B12)", "summarize": "Ringkas pilihan", "summarizeSub": "Kelompokkan", "copyFile": "Salin berkas", "copyFileSub": "Salin .xlsx ke papan klip", "copyFilePath": "Salin jalur berkas", "copyFilePathSub": "Salin jalur sebagai teks", "checkUpdates": "Periksa Pembaruan", "openWorkspace": "Buka panel ruang kerja", "openSettings": "Buka pengaturan", "changeTheme": "Ubah tema", "changeThemeSub": "Ganti palet warna", "searchTheme": "Cari tema…", "sectionTheme": "Tema" },
   "find": { "placeholder": "Cari di lembar…", "ariaFind": "Cari di lembar", "ariaPrev": "Hasil sebelumnya", "ariaNext": "Hasil berikutnya", "ariaClose": "Tutup pencarian", "position": "{{current}} dari {{total}}", "matches_one": "{{count}} hasil", "matches_other": "{{count}} hasil", "noMatches": "Tidak ada hasil" },
+  "query": {
+    "title": "Salin sebagai {{kind}}",
+    "description": "Atur opsi untuk kueri SQL.",
+    "tableName": "Nama tabel",
+    "dialect": "Dialek SQL",
+    "keyFields": "Kolom kunci",
+    "keyPlaceholder": "Pilih kolom kunci…",
+    "dupWarning": "Kunci terpilih memiliki nilai duplikat pada pilihan — dapat memengaruhi banyak baris.",
+    "needNonKey": "Butuh minimal satu kolom non-kunci.",
+    "ansiNoUpsert": "ANSI SQL tidak mendukung upsert",
+    "ansiUnsupportedSuffix": "(tidak didukung untuk upsert)",
+    "generating": "Membuat… {{done}}/{{total}} baris ({{pct}}%)",
+    "copy": "Salin",
+    "close": "Tutup",
+    "errEnterTable": "Masukkan nama tabel",
+    "errInvalidTable": "Nama tabel tidak valid",
+    "errPickKey": "Pilih minimal satu kolom kunci",
+    "errNeedNonKey": "Butuh minimal satu kolom non-kunci"
+  },
   "app": {
     "failedToOpen": "Gagal membuka berkas",
     "selectRangeFirst": "Pilih rentang (≥2 kolom × ≥2 baris) terlebih dahulu",
@@ -32,7 +51,14 @@
     "noSheetOpen": "Tidak ada lembar terbuka",
     "invalidRef": "Referensi sel tidak valid",
     "rowOutOfRange": "Baris di luar rentang (maks {{max}})",
-    "colOutOfRange": "Kolom di luar rentang (maks {{max}})"
+    "colOutOfRange": "Kolom di luar rentang (maks {{max}})",
+    "saved": "Tersimpan",
+    "cancelled": "Dibatalkan",
+    "unsupportedSaveFormat": "Tipe berkas ini tidak bisa disimpan. Simpan sebagai .xlsx.",
+    "confirmCloseTitle": "Perubahan belum disimpan",
+    "confirmCloseDesc": "Ada perubahan yang belum disimpan. Tutup tanpa menyimpan? Perubahan akan hilang.",
+    "confirmCloseCancel": "Batal",
+    "confirmCloseConfirm": "Tutup tanpa menyimpan"
   },
   "copyFormatLabels": { "inline": "markdown", "title": "judul markdown", "table": "tabel markdown", "ascii": "tabel ASCII", "csv": "CSV", "tsv": "TSV", "plain": "teks biasa" },
   "resize": {
@@ -170,6 +196,11 @@
     "askBeforeCloseDesc": "Saat menutup berkas yang tidak ada di ruang kerja mana pun, tanyakan ke ruang kerja mana akan ditambahkan.",
     "theme": "Tema",
     "themeDesc": "Palet warna aplikasi",
+    "themeDefaultGroup": "Bawaan",
+    "language": "Bahasa",
+    "languageDesc": "Bahasa tampilan aplikasi",
+    "runningText": "Nonaktifkan teks berjalan",
+    "runningTextDesc": "Tampilkan nama berkas panjang terpotong, bukan berjalan.",
     "done": "Selesai"
   },
   "addToWs": {

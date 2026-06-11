@@ -68,4 +68,50 @@ describe("Marquee", () => {
     // The text should still be visible in a static span
     expect(screen.getByText("Short text")).toBeInTheDocument();
   });
+
+  it("renders static branch (no animation) when overflow AND disabled=true", () => {
+    // Force overflow condition
+    stubSizes(300, 100);
+
+    render(<Marquee text="Long disabled text" disabled={true} />);
+
+    // Animated track must NOT be present
+    const track = document.querySelector(".animate-marquee");
+    expect(track).toBeNull();
+
+    // Static truncate span must be present
+    expect(screen.getByText("Long disabled text")).toBeInTheDocument();
+    const staticSpan = document.querySelector(".truncate");
+    expect(staticSpan).not.toBeNull();
+  });
+
+  it("inner text spans have pointer-events-none class in animated (overflow) branch", () => {
+    stubSizes(300, 100);
+
+    render(<Marquee text="Animated pointer test" />);
+
+    // Animated branch should be rendered
+    expect(document.querySelector(".animate-marquee")).not.toBeNull();
+
+    // All inner text spans inside the animated track should have pointer-events-none
+    const innerSpans = document.querySelectorAll(".animate-marquee span");
+    expect(innerSpans.length).toBeGreaterThanOrEqual(2);
+    innerSpans.forEach((span) => {
+      expect(span.classList.contains("pointer-events-none")).toBe(true);
+    });
+  });
+
+  it("inner text span has pointer-events-none class in static (no overflow) branch", () => {
+    stubSizes(50, 200);
+
+    render(<Marquee text="Static pointer test" />);
+
+    // Static branch: no animated track
+    expect(document.querySelector(".animate-marquee")).toBeNull();
+
+    // The single inner span (block truncate) must have pointer-events-none
+    const staticSpan = document.querySelector(".truncate");
+    expect(staticSpan).not.toBeNull();
+    expect(staticSpan!.classList.contains("pointer-events-none")).toBe(true);
+  });
 });

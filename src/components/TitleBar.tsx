@@ -10,8 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LanguageToggle } from "@/components/LanguageToggle";
-import { flags } from "@/lib/feature-flags";
 import { getPlatform } from "@/lib/platform";
 import { WindowControls } from "@/components/WindowControls";
 import { cn } from "@/lib/utils";
@@ -26,6 +24,7 @@ interface TitleBarProps {
   onDragOut?: () => void;
   dirty?: boolean;
   onToggleWorkspace?: () => void;
+  disableRunningText?: boolean;
 }
 
 export function TitleBar({
@@ -38,6 +37,7 @@ export function TitleBar({
   onDragOut,
   dirty,
   onToggleWorkspace,
+  disableRunningText,
 }: TitleBarProps) {
   const { t } = useTranslation();
   const platform = getPlatform();
@@ -74,14 +74,15 @@ export function TitleBar({
           text={fileName ?? t("common.appName")}
           data-testid="titlebar-filename"
           data-tauri-drag-region
-          className="min-w-0 font-medium text-foreground/90"
+          className="min-w-0 select-none font-medium text-foreground/90"
+          disabled={disableRunningText}
         />
 
         {dirty && (
           <span
             data-testid="titlebar-dirty"
-            className="shrink-0 text-muted-foreground"
-            title="Unsaved changes"
+            className="pointer-events-none select-none shrink-0 text-muted-foreground"
+            title={t("titlebar.unsavedChanges")}
           >
             •
           </span>
@@ -125,8 +126,7 @@ export function TitleBar({
         </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
-        {flags.multiLang && <LanguageToggle />}
+      <div data-tauri-drag-region className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
         {onToggleWorkspace && (
           <Button
             onClick={onToggleWorkspace}
@@ -145,7 +145,7 @@ export function TitleBar({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            title="Close file"
+            title={t("titlebar.closeFile")}
           >
             <X className="h-3.5 w-3.5" />
           </Button>

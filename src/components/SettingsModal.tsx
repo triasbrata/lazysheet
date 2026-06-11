@@ -22,6 +22,7 @@ import {
 import { useTheme } from "@/components/theme-provider";
 import { THEME_PRESETS, getPreset } from "@/lib/themes";
 import type { AppSettings } from "@/lib/settings-pref";
+import { SUPPORTED_LANGUAGES } from "@/i18n/languages";
 
 function SettingRow({
   title,
@@ -56,6 +57,7 @@ export interface SettingsModalProps {
   onOpenChange: (open: boolean) => void;
   settings: AppSettings;
   onChangeAskBeforeClose: (value: boolean) => void;
+  onChangeDisableRunningText: (value: boolean) => void;
 }
 
 export function SettingsModal({
@@ -63,15 +65,17 @@ export function SettingsModal({
   onOpenChange,
   settings,
   onChangeAskBeforeClose,
+  onChangeDisableRunningText,
 }: SettingsModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
 
   const palettePresets = THEME_PRESETS.filter((p) => p.palette);
+  const currentLangCode = i18n.language.split("-")[0];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-testid="settings-modal">
+      <DialogContent data-testid="settings-modal" className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("settings.title")}</DialogTitle>
         </DialogHeader>
@@ -103,7 +107,7 @@ export function SettingsModal({
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   <SelectGroup>
-                    <SelectLabel>Default</SelectLabel>
+                    <SelectLabel>{t("settings.themeDefaultGroup")}</SelectLabel>
                     <SelectItem value="light" data-testid="theme-opt-light">
                       <span
                         className="mr-2 inline-block h-3 w-3 rounded-full border"
@@ -141,6 +145,48 @@ export function SettingsModal({
                   </SelectGroup>
                 </SelectContent>
               </Select>
+            }
+          />
+
+          <SettingRow
+            title={t("settings.language")}
+            description={t("settings.languageDesc")}
+            control={
+              <Select
+                value={currentLangCode}
+                onValueChange={(v) => i18n.changeLanguage(v)}
+              >
+                <SelectTrigger
+                  data-testid="settings-language-select"
+                  className="w-44"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map(({ code, nativeLabel }) => (
+                    <SelectItem
+                      key={code}
+                      value={code}
+                      data-testid={"lang-opt-" + code}
+                    >
+                      {nativeLabel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
+
+          <SettingRow
+            htmlFor="disable-running-text"
+            title={t("settings.runningText")}
+            description={t("settings.runningTextDesc")}
+            control={
+              <Checkbox
+                id="disable-running-text"
+                checked={settings.disableRunningText}
+                onCheckedChange={(c) => onChangeDisableRunningText(c === true)}
+              />
             }
           />
         </div>

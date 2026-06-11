@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, useAnimationControls } from "motion/react";
 import { XIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -50,6 +51,7 @@ interface QueryModalProps {
 
 export function QueryModal(props: QueryModalProps): React.JSX.Element {
   const { state, progress, onConfirm, onCancel } = props;
+  const { t } = useTranslation();
 
   const open = state !== null;
 
@@ -109,32 +111,32 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
   const submit = () => {
     if (!state) return;
 
-    const t = tableName.trim();
-    if (t === "") {
-      toast.error("Enter a table name");
+    const trimmed = tableName.trim();
+    if (trimmed === "") {
+      toast.error(t("query.errEnterTable"));
       return;
     }
     if (
-      sanitizeTableName(t) === "" ||
-      t.split(".").some((seg) => seg.trim() === "")
+      sanitizeTableName(trimmed) === "" ||
+      trimmed.split(".").some((seg) => seg.trim() === "")
     ) {
-      toast.error("Invalid table name");
+      toast.error(t("query.errInvalidTable"));
       return;
     }
 
     if (needsKey && keyVals.length === 0) {
-      toast.error("Pick at least one key field");
+      toast.error(t("query.errPickKey"));
       return;
     }
     if (needsKey && nonKeyCount === 0) {
-      toast.error("Need at least one non-key column");
+      toast.error(t("query.errNeedNonKey"));
       return;
     }
 
-    onConfirm({ tableName: t, dialect, keyCols: keyVals.map(Number) });
+    onConfirm({ tableName: trimmed, dialect, keyCols: keyVals.map(Number) });
   };
 
-  const title = state ? `Copy as ${state.kind.toUpperCase()}` : "";
+  const title = state ? t("query.title", { kind: state.kind.toUpperCase() }) : "";
 
   const pct =
     progress && progress.total
@@ -179,7 +181,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
           type="button"
           onClick={onCancel}
           className="absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:opacity-100"
-          aria-label="Close"
+          aria-label={t("query.close")}
         >
           <XIcon className="size-4" />
         </button>
@@ -187,7 +189,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
           <DialogTitle>{title}</DialogTitle>
           {!generating && (
             <DialogDescription>
-              Configure options for the SQL query.
+              {t("query.description")}
             </DialogDescription>
           )}
         </DialogHeader>
@@ -196,7 +198,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
           <>
             <div className="flex flex-col gap-3 py-2">
               <p className="text-sm text-muted-foreground">
-                Generating&hellip; {progress!.done}/{progress!.total} rows ({pct}%)
+                {t("query.generating", { done: progress!.done, total: progress!.total, pct })}
               </p>
               <div className="h-2 w-full rounded bg-muted overflow-hidden">
                 <div
@@ -208,7 +210,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
 
             <DialogFooter className="flex-row justify-end [&>*]:w-auto">
               <Button variant="outline" onClick={onCancel}>
-                Cancel
+                {t("common.cancel")}
               </Button>
             </DialogFooter>
           </>
@@ -217,7 +219,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
             <div className="flex flex-col gap-4">
               {/* Table name */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">Table name</label>
+                <label className="text-sm font-medium">{t("query.tableName")}</label>
                 <input
                   ref={inputRef}
                   type="text"
@@ -241,7 +243,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
 
               {/* Dialect */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">SQL dialect</label>
+                <label className="text-sm font-medium">{t("query.dialect")}</label>
                 <Select
                   value={dialect}
                   onValueChange={(v) => setDialect(v as SqlDialect)}
@@ -258,14 +260,14 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
                       disabled={state?.kind === "upsert"}
                       title={
                         state?.kind === "upsert"
-                          ? "ANSI SQL does not support upsert"
+                          ? t("query.ansiNoUpsert")
                           : undefined
                       }
                     >
                       ANSI SQL
                       {state?.kind === "upsert" && (
                         <span className="ml-1 text-xs text-muted-foreground">
-                          (unsupported for upsert)
+                          {t("query.ansiUnsupportedSuffix")}
                         </span>
                       )}
                     </SelectItem>
@@ -276,7 +278,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
               {/* Key columns (update / upsert only) */}
               {needsKey && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium">Key field(s)</label>
+                  <label className="text-sm font-medium">{t("query.keyFields")}</label>
                   <MultiSelect
                     options={
                       state
@@ -288,7 +290,7 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
                     }
                     selected={keyVals}
                     onChange={setKeyVals}
-                    placeholder="Select key field(s)…"
+                    placeholder={t("query.keyPlaceholder")}
                   />
                   {state?.keyWarning && (
                     <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -297,13 +299,12 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
                   )}
                   {keyDup && (
                     <p className="text-xs text-amber-600 dark:text-amber-400">
-                      Selected key has duplicate values in selection — may affect
-                      multiple rows.
+                      {t("query.dupWarning")}
                     </p>
                   )}
                   {nonKeyCount === 0 && keyVals.length > 0 && (
                     <p className="text-xs text-destructive">
-                      Need at least one non-key column.
+                      {t("query.needNonKey")}
                     </p>
                   )}
                 </div>
@@ -312,14 +313,14 @@ export function QueryModal(props: QueryModalProps): React.JSX.Element {
 
             <DialogFooter className="flex-row justify-end [&>*]:w-auto">
               <Button variant="outline" data-testid="query-modal-cancel" onClick={onCancel}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 data-testid="query-modal-confirm"
                 onClick={submit}
                 disabled={generating || (needsKey && nonKeyCount === 0)}
               >
-                Copy
+                {t("query.copy")}
               </Button>
             </DialogFooter>
           </>

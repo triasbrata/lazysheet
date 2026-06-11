@@ -1,5 +1,5 @@
 /**
- * Spec 28 — Undo / redo for inline cell edits (VITE_FF_UNDO)
+ * Spec 28 — Undo / redo for inline cell edits
  *
  * Verifies session-scoped undo/redo end-to-end, including the regression where
  * undo did nothing AFTER a save:
@@ -15,8 +15,7 @@
  * contents — keeping the committed file pristine and isolating this spec from
  * spec 27 (which also saves into simple.csv).
  *
- * Requirements: build must include VITE_FF_INLINE_EDIT=true and VITE_FF_UNDO=true
- * (both wired in e2e:build-app).
+ * Requirements: inline cell editing and undo/redo are always-on (no feature flags needed).
  */
 
 import { writeFileSync } from "node:fs";

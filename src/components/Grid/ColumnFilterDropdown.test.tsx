@@ -581,6 +581,24 @@ describe("ColumnFilterDropdown", () => {
     });
   });
 
+  // ── i18n: labels render English values, not raw keys ─────────────────────
+
+  describe("i18n label rendering", () => {
+    it("renders translated 'Filter by condition' header — no raw key leak", () => {
+      renderWithProviders(<ColumnFilterDropdown {...makeProps()} />);
+      expect(screen.getByText("Filter by condition")).toBeInTheDocument();
+      expect(screen.queryByText(/filter\.filterByCondition/)).toBeNull();
+    });
+
+    it("renders translated 'Select all' and 'Displaying N' — no raw key leak", () => {
+      renderWithProviders(<ColumnFilterDropdown {...makeProps()} />);
+      expect(screen.getByText("Select all")).toBeInTheDocument();
+      expect(screen.queryByText(/filter\.selectAll/)).toBeNull();
+      expect(screen.getByText("Displaying 4")).toBeInTheDocument();
+      expect(screen.queryByText(/filter\.displaying/)).toBeNull();
+    });
+  });
+
   // ── operand input typing ──────────────────────────────────────────────────
 
   describe("operand input typing", () => {

@@ -52,10 +52,10 @@ describe("readStoredSettings", () => {
     expect(result.askBeforeClose).toBe(false);
   });
 
-  it("returns {askBeforeClose: true} when readJson resolves {askBeforeClose: true}", async () => {
+  it("returns {askBeforeClose: true, disableRunningText: false} when readJson resolves old-shape {askBeforeClose: true}", async () => {
     vi.mocked(readJson).mockResolvedValue({ askBeforeClose: true });
     const result = await readStoredSettings();
-    expect(result).toEqual({ askBeforeClose: true });
+    expect(result).toEqual({ askBeforeClose: true, disableRunningText: false });
   });
 
   it("returns DEFAULT_SETTINGS when readJson resolves malformed object {askBeforeClose: 'yes'}", async () => {
@@ -80,9 +80,26 @@ describe("readStoredSettings", () => {
 describe("writeStoredSettings", () => {
   it("calls writeJson with SETTINGS_FILE and the provided settings", async () => {
     vi.mocked(writeJson).mockResolvedValue(undefined);
-    await writeStoredSettings({ askBeforeClose: true });
+    await writeStoredSettings({ askBeforeClose: true, disableRunningText: false });
     expect(vi.mocked(writeJson)).toHaveBeenCalledWith(SETTINGS_FILE, {
       askBeforeClose: true,
+      disableRunningText: false,
     });
+  });
+});
+
+describe("DEFAULT_SETTINGS", () => {
+  it("has disableRunningText === false", () => {
+    expect(DEFAULT_SETTINGS.disableRunningText).toBe(false);
+  });
+});
+
+describe("isAppSettings backward-compat", () => {
+  it("accepts old-shape object lacking disableRunningText", () => {
+    expect(isAppSettings({ askBeforeClose: true })).toBe(true);
+  });
+
+  it("accepts old-shape object lacking disableRunningText (false variant)", () => {
+    expect(isAppSettings({ askBeforeClose: false })).toBe(true);
   });
 });

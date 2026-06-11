@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { TitleBar } from "@/components/TitleBar";
@@ -41,7 +42,6 @@ import { useFileState } from "@/hooks/useFileState";
 import { pickFile, saveEdits } from "@/lib/tauri-api";
 import { readText } from "tauri-plugin-clipboard-api";
 import { cellText, coerceInput, isWritableFormat, type CellModel, type CellValue } from "@/lib/types";
-import { flags } from "@/lib/feature-flags";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   copyFilePath,
@@ -171,10 +171,9 @@ function App() {
 
   const editBuffer = useEditBuffer();
   const history = useUndoHistory();
-  const undoOn = flags.undo;
   const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
   const activeSheetName = wb.activeSheet?.name ?? "";
-  const editEnabled = flags.inlineEdit && isWritableFormat(wb.workbook?.path);
+  const editEnabled = isWritableFormat(wb.workbook?.path);
   const getEditedCell = useCallback(
     (row: number, col: number) => editBuffer.getEdit(activeSheetName, row, col),
     [editBuffer, activeSheetName],
@@ -184,6 +183,7 @@ function App() {
 
   const ws = useWorkspaces();
   const appSettings = useSettings();
+  const { t } = useTranslation();
   const [workspacePanelOpen, setWorkspacePanelOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addToWsState, setAddToWsState] = useState<AddToWorkspaceState>(null);
@@ -235,13 +235,11 @@ function App() {
         wb.activeSheet?.rows[row]?.[col] ?? { v: { t: "Empty" } };
       const after: CellModel = { v: coerceInput(raw) };
       editBuffer.setEdit(sheet, row, col, after.v);
-      if (undoOn) {
-        history.push({
-          label: "Edit cell",
-          undo: () => restoreCell(sheet, row, col, before),
-          redo: () => restoreCell(sheet, row, col, after),
-        });
-      }
+      history.push({
+        label: "Edit cell",
+        undo: () => restoreCell(sheet, row, col, before),
+        redo: () => restoreCell(sheet, row, col, after),
+      });
       setEditingCell(null);
       if (nav === "none") return;
       const maxRow = (wb.activeSheet?.rows.length ?? 1) - 1;
@@ -257,7 +255,7 @@ function App() {
         nonce: Date.now(),
       });
     },
-    [editBuffer, activeSheetName, wb.activeSheet, undoOn, history, restoreCell],
+    [editBuffer, activeSheetName, wb.activeSheet, history, restoreCell],
   );
 
   const handleEditCancel = useCallback(() => {
@@ -272,15 +270,15 @@ function App() {
       // overlay buffer — otherwise display falls back to the stale parsed rows.
       await wb.reloadActiveSheet();
       editBuffer.clearAll();
-      toast.success("Saved");
+      toast.success(t("app.saved"));
     } catch (e) {
       const msg = typeof e === "string" ? e : (e as Error).message ?? String(e);
       const friendly = msg.includes("unsupported_format")
-        ? "This file type can't be saved. Save as .xlsx."
+        ? t("app.unsupportedSaveFormat")
         : msg;
       toast.error(friendly);
     }
-  }, [editBuffer, wb]);
+  }, [editBuffer, wb, t]);
 
   const open = useCallback(
     async (path: string) => {
@@ -625,14 +623,14 @@ function App() {
       zoomPersistTimerRef.current = null;
       fileState.setZoom(clamped);
     }, 250);
-    if (undoOn && clamped !== before) {
+    if (clamped !== before) {
       history.push({
         label: "Zoom",
         undo: () => applyZoomImmediate(before),
         redo: () => applyZoomImmediate(clamped),
       });
     }
-  }, [fileState, undoOn, history, applyZoomImmediate]);
+  }, [fileState, history, applyZoomImmediate]);
 
   const handleZoomIn = useCallback(() => {
     handleZoomChange(stepZoom(zoomLiveRef.current, 1));
@@ -668,7 +666,7 @@ function App() {
         if (shouldZoomOut(e))   { e.preventDefault(); handleZoomOut(); return; }
         if (shouldZoomReset(e)) { e.preventDefault(); handleZoomReset(); return; }
       }
-      if (undoOn && wb.workbook && !editingCell) {
+      if (wb.workbook && !editingCell) {
         const tag = (e.target as HTMLElement | null)?.tagName;
         const inEditable = tag === "INPUT" || tag === "TEXTAREA" || ((e.target as HTMLElement | null)?.isContentEditable ?? false);
         if (!inEditable) {
@@ -697,19 +695,18 @@ function App() {
         } else {
           toast.message("Select a range (≥2 cols × ≥2 rows) first");
         }
-      } else if (k === "s" && !e.shiftKey && flags.inlineEdit) {
+      } else if (k === "s" && !e.shiftKey) {
         e.preventDefault();
         void handleSave();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset, handleSave, undoOn, history, editingCell]);
+  }, [openPalette, openFind, summaryEligible, summaryPanelOpen, handleClose, handlePick, wb.workbook, handleZoomIn, handleZoomOut, handleZoomReset, handleSave, history, editingCell]);
 
   const allowCloseRef = useRef(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   useEffect(() => {
-    if (!flags.inlineEdit) return;
     let unlisten: (() => void) | undefined;
     let active = true;
     getCurrentWindow().onCloseRequested((ev) => {
@@ -855,20 +852,18 @@ function App() {
       const sheet = activeSheetName;
       const before = headerRows[sheet] ?? null;
       fileState.setHeader(sheet, row);
-      if (undoOn) {
-        history.push({
-          label: "Mark header",
-          undo: () => fileState.setHeader(sheet, before),
-          redo: () => fileState.setHeader(sheet, row),
-        });
-      }
+      history.push({
+        label: "Mark header",
+        undo: () => fileState.setHeader(sheet, before),
+        redo: () => fileState.setHeader(sheet, row),
+      });
       toast.success(
         row === null
           ? "Header row unmarked"
           : `Row ${row + 1} marked as header`,
       );
     },
-    [activeSheetName, fileState, headerRows, undoOn, history],
+    [activeSheetName, fileState, headerRows, history],
   );
 
   const handleColumnFilterChange = useCallback(
@@ -889,18 +884,16 @@ function App() {
 
       setFilters((prev) => ({ ...prev, [sheetName]: nextSheetFilters }));
 
-      if (undoOn) {
-        history.push({
-          label: "Filter",
-          undo: () => setFilters((prev) => {
-            const n = { ...prev };
-            if (before === undefined) delete n[sheetName];
-            else n[sheetName] = before;
-            return n;
-          }),
-          redo: () => setFilters((prev) => ({ ...prev, [sheetName]: nextSheetFilters })),
-        });
-      }
+      history.push({
+        label: "Filter",
+        undo: () => setFilters((prev) => {
+          const n = { ...prev };
+          if (before === undefined) delete n[sheetName];
+          else n[sheetName] = before;
+          return n;
+        }),
+        redo: () => setFilters((prev) => ({ ...prev, [sheetName]: nextSheetFilters })),
+      });
 
       if (!wasActive && nowActive && sheet) {
         const hasMerges = buildMergedRowSet(sheet.merges).size > 0;
@@ -912,7 +905,7 @@ function App() {
         }
       }
     },
-    [activeSheetName, filters, wb.activeSheet, headerRow, undoOn, history],
+    [activeSheetName, filters, wb.activeSheet, headerRow, history],
   );
 
   // ── Resize: overrides + stale-prompt state ────────────────────────────────
@@ -1013,17 +1006,15 @@ function App() {
       const sh = activeSheet;
       const before = fileState.getColOverrides(sheet, sh)?.[col];
       fileState.setColWidth(sheet, sh, col, width);
-      if (undoOn) {
-        history.push({
-          label: "Resize column",
-          undo: () => before === undefined
-            ? fileState.resetColWidth(sheet, col)
-            : fileState.setColWidth(sheet, sh, col, before),
-          redo: () => fileState.setColWidth(sheet, sh, col, width),
-        });
-      }
+      history.push({
+        label: "Resize column",
+        undo: () => before === undefined
+          ? fileState.resetColWidth(sheet, col)
+          : fileState.setColWidth(sheet, sh, col, before),
+        redo: () => fileState.setColWidth(sheet, sh, col, width),
+      });
     },
-    [activeSheetName, activeSheet, fileState, undoOn, history],
+    [activeSheetName, activeSheet, fileState, history],
   );
 
   const handleRowResize = useCallback(
@@ -1033,17 +1024,15 @@ function App() {
       const sh = activeSheet;
       const before = fileState.getRowOverrides(sheet, sh)?.[row];
       fileState.setRowHeight(sheet, sh, row, height);
-      if (undoOn) {
-        history.push({
-          label: "Resize row",
-          undo: () => before === undefined
-            ? fileState.resetRowHeight(sheet, row)
-            : fileState.setRowHeight(sheet, sh, row, before),
-          redo: () => fileState.setRowHeight(sheet, sh, row, height),
-        });
-      }
+      history.push({
+        label: "Resize row",
+        undo: () => before === undefined
+          ? fileState.resetRowHeight(sheet, row)
+          : fileState.setRowHeight(sheet, sh, row, before),
+        redo: () => fileState.setRowHeight(sheet, sh, row, height),
+      });
     },
-    [activeSheetName, activeSheet, fileState, undoOn, history],
+    [activeSheetName, activeSheet, fileState, history],
   );
 
   const handleColReset = useCallback(
@@ -1279,7 +1268,7 @@ function App() {
         }
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") {
-          toast.message("Cancelled");
+          toast.message(t("app.cancelled"));
         } else {
           toast.error("Copy failed", { description: e instanceof Error ? e.message : String(e) });
         }
@@ -1326,7 +1315,7 @@ function App() {
       setQueryProgress(null);
       setQueryModal(null);
     },
-    [],
+    [t],
   );
 
   const handleCopyQuery = useCallback(
@@ -1623,6 +1612,7 @@ function App() {
         onDragOut={handleDragOut}
         dirty={editBuffer.isDirty}
         onToggleWorkspace={() => setWorkspacePanelOpen(o => !o)}
+        disableRunningText={appSettings.settings.disableRunningText}
       />
 
       {wb.loading && (
@@ -1695,6 +1685,7 @@ function App() {
                 onRemoveFile={ws.removeFile}
                 onOpenFile={(p) => { open(p); }}
                 onBrowseAdd={handleBrowseAdd}
+                disableRunningText={appSettings.settings.disableRunningText}
               />
             </ResizablePanel>
           </>
@@ -1761,22 +1752,21 @@ function App() {
       >
         <DialogContent className="sm:max-w-sm" data-testid="close-confirm-dialog">
           <DialogHeader>
-            <DialogTitle>Unsaved changes</DialogTitle>
+            <DialogTitle>{t("app.confirmCloseTitle")}</DialogTitle>
             <DialogDescription>
-              You have unsaved edits. Close without saving? Your changes will be
-              lost.
+              {t("app.confirmCloseDesc")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCloseConfirmOpen(false)}>
-              Cancel
+              {t("app.confirmCloseCancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmClose}
               data-testid="close-confirm-btn"
             >
-              Close without saving
+              {t("app.confirmCloseConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1786,6 +1776,7 @@ function App() {
         onOpenChange={setSettingsOpen}
         settings={appSettings.settings}
         onChangeAskBeforeClose={appSettings.setAskBeforeClose}
+        onChangeDisableRunningText={appSettings.setDisableRunningText}
       />
       <AddToWorkspaceDialog
         state={addToWsState}

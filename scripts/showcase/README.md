@@ -130,6 +130,4 @@ after placement.
   not invoke it, and it is not wired into CI.
 - The showcase app is built **without** the `VITE_E2E` or `webdriver` flags — it is the
   real, non-instrumented binary.
-- Feature flags used at build time: `VITE_FF_MULTI_LANG=true VITE_FF_INLINE_EDIT=true
-  VITE_FF_UNDO=true` (required for the full feature reel).
 - Recordings are gitignored (`scripts/showcase/recordings/*.mov`).

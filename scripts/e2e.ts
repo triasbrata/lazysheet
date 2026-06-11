@@ -100,7 +100,7 @@ log("Generating e2e fixtures");
 await $`bun run e2e:fixtures`.cwd(ROOT);
 
 log("Building instrumented frontend (VITE_E2E=true)");
-await $`bun run build:web`.cwd(ROOT).env({ ...process.env, VITE_E2E: "true", VITE_FF_MULTI_LANG: "true" });
+await $`bun run build:web`.cwd(ROOT).env({ ...process.env, VITE_E2E: "true" });
 
 log("Building debug app (--features webdriver)");
 await $`cargo build --manifest-path src-tauri/Cargo.toml --features webdriver`

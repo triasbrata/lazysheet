@@ -1,12 +1,31 @@
 {
   "common": { "appName": "LazySheet", "openingEllipsis": "Abriendo…", "ok": "OK", "cancel": "Cancelar", "truncatedSuffix": " (truncado)" },
   "welcome": { "title": "Abrir una hoja de cálculo", "dropHint": "Suelta un archivo aquí o explora para abrir", "extensions": ".xlsx · .xlsm · .xls · .csv · .tsv", "openFile": "Abrir archivo", "recent": "Recientes" },
-  "titlebar": { "dragFileOut": "Arrastrar archivo fuera", "fileActions": "Acciones de archivo", "fileActionsLabel": "Acciones de archivo", "copyFile": "Copiar archivo", "copyFilePath": "Copiar ruta del archivo", "searchCommands": "Buscar comandos…", "openCommandCenter": "Abrir centro de comandos ({{shortcut}})", "minimize": "Minimizar", "maximize": "Maximizar", "restore": "Restaurar", "closeWindow": "Cerrar" },
+  "titlebar": { "dragFileOut": "Arrastrar archivo fuera", "fileActions": "Acciones de archivo", "fileActionsLabel": "Acciones de archivo", "copyFile": "Copiar archivo", "copyFilePath": "Copiar ruta del archivo", "searchCommands": "Buscar comandos…", "openCommandCenter": "Abrir centro de comandos ({{shortcut}})", "minimize": "Minimizar", "maximize": "Maximizar", "restore": "Restaurar", "closeWindow": "Cerrar", "unsavedChanges": "Cambios sin guardar", "closeFile": "Cerrar archivo" },
   "theme": { "toggle": "Cambiar tema", "light": "Claro", "dark": "Oscuro", "system": "Sistema", "customize": "Paletas de colores" },
   "language": { "toggle": "Cambiar idioma" },
   "statusbar": { "selectionSize_one": "{{rows}}F × {{cols}}C · {{count}} celda", "selectionSize_other": "{{rows}}F × {{cols}}C · {{count}} celdas", "activeCell": "Celda activa", "analyze": "Analizar", "summaryTitle": "Resumen por grupos ({{shortcut}})", "zoomIn": "Acercar", "zoomOut": "Alejar", "zoomReset": "Restablecer zoom al 100%" },
   "command": { "paletteTitle": "Paleta de comandos", "searchRecent": "Buscar archivos recientes…", "typeCommand": "Escribe un comando…", "cellRefPlaceholder": "Referencia de celda (p. ej. A1, B12, AB45)", "noRecent": "No hay archivos recientes.", "noMatch": "Ningún comando coincide.", "gotoHelp": "Pulsa Enter para saltar. Esc para volver.", "sectionCommands": "Comandos", "sectionRecent": "Archivos recientes", "openFile": "Abrir archivo…", "openFileSub": "Explorar (.xlsx, .csv…)", "goto": "Ir a", "gotoSub": "Saltar a celda (p. ej. A1, B12)", "summarize": "Resumir selección", "summarizeSub": "Agrupar por", "copyFile": "Copiar archivo", "copyFileSub": "Copiar .xlsx al portapapeles", "copyFilePath": "Copiar ruta del archivo", "copyFilePathSub": "Copiar ruta como texto", "checkUpdates": "Buscar actualizaciones", "openWorkspace": "Abrir panel de espacios de trabajo", "openSettings": "Abrir configuración", "changeTheme": "Cambiar tema", "changeThemeSub": "Cambiar paleta de colores", "searchTheme": "Buscar temas…", "sectionTheme": "Tema" },
   "find": { "placeholder": "Buscar en la hoja…", "ariaFind": "Buscar en la hoja", "ariaPrev": "Coincidencia anterior", "ariaNext": "Coincidencia siguiente", "ariaClose": "Cerrar búsqueda", "position": "{{current}} de {{total}}", "matches_one": "{{count}} coincidencia", "matches_other": "{{count}} coincidencias", "noMatches": "Sin coincidencias" },
+  "query": {
+    "title": "Copiar como {{kind}}",
+    "description": "Configura las opciones de la consulta SQL.",
+    "tableName": "Nombre de la tabla",
+    "dialect": "Dialecto SQL",
+    "keyFields": "Campo(s) clave",
+    "keyPlaceholder": "Selecciona campo(s) clave…",
+    "dupWarning": "La clave seleccionada tiene valores duplicados en la selección: puede afectar a varias filas.",
+    "needNonKey": "Se necesita al menos una columna que no sea clave.",
+    "ansiNoUpsert": "ANSI SQL no admite upsert",
+    "ansiUnsupportedSuffix": "(no compatible con upsert)",
+    "generating": "Generando… {{done}}/{{total}} filas ({{pct}}%)",
+    "copy": "Copiar",
+    "close": "Cerrar",
+    "errEnterTable": "Introduce un nombre de tabla",
+    "errInvalidTable": "Nombre de tabla no válido",
+    "errPickKey": "Elige al menos un campo clave",
+    "errNeedNonKey": "Se necesita al menos una columna que no sea clave"
+  },
   "app": {
     "failedToOpen": "No se pudo abrir el archivo",
     "selectRangeFirst": "Selecciona un rango (≥2 columnas × ≥2 filas) primero",
@@ -32,7 +51,14 @@
     "noSheetOpen": "Ninguna hoja abierta",
     "invalidRef": "Referencia de celda no válida",
     "rowOutOfRange": "Fila fuera de rango (máx {{max}})",
-    "colOutOfRange": "Columna fuera de rango (máx {{max}})"
+    "colOutOfRange": "Columna fuera de rango (máx {{max}})",
+    "saved": "Guardado",
+    "cancelled": "Cancelado",
+    "unsupportedSaveFormat": "Este tipo de archivo no se puede guardar. Guárdalo como .xlsx.",
+    "confirmCloseTitle": "Cambios sin guardar",
+    "confirmCloseDesc": "Tienes ediciones sin guardar. ¿Cerrar sin guardar? Se perderán los cambios.",
+    "confirmCloseCancel": "Cancelar",
+    "confirmCloseConfirm": "Cerrar sin guardar"
   },
   "copyFormatLabels": { "inline": "markdown", "title": "título markdown", "table": "tabla markdown", "ascii": "tabla ASCII", "csv": "CSV", "tsv": "TSV", "plain": "texto sin formato" },
   "resize": {
@@ -170,6 +196,11 @@
     "askBeforeCloseDesc": "Al cerrar un archivo que no está en ningún espacio de trabajo, preguntar a cuál agregarlo.",
     "theme": "Tema",
     "themeDesc": "Paleta de colores de la app",
+    "themeDefaultGroup": "Predeterminado",
+    "language": "Idioma",
+    "languageDesc": "Idioma de la interfaz de la app",
+    "runningText": "Desactivar texto en movimiento",
+    "runningTextDesc": "Muestra los nombres largos recortados en lugar de desplazarse.",
     "done": "Listo"
   },
   "addToWs": {

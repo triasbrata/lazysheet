@@ -334,3 +334,30 @@ describe("WorkspacePanel — add file dropdown", () => {
   });
 });
 
+// ─── disableRunningText prop ──────────────────────────────────────────────────
+
+describe("WorkspacePanel — disableRunningText", () => {
+  it("renders file names in static (non-animated) branch when disableRunningText=true", () => {
+    const { container } = renderWithProviders(
+      <WorkspacePanel {...makeProps({ disableRunningText: true })} />,
+    );
+
+    // File names are visible (static truncate branch renders)
+    expect(screen.getByText("foo.xlsx")).toBeInTheDocument();
+    expect(screen.getByText("bar.csv")).toBeInTheDocument();
+
+    // No animate-marquee class anywhere in the file list
+    expect(container.querySelector(".animate-marquee")).toBeNull();
+  });
+
+  it("also renders file names without animate-marquee when disableRunningText is omitted (jsdom has no overflow)", () => {
+    const { container } = renderWithProviders(
+      <WorkspacePanel {...makeProps()} />,
+    );
+
+    expect(screen.getByText("foo.xlsx")).toBeInTheDocument();
+    // In jsdom, scrollWidth === clientWidth === 0 so overflow never triggers
+    expect(container.querySelector(".animate-marquee")).toBeNull();
+  });
+});
+

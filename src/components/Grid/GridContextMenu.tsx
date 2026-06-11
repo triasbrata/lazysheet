@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
 import {
   ContextMenuContent,
@@ -18,16 +19,19 @@ const QUERY_KINDS: { kind: QueryKind; label: string }[] = [
   { kind: "upsert", label: "UPSERT" },
 ];
 
-const MARKDOWN_FORMATS: { fmt: CopyFormat; label: string }[] = [
-  { fmt: "inline", label: "Inline" },
-  { fmt: "title", label: "Title" },
-  { fmt: "table", label: "Table" },
+// Store translation keys; labels are resolved via t() at render time.
+// The fmt VALUE strings are identifiers used for copy logic / default-format
+// persistence and must remain unchanged.
+const MARKDOWN_FORMATS: { fmt: CopyFormat; labelKey: string }[] = [
+  { fmt: "inline", labelKey: "contextMenu.fmtInline" },
+  { fmt: "title", labelKey: "contextMenu.fmtTitle" },
+  { fmt: "table", labelKey: "contextMenu.fmtTable" },
 ];
-const COPY_LEAVES: { fmt: CopyFormat; label: string }[] = [
-  { fmt: "csv", label: "CSV" },
-  { fmt: "tsv", label: "TSV" },
-  { fmt: "ascii", label: "ASCII Table" },
-  { fmt: "plain", label: "Plain text" },
+const COPY_LEAVES: { fmt: CopyFormat; labelKey: string }[] = [
+  { fmt: "csv", labelKey: "contextMenu.fmtCsv" },
+  { fmt: "tsv", labelKey: "contextMenu.fmtTsv" },
+  { fmt: "ascii", labelKey: "contextMenu.fmtAscii" },
+  { fmt: "plain", labelKey: "contextMenu.fmtPlain" },
 ];
 
 export type GridContextMenuTarget =
@@ -94,6 +98,8 @@ export function GridContextMenuContent({
   canCopyQuery,
   onCopyQuery,
 }: GridContextMenuContentProps) {
+  const { t } = useTranslation();
+
   // Tracks whether the pointer that triggered onSelect held Cmd/Ctrl. Radix's
   // onSelect event does not expose modifier keys, so we stash it on pointerdown.
   const modRef = useRef(false);
@@ -106,8 +112,8 @@ export function GridContextMenuContent({
   if (ctx.type === "col") {
     const colLabel =
       multiColCount && multiColCount > 1
-        ? `Autofit ${multiColCount} columns`
-        : "Autofit column width";
+        ? t("contextMenu.autofitColumnsMulti", { count: multiColCount })
+        : t("contextMenu.autofitColumnWidth");
     return (
       <ContextMenuContent data-testid="context-menu">
         {onAutofitCol && (
@@ -117,7 +123,7 @@ export function GridContextMenuContent({
         )}
         {onOpenColWidthDialog && (
           <ContextMenuItem onSelect={() => onOpenColWidthDialog()}>
-            Column width…
+            {t("contextMenu.columnWidth")}
           </ContextMenuItem>
         )}
         {(onAutofitCol || onOpenColWidthDialog) && <ContextMenuSeparator />}
@@ -125,14 +131,14 @@ export function GridContextMenuContent({
           disabled={!hasColOverride || !onResetColWidth}
           onSelect={() => onResetColWidth?.()}
         >
-          Reset width
+          {t("contextMenu.resetWidth")}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
           disabled={!hasAnyOverride || !onResetAllDimensions}
           onSelect={() => onResetAllDimensions?.()}
         >
-          Reset all resized dimensions
+          {t("contextMenu.resetAllDimensions")}
         </ContextMenuItem>
       </ContextMenuContent>
     );
@@ -142,8 +148,8 @@ export function GridContextMenuContent({
   const isHeader = isRow && headerRow === ctx.row;
   const rowLabel =
     multiRowCount && multiRowCount > 1
-      ? `Autofit ${multiRowCount} rows`
-      : "Autofit row height";
+      ? t("contextMenu.autofitRowsMulti", { count: multiRowCount })
+      : t("contextMenu.autofitRowHeight");
 
   function renderCopyItem(fmt: CopyFormat, label: string) {
     const isDefault = defaultCopyFormat === fmt;
@@ -151,7 +157,7 @@ export function GridContextMenuContent({
       <ContextMenuItem
         key={fmt}
         data-testid={`ctx-copy-${fmt}`}
-        title="Click to copy · ⌘/Ctrl-click or star to set default"
+        title={t("contextMenu.copyHint")}
         onPointerDown={(e) => {
           modRef.current = e.metaKey || e.ctrlKey;
         }}
@@ -181,10 +187,10 @@ export function GridContextMenuContent({
           role="button"
           aria-label={
             isDefault
-              ? `${label} is the default copy format`
-              : `Set ${label} as the default copy format`
+              ? t("contextMenu.isDefaultFormat", { label })
+              : t("contextMenu.setAsDefaultFormat", { label })
           }
-          title={isDefault ? "Default copy format" : "Set as default"}
+          title={isDefault ? t("contextMenu.defaultCopyFormat") : t("contextMenu.setAsDefault")}
           onPointerDown={() => {
             starRef.current = true;
           }}
@@ -209,14 +215,14 @@ export function GridContextMenuContent({
           data-testid="ctx-mark-header"
           onSelect={() => onMarkHeader(isHeader ? null : ctx.row)}
         >
-          {isHeader ? "Unmark as header" : "Mark as header"}
+          {isHeader ? t("contextMenu.unmarkAsHeader") : t("contextMenu.markAsHeader")}
         </ContextMenuItem>
       )}
       {isRow && canCopy && <ContextMenuSeparator />}
       {ctx.type === "cell" && canCopyFormula && (
         <>
           <ContextMenuItem onSelect={onCopyFormula}>
-            Copy Function
+            {t("contextMenu.copyFunction")}
             <ContextMenuShortcut>⌘⇧C</ContextMenuShortcut>
           </ContextMenuItem>
           <ContextMenuSeparator />
@@ -225,14 +231,14 @@ export function GridContextMenuContent({
       {ctx.type === "cell" && canSummarize && onSummarize && (
         <>
           <ContextMenuItem data-testid="ctx-summarize" onSelect={() => onSummarize()}>
-            Summarize range…
+            {t("contextMenu.summarizeRange")}
           </ContextMenuItem>
           {canCopy && <ContextMenuSeparator />}
         </>
       )}
       {canCopy && (
         <ContextMenuSub>
-          <ContextMenuSubTrigger data-testid="ctx-copy">Copy</ContextMenuSubTrigger>
+          <ContextMenuSubTrigger data-testid="ctx-copy">{t("contextMenu.copy")}</ContextMenuSubTrigger>
           <ContextMenuSubContent
             // Capture-phase reset: runs before any item's bubble-phase
             // onPointerDown, so a stale star press (released off-item) can never
@@ -242,18 +248,18 @@ export function GridContextMenuContent({
             }}
           >
             <ContextMenuSub>
-              <ContextMenuSubTrigger data-testid="ctx-copy-markdown">Markdown</ContextMenuSubTrigger>
+              <ContextMenuSubTrigger data-testid="ctx-copy-markdown">{t("contextMenu.markdown")}</ContextMenuSubTrigger>
               <ContextMenuSubContent
                 onPointerDownCapture={() => {
                   starRef.current = false;
                 }}
               >
-                {MARKDOWN_FORMATS.map(({ fmt, label }) =>
-                  renderCopyItem(fmt, label)
+                {MARKDOWN_FORMATS.map(({ fmt, labelKey }) =>
+                  renderCopyItem(fmt, t(labelKey))
                 )}
               </ContextMenuSubContent>
             </ContextMenuSub>
-            {COPY_LEAVES.map(({ fmt, label }) => renderCopyItem(fmt, label))}
+            {COPY_LEAVES.map(({ fmt, labelKey }) => renderCopyItem(fmt, t(labelKey)))}
           </ContextMenuSubContent>
         </ContextMenuSub>
       )}
@@ -279,16 +285,16 @@ export function GridContextMenuContent({
           <>
             <ContextMenuSeparator />
             <ContextMenuSub>
-              <ContextMenuSubTrigger data-testid="ctx-resize">Resize</ContextMenuSubTrigger>
+              <ContextMenuSubTrigger data-testid="ctx-resize">{t("contextMenu.resize")}</ContextMenuSubTrigger>
               <ContextMenuSubContent>
                 {onAutofitCol && (
                   <ContextMenuItem onSelect={() => onAutofitCol()}>
-                    Autofit column width
+                    {t("contextMenu.autofitColumnWidth")}
                   </ContextMenuItem>
                 )}
                 {onAutofitRow && (
                   <ContextMenuItem onSelect={() => onAutofitRow()}>
-                    Autofit row height
+                    {t("contextMenu.autofitRowHeight")}
                   </ContextMenuItem>
                 )}
                 {(onAutofitCol || onAutofitRow) &&
@@ -297,12 +303,12 @@ export function GridContextMenuContent({
                   )}
                 {onOpenColWidthDialog && (
                   <ContextMenuItem data-testid="ctx-col-width" onSelect={() => onOpenColWidthDialog()}>
-                    Column width…
+                    {t("contextMenu.columnWidth")}
                   </ContextMenuItem>
                 )}
                 {onOpenRowHeightDialog && (
                   <ContextMenuItem onSelect={() => onOpenRowHeightDialog()}>
-                    Row height…
+                    {t("contextMenu.rowHeight")}
                   </ContextMenuItem>
                 )}
               </ContextMenuSubContent>
@@ -320,7 +326,7 @@ export function GridContextMenuContent({
           )}
           {onOpenRowHeightDialog && (
             <ContextMenuItem onSelect={() => onOpenRowHeightDialog()}>
-              Row height…
+              {t("contextMenu.rowHeight")}
             </ContextMenuItem>
           )}
           {(onAutofitRow || onOpenRowHeightDialog) && <ContextMenuSeparator />}
@@ -328,13 +334,13 @@ export function GridContextMenuContent({
             disabled={!hasRowOverride || !onResetRowHeight}
             onSelect={() => onResetRowHeight?.()}
           >
-            Reset height
+            {t("contextMenu.resetHeight")}
           </ContextMenuItem>
           <ContextMenuItem
             disabled={!hasAnyOverride || !onResetAllDimensions}
             onSelect={() => onResetAllDimensions?.()}
           >
-            Reset all resized dimensions
+            {t("contextMenu.resetAllDimensions")}
           </ContextMenuItem>
         </>
       )}
