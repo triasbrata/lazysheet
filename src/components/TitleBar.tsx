@@ -1,6 +1,7 @@
 import { X, Search, FileSpreadsheet, Files, ClipboardCopy, PanelRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Marquee } from "@/components/Marquee";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +53,7 @@ export function TitleBar({
     >
       <div
         data-tauri-drag-region
-        className="flex flex-1 items-center gap-1.5 text-sm min-w-0"
+        className="flex min-w-0 flex-1 items-center gap-1.5 text-sm"
       >
         {filePath && (
           <button
@@ -69,18 +70,17 @@ export function TitleBar({
           </button>
         )}
 
-        <span
-          data-tauri-drag-region
+        <Marquee
+          text={fileName ?? t("common.appName")}
           data-testid="titlebar-filename"
-          className="truncate font-medium text-foreground/90"
-        >
-          {fileName ?? t("common.appName")}
-        </span>
+          data-tauri-drag-region
+          className="min-w-0 font-medium text-foreground/90"
+        />
 
         {dirty && (
           <span
             data-testid="titlebar-dirty"
-            className="text-muted-foreground"
+            className="shrink-0 text-muted-foreground"
             title="Unsaved changes"
           >
             •
@@ -110,20 +110,22 @@ export function TitleBar({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onOpenCommand}
-        title={t("titlebar.openCommandCenter", { shortcut: cmdShortcut })}
-        className="absolute left-1/2 top-1/2 flex w-full max-w-xs -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-      >
-        <Search className="h-3.5 w-3.5 shrink-0" />
-        <span className="flex-1 truncate text-left">{t("titlebar.searchCommands")}</span>
-        <kbd className="pointer-events-none hidden shrink-0 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
-          {cmdShortcut}
-        </kbd>
-      </button>
+      <div data-tauri-drag-region className="flex min-w-0 shrink justify-center">
+        <button
+          type="button"
+          onClick={onOpenCommand}
+          title={t("titlebar.openCommandCenter", { shortcut: cmdShortcut })}
+          className="flex w-80 min-w-0 max-w-[40vw] items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1 truncate text-left">{t("titlebar.searchCommands")}</span>
+          <kbd className="pointer-events-none hidden shrink-0 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
+            {cmdShortcut}
+          </kbd>
+        </button>
+      </div>
 
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
         {flags.multiLang && <LanguageToggle />}
         {onToggleWorkspace && (
           <Button

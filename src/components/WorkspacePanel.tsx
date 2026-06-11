@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Plus, Check, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Marquee } from "@/components/Marquee";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -271,11 +272,11 @@ export function WorkspacePanel(props: WorkspacePanelProps) {
                   >
                     <button
                       type="button"
-                      className="flex-1 truncate text-left"
+                      className="flex min-w-0 flex-1 text-left"
                       title={f.path}
                       onClick={() => props.onOpenFile(f.path)}
                     >
-                      {f.fileName}
+                      <Marquee text={f.fileName} className="block w-full" />
                     </button>
                     <Button
                       type="button"

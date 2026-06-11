@@ -42,7 +42,7 @@ describe("StatusBar — no sheet or no selection", () => {
       <StatusBar sheet={null} selection={null} />
     );
     // shows the dash placeholder
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByTestId("statusbar-cell-ref")).toHaveTextContent("—");
   });
 
   it("renders minimal bar when sheet provided but selection is null", () => {
@@ -50,7 +50,34 @@ describe("StatusBar — no sheet or no selection", () => {
     renderWithProviders(
       <StatusBar sheet={sheet} selection={null} />
     );
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByTestId("statusbar-cell-ref")).toHaveTextContent("—");
+  });
+
+  it("renders zoom controls when sheet has selection=null but zoom props are supplied", () => {
+    const sheet = makeSheet([]);
+    const onZoomIn = vi.fn();
+    const onZoomOut = vi.fn();
+    const onZoomReset = vi.fn();
+    renderWithProviders(
+      <StatusBar
+        sheet={sheet}
+        selection={null}
+        zoom={1}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onZoomReset={onZoomReset}
+      />
+    );
+    expect(screen.getByTestId("statusbar-zoom-label")).toBeInTheDocument();
+    expect(screen.getByTestId("statusbar-cell-ref")).toHaveTextContent("—");
+  });
+
+  it("does not render zoom controls when zoom props are absent (sheet=null, selection=null)", () => {
+    renderWithProviders(
+      <StatusBar sheet={null} selection={null} />
+    );
+    expect(screen.getByTestId("statusbar-cell-ref")).toHaveTextContent("—");
+    expect(screen.queryByTestId("statusbar-zoom-label")).toBeNull();
   });
 });
 

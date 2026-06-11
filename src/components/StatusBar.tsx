@@ -56,57 +56,48 @@ export function StatusBar({
     return single ? null : computeSelectionStats(sheet, bounds);
   }, [sheet, selection]);
 
-  if (!sheet || !selection) {
-    return (
-      <div
-        data-tauri-drag-region
-        className="flex h-6 shrink-0 items-center gap-3 border-t border-border bg-muted/30 px-3 text-[11px] text-muted-foreground"
-      >
-        <span
-          data-tauri-drag-region
-          className="min-w-[3rem] font-mono font-medium tabular-nums text-foreground/80"
-        >
-          —
-        </span>
-        <span data-tauri-drag-region className="flex-1 truncate"></span>
-      </div>
-    );
-  }
-
-  const totalRows = sheet.rows.length;
-  const totalCols = sheet.max_col;
-  const base = selectionBounds(selection, totalRows, totalCols);
-  const merges = buildMergeInfo(sheet.merges);
-  const bounds = expandBoundsForMerges(base, merges);
-
-  const isSingle =
-    bounds.r1 === bounds.r2 &&
-    bounds.c1 === bounds.c2 &&
-    selection.mode === "cell";
-
-  const ref = formatSelectionRef(selection, bounds);
-
-  let summary = "";
+  // Compute derived values only when sheet and selection are present.
+  let ref = "—";
+  let isSingle = false;
   let preview = "";
-  if (isSingle) {
-    const cell = sheet.rows[bounds.r1]?.[bounds.c1];
-    const value = cell ? cellText(cell) : "";
-    preview =
-      value.length > PREVIEW_MAX ? value.slice(0, PREVIEW_MAX) + "…" : value;
-  } else {
-    const rows = bounds.r2 - bounds.r1 + 1;
-    const cols = bounds.c2 - bounds.c1 + 1;
-    summary = t("statusbar.selectionSize", { rows, cols, count: rows * cols });
+  let summary = "";
+  let statsLabel: string | null = null;
+  let anchorLabel: string | null = null;
+
+  if (sheet && selection) {
+    const totalRows = sheet.rows.length;
+    const totalCols = sheet.max_col;
+    const base = selectionBounds(selection, totalRows, totalCols);
+    const merges = buildMergeInfo(sheet.merges);
+    const bounds = expandBoundsForMerges(base, merges);
+
+    isSingle =
+      bounds.r1 === bounds.r2 &&
+      bounds.c1 === bounds.c2 &&
+      selection.mode === "cell";
+
+    ref = formatSelectionRef(selection, bounds);
+
+    if (isSingle) {
+      const cell = sheet.rows[bounds.r1]?.[bounds.c1];
+      const value = cell ? cellText(cell) : "";
+      preview =
+        value.length > PREVIEW_MAX ? value.slice(0, PREVIEW_MAX) + "…" : value;
+    } else {
+      const rows = bounds.r2 - bounds.r1 + 1;
+      const cols = bounds.c2 - bounds.c1 + 1;
+      summary = t("statusbar.selectionSize", { rows, cols, count: rows * cols });
+    }
+
+    statsLabel = stats
+      ? `SUM: ${formatStatNumber(stats.sum)} · AVG: ${formatStatNumber(stats.avg)} · MIN: ${formatStatNumber(stats.min)} · MAX: ${formatStatNumber(stats.max)} · COUNT: ${stats.count}`
+      : null;
+
+    // Convenience anchor label — show the active cell coord when in a range.
+    anchorLabel = isSingle
+      ? null
+      : `${columnLetter(selection.anchor.col)}${selection.anchor.row + 1}`;
   }
-
-  const statsLabel = stats
-    ? `SUM: ${formatStatNumber(stats.sum)} · AVG: ${formatStatNumber(stats.avg)} · MIN: ${formatStatNumber(stats.min)} · MAX: ${formatStatNumber(stats.max)} · COUNT: ${stats.count}`
-    : null;
-
-  // Convenience anchor label — show the active cell coord when in a range.
-  const anchorLabel = isSingle
-    ? null
-    : `${columnLetter(selection.anchor.col)}${selection.anchor.row + 1}`;
 
   return (
     <div
