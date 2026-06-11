@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ModeToggle } from "@/components/mode-toggle";
+import { ThemePicker } from "@/components/theme-picker";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { flags } from "@/lib/feature-flags";
 import { getPlatform } from "@/lib/platform";
@@ -138,7 +138,7 @@ export function TitleBar({
             <PanelRight className="h-3.5 w-3.5" />
           </Button>
         )}
-        <ModeToggle />
+        <ThemePicker />
 
         {fileName && onClose && (
           <Button

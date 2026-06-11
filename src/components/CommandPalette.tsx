@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, PanelRight, Settings, Sigma } from "lucide-react";
+import { ArrowRight, ClipboardCopy, Crosshair, DownloadCloud, FileSpreadsheet, Files, FolderOpen, Palette, PanelRight, Settings, Sigma } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { RecentFile } from "@/hooks/useWorkbook";
+import { useTheme } from "@/components/theme-provider";
+import { THEME_PRESETS } from "@/lib/themes";
 
-export type PaletteMode = "root" | "goto";
+export type PaletteMode = "root" | "goto" | "theme";
 
 interface CommandItem {
   id: string;
@@ -63,6 +65,7 @@ export function CommandPalette({
   onOpenSettings,
 }: CommandPaletteProps) {
   const { t } = useTranslation();
+  const { theme, setTheme } = useTheme();
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -76,6 +79,14 @@ export function CommandPalette({
       queueMicrotask(() => inputRef.current?.focus());
     }
   }, [open, mode]);
+
+  const changeThemeItem: CommandItem = useMemo(() => ({
+    id: "change-theme",
+    label: t("command.changeTheme"),
+    subtitle: t("command.changeThemeSub"),
+    icon: Palette,
+    run: () => onModeChange("theme"),
+  }), [t, onModeChange]);
 
   const sections = useMemo<Section[]>(() => {
     const visibleRecents = recents.filter((r) => r.path !== currentPath);
@@ -142,8 +153,12 @@ export function CommandPalette({
       const sections: Section[] = [
         { title: t("command.sectionRecent"), items: [openFileItem, ...fileItems].filter(Boolean) as CommandItem[] },
       ];
-      if (globalItems.length > 0) {
-        sections.push({ title: t("command.sectionCommands"), items: globalItems });
+      // File-independent commands (workspace/settings) plus theme switching,
+      // reachable even on the Welcome screen. The "No recent files" empty
+      // message is shown separately via showNoRecentMessage.
+      const globals = [...globalItems, changeThemeItem];
+      if (globals.length > 0) {
+        sections.push({ title: t("command.sectionCommands"), items: globals });
       }
       return sections;
     }
@@ -212,6 +227,7 @@ export function CommandPalette({
             },
           ]
         : []),
+      changeThemeItem,
       ...globalItems,
     ];
 
@@ -234,39 +250,114 @@ export function CommandPalette({
     onCopyFile,
     onCopyFilePath,
     onCheckUpdates,
+    changeThemeItem,
     onOpenWorkspace,
     onOpenSettings,
   ]);
 
+  const themeItems = useMemo<CommandItem[]>(() => {
+    const palettePresets = THEME_PRESETS.filter((p) => p.palette);
+    const defaultPresets = THEME_PRESETS.filter((p) => !p.palette);
+
+    const items: CommandItem[] = [];
+
+    // light and dark first
+    for (const preset of defaultPresets) {
+      items.push({
+        id: `theme:${preset.id}`,
+        label: preset.labelKey ? t(preset.labelKey) : preset.id,
+        hint: theme === preset.id ? "✓" : undefined,
+        icon: Palette,
+        run: () => {
+          onOpenChange(false);
+          setTheme(preset.id);
+        },
+      });
+    }
+
+    // system entry
+    items.push({
+      id: "theme:system",
+      label: t("theme.system"),
+      hint: theme === "system" ? "✓" : undefined,
+      icon: Palette,
+      run: () => {
+        onOpenChange(false);
+        setTheme("system");
+      },
+    });
+
+    // palette presets
+    for (const preset of palettePresets) {
+      items.push({
+        id: `theme:${preset.id}`,
+        label: preset.name ?? preset.id,
+        subtitle: preset.base,
+        hint: theme === preset.id ? "✓" : undefined,
+        icon: Palette,
+        run: () => {
+          onOpenChange(false);
+          setTheme(preset.id);
+        },
+      });
+    }
+
+    return items;
+  }, [t, theme, setTheme, onOpenChange]);
+
   const filteredSections = useMemo<Section[]>(() => {
-    if (mode !== "root") return [];
-    const q = query.trim().toLowerCase();
-    return sections
-      .map((s) => ({
-        ...s,
-        items: q
-          ? s.items.filter(
-              (c) =>
-                c.label.toLowerCase().includes(q) ||
-                c.hint?.toLowerCase().includes(q) ||
-                c.subtitle?.toLowerCase().includes(q),
-            )
-          : s.items,
-      }))
-      .filter((s) => s.items.length > 0);
-  }, [sections, query, mode]);
+    if (mode === "root") {
+      const q = query.trim().toLowerCase();
+      return sections
+        .map((s) => ({
+          ...s,
+          items: q
+            ? s.items.filter(
+                (c) =>
+                  c.label.toLowerCase().includes(q) ||
+                  c.hint?.toLowerCase().includes(q) ||
+                  c.subtitle?.toLowerCase().includes(q),
+              )
+            : s.items,
+        }))
+        .filter((s) => s.items.length > 0);
+    }
+    if (mode === "theme") {
+      const q = query.trim().toLowerCase();
+      const filtered = q
+        ? themeItems.filter(
+            (c) =>
+              c.label.toLowerCase().includes(q) ||
+              c.hint?.toLowerCase().includes(q) ||
+              c.subtitle?.toLowerCase().includes(q),
+          )
+        : themeItems;
+      return filtered.length > 0
+        ? [{ title: t("command.sectionTheme"), items: filtered }]
+        : [];
+    }
+    return [];
+  }, [sections, themeItems, query, mode, t]);
 
   const flatItems = useMemo(
     () => filteredSections.flatMap((s) => s.items),
     [filteredSections],
   );
 
+  // True when hasFile=false and there are no real file items (recents + openFile).
+  // In this case we show the "No recent files." message alongside changeThemeItem.
+  const showNoRecentMessage = useMemo(() => {
+    if (mode !== "root" || hasFile) return false;
+    const visibleRecents = recents.filter((r) => r.path !== currentPath);
+    return visibleRecents.length === 0 && !onPickFile;
+  }, [mode, hasFile, recents, currentPath, onPickFile]);
+
   useEffect(() => {
     setActiveIdx(0);
   }, [query, mode]);
 
   const submit = () => {
-    if (mode === "root") {
+    if (mode === "root" || mode === "theme") {
       const cmd = flatItems[activeIdx];
       if (cmd) cmd.run();
       return;
@@ -292,7 +383,7 @@ export function CommandPalette({
       onOpenChange(false);
       return;
     }
-    if (mode === "root") {
+    if (mode === "root" || mode === "theme") {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setActiveIdx((i) => Math.min(i + 1, flatItems.length - 1));
@@ -313,7 +404,56 @@ export function CommandPalette({
   const placeholder =
     mode === "root"
       ? (!hasFile ? t("command.searchRecent") : t("command.typeCommand"))
-      : t("command.cellRefPlaceholder");
+      : mode === "theme"
+        ? t("command.searchTheme")
+        : t("command.cellRefPlaceholder");
+
+  const renderItems = (sections: Section[], startIdx: { value: number }) => {
+    return sections.map((section) => (
+      <div key={section.title}>
+        <div className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {section.title}
+        </div>
+        {section.items.map((c) => {
+          const globalIdx = startIdx.value++;
+          const Icon = c.icon;
+          return (
+            <button
+              key={c.id}
+              data-testid="command-palette-item"
+              onMouseEnter={() => setActiveIdx(globalIdx)}
+              onClick={() => c.run()}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm",
+                globalIdx === activeIdx
+                  ? "bg-muted text-foreground"
+                  : "text-foreground/90",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate" title={c.label}>{c.label}</span>
+                {c.subtitle && (
+                  <span
+                    className="max-w-[60%] truncate text-[11px] text-muted-foreground"
+                    title={c.subtitle}
+                  >
+                    {c.subtitle}
+                  </span>
+                )}
+              </span>
+              {c.hint && (
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  {c.hint}
+                </span>
+              )}
+              <ArrowRight className="h-3 w-3 shrink-0 opacity-40" />
+            </button>
+          );
+        })}
+      </div>
+    ));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -352,60 +492,21 @@ export function CommandPalette({
           </div>
         )}
 
-        {mode === "root" && (
+        {(mode === "root" || mode === "theme") && (
           <div className="max-h-72 overflow-y-auto px-2 py-1">
             {flatItems.length === 0 ? (
               <div className="px-3 py-4 text-xs text-muted-foreground">
-                {!hasFile ? t("command.noRecent") : t("command.noMatch")}
+                {t("command.noMatch")}
               </div>
             ) : (
-              (() => {
-                let idx = 0;
-                return filteredSections.map((section) => (
-                  <div key={section.title}>
-                    <div className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {section.title}
-                    </div>
-                    {section.items.map((c) => {
-                      const globalIdx = idx++;
-                      const Icon = c.icon;
-                      return (
-                        <button
-                          key={c.id}
-                          data-testid="command-palette-item"
-                          onMouseEnter={() => setActiveIdx(globalIdx)}
-                          onClick={() => c.run()}
-                          className={cn(
-                            "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm",
-                            globalIdx === activeIdx
-                              ? "bg-muted text-foreground"
-                              : "text-foreground/90",
-                          )}
-                        >
-                          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="flex min-w-0 flex-1 flex-col">
-                            <span className="truncate" title={c.label}>{c.label}</span>
-                            {c.subtitle && (
-                              <span
-                                className="max-w-[60%] truncate text-[11px] text-muted-foreground"
-                                title={c.subtitle}
-                              >
-                                {c.subtitle}
-                              </span>
-                            )}
-                          </span>
-                          {c.hint && (
-                            <span className="shrink-0 text-[11px] text-muted-foreground">
-                              {c.hint}
-                            </span>
-                          )}
-                          <ArrowRight className="h-3 w-3 shrink-0 opacity-40" />
-                        </button>
-                      );
-                    })}
+              <>
+                {showNoRecentMessage && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    {t("command.noRecent")}
                   </div>
-                ));
-              })()
+                )}
+                {renderItems(filteredSections, { value: 0 })}
+              </>
             )}
           </div>
         )}

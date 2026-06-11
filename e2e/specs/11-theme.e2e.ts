@@ -24,4 +24,18 @@ describe('theme', () => {
     );
     expect(isDark).toBe(false);
   });
+
+  it('switches to a color palette and sets data-theme plus dark base class', async () => {
+    await openDropdownItem(T.themeToggleBtn, "theme-item-palenight");
+
+    const dataTheme = await browser.execute(
+      () => document.documentElement.getAttribute('data-theme')
+    );
+    expect(dataTheme).toBe('palenight');
+
+    const isDark = await browser.execute(
+      () => document.documentElement.classList.contains('dark')
+    );
+    expect(isDark).toBe(true);
+  });
 });
