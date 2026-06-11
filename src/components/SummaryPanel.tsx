@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ChevronDown,
@@ -332,6 +333,7 @@ export function SummaryPanel({
   headerRow,
   onClose,
 }: SummaryPanelProps) {
+  const { t } = useTranslation();
   const totalRows = sheet.rows.length;
   const totalCols = sheet.max_col;
 
@@ -452,55 +454,55 @@ export function SummaryPanel({
   const catLabels = categoryCols.map(
     (c) => fieldsByCol.get(c)?.label ?? columnLetter(c),
   );
-  const valueLabel = fieldsByCol.get(valueCol)?.label ?? "Value";
+  const valueLabel = fieldsByCol.get(valueCol)?.label ?? t("summary.valueFallback");
   const valueHeader = buildValueHeader(aggFn, valueLabel);
 
   const handleCopyMarkdown = useCallback(async () => {
     if (result.rows.length === 0) {
-      toast.message("Nothing to copy");
+      toast.message(t("app.nothingToCopy"));
       return;
     }
     try {
       const text = formatGroupByMarkdown(result, catLabels, valueHeader);
       await navigator.clipboard.writeText(text);
-      const suffix = result.truncated ? " (truncated)" : "";
+      const suffix = result.truncated ? t("common.truncatedSuffix") : "";
       toast.success(
-        `Copied ${result.totalGroups} group${result.totalGroups === 1 ? "" : "s"} as markdown${suffix}`,
+        t("summary.copiedGroups", { count: result.totalGroups, format: t("summary.fmtMarkdown"), suffix }),
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Copy failed", { description: msg });
+      toast.error(t("app.copyFailed"), { description: msg });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, catLabels.join("|"), valueHeader]);
+  }, [result, catLabels.join("|"), valueHeader, t]);
 
   const handleCopyTSV = useCallback(async () => {
     if (result.rows.length === 0) {
-      toast.message("Nothing to copy");
+      toast.message(t("app.nothingToCopy"));
       return;
     }
     try {
       const text = formatGroupByTSV(result, catLabels, valueHeader);
       await navigator.clipboard.writeText(text);
-      const suffix = result.truncated ? " (truncated)" : "";
+      const suffix = result.truncated ? t("common.truncatedSuffix") : "";
       toast.success(
-        `Copied ${result.totalGroups} group${result.totalGroups === 1 ? "" : "s"} as TSV${suffix}`,
+        t("summary.copiedGroups", { count: result.totalGroups, format: t("summary.fmtTsv"), suffix }),
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Copy failed", { description: msg });
+      toast.error(t("app.copyFailed"), { description: msg });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, catLabels.join("|"), valueHeader]);
+  }, [result, catLabels.join("|"), valueHeader, t]);
 
   const handleCopyImage = useCallback(async () => {
     if (result.rows.length === 0 || result.tooLarge) {
-      toast.message("Nothing to copy");
+      toast.message(t("app.nothingToCopy"));
       return;
     }
     const node = tableContainerRef.current;
     if (!node) {
-      toast.error("Copy failed", { description: "Table not ready" });
+      toast.error(t("app.copyFailed"), { description: "Table not ready" });
       return;
     }
 
@@ -512,12 +514,12 @@ export function SummaryPanel({
     try {
       const res = await copyNodeAsImage(node);
       if (res.ok) {
-        const suffix = result.truncated ? " (truncated)" : "";
+        const suffix = result.truncated ? t("common.truncatedSuffix") : "";
         toast.success(
-          `Copied ${result.totalGroups} group${result.totalGroups === 1 ? "" : "s"} as image${suffix}`,
+          t("summary.copiedGroups", { count: result.totalGroups, format: t("summary.fmtImage"), suffix }),
         );
       } else {
-        toast.error("Copy failed", {
+        toast.error(t("app.copyFailed"), {
           description: res.error ?? "Unknown error",
         });
       }
@@ -525,7 +527,7 @@ export function SummaryPanel({
       node.style.maxHeight = originalMaxHeight;
       node.style.overflow = originalOverflow;
     }
-  }, [result]);
+  }, [result, t]);
 
   const effectiveCopyFormat: CopyFormat =
     copyFormat === "image" && result.tooLarge ? "markdown" : copyFormat;
@@ -613,14 +615,14 @@ export function SummaryPanel({
       <div className="flex items-start gap-2 px-3 py-2 border-b border-border/60">
         <Sigma className="h-3.5 w-3.5 text-foreground/70 mt-1.5" />
         <span className="text-xs font-medium text-foreground/80 mt-1.5 whitespace-nowrap">
-          Group-by summary
+          {t("summary.groupBySummary")}
         </span>
 
         <div className="flex flex-col gap-1 ml-2">
           {/* Aggregate row */}
           <div className="flex items-center gap-1.5">
             <FieldPicker
-              label="Aggregate"
+              label={t("summary.aggregate")}
               current={AGG_LABELS[aggFn]}
               options={AGG_OPTIONS.map((a) => ({
                 value: a,
@@ -630,7 +632,7 @@ export function SummaryPanel({
               onChange={(v) => setAggFn(v as AggFn)}
             />
             <FieldPicker
-              label="of"
+              label={t("summary.of")}
               current={valueLabel}
               options={resolved.fields.map((f) => ({
                 value: String(f.col),
@@ -650,7 +652,7 @@ export function SummaryPanel({
             return (
               <div key={idx} className="flex items-center gap-1.5">
                 <FieldPicker
-                  label={idx === 0 ? "Group by" : `Sub ${idx}`}
+                  label={idx === 0 ? t("summary.groupBy") : t("summary.sub", { n: idx })}
                   current={fieldsByCol.get(col)?.label ?? columnLetter(col)}
                   options={opts}
                   value={String(col)}
@@ -662,8 +664,8 @@ export function SummaryPanel({
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => removeCategoryCol(idx)}
-                    title="Remove this category"
-                    aria-label="Remove category"
+                    title={t("summary.removeCategoryTitle")}
+                    aria-label={t("summary.removeCategoryAria")}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -679,11 +681,11 @@ export function SummaryPanel({
               size="xs"
               onClick={addCategoryCol}
               className="self-start text-muted-foreground"
-              title={`Add sub-category (up to ${MAX_CATEGORY_FIELDS - 1})`}
+              title={t("summary.addSubCategoryTitle", { max: MAX_CATEGORY_FIELDS - 1 })}
               data-testid="summary-add-category"
             >
               <Plus className="h-3 w-3" />
-              <span>Add sub-category</span>
+              <span>{t("summary.addSubCategory")}</span>
             </Button>
           )}
         </div>
@@ -700,10 +702,10 @@ export function SummaryPanel({
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
-                title="Collapsible tree view"
+                title={t("summary.treeViewTitle")}
                 data-testid="summary-view-tree"
               >
-                Tree
+                {t("summary.tree")}
               </button>
               <button
                 type="button"
@@ -713,16 +715,16 @@ export function SummaryPanel({
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
-                title="Hierarchical flat view (Excel-style indent)"
+                title={t("summary.flatViewTitle")}
                 data-testid="summary-view-flat"
               >
-                Flat
+                {t("summary.flat")}
               </button>
             </div>
 
             <label
               className="flex items-center gap-1 text-[11px] text-muted-foreground cursor-pointer select-none"
-              title="Show subtotal rows for parent groups"
+              title={t("summary.subtotalsTitle")}
             >
               <input
                 type="checkbox"
@@ -732,22 +734,22 @@ export function SummaryPanel({
                 className="h-3 w-3 accent-primary"
                 data-testid="summary-subtotals"
               />
-              Subtotals
+              {t("summary.subtotals")}
             </label>
 
             {headerInsideSelection ? (
               <span
                 className="text-[11px] text-muted-foreground"
-                title="Header row marked via context menu"
+                title={t("summary.markedHeaderTitle")}
               >
-                Using marked header row
+                {t("summary.usingMarkedHeader")}
               </span>
             ) : headerRow !== null ? (
               <span
                 className="text-[11px] text-muted-foreground"
-                title="Header row is outside the current selection"
+                title={t("summary.headerRowOutsideTitle")}
               >
-                Header row (row {headerRow + 1})
+                {t("summary.headerRowLabel", { row: headerRow + 1 })}
               </span>
             ) : (
               <label className="flex items-center gap-1 text-[11px] text-muted-foreground cursor-pointer select-none">
@@ -757,7 +759,7 @@ export function SummaryPanel({
                   onChange={(e) => setTreatFirstRowAsHeader(e.target.checked)}
                   className="h-3 w-3 accent-primary"
                 />
-                First row is header
+                {t("summary.firstRowHeader")}
               </label>
             )}
           </div>
@@ -775,13 +777,14 @@ export function SummaryPanel({
                   (effectiveCopyFormat === "image" && result.tooLarge)
                 }
                 className="rounded-none border-0"
-                title={`Copy as ${
-                  effectiveCopyFormat === "markdown"
-                    ? "Markdown"
-                    : effectiveCopyFormat === "tsv"
-                      ? "TSV"
-                      : "Image"
-                }`}
+                title={t("summary.copyAs", {
+                  format:
+                    effectiveCopyFormat === "markdown"
+                      ? t("summary.fmtMarkdown")
+                      : effectiveCopyFormat === "tsv"
+                        ? t("summary.fmtTsv")
+                        : t("summary.fmtImage"),
+                })}
               >
                 {effectiveCopyFormat === "image" ? (
                   <ImageDown className="h-3 w-3" />
@@ -789,12 +792,12 @@ export function SummaryPanel({
                   <Copy className="h-3 w-3" />
                 )}
                 <span>
-                  Copy{" "}
+                  {t("summary.copyShort")}{" "}
                   {effectiveCopyFormat === "markdown"
-                    ? "Markdown"
+                    ? t("summary.fmtMarkdown")
                     : effectiveCopyFormat === "tsv"
-                      ? "TSV"
-                      : "Image"}
+                      ? t("summary.fmtTsv")
+                      : t("summary.fmtImage")}
                 </span>
               </Button>
               <DropdownMenu>
@@ -805,8 +808,8 @@ export function SummaryPanel({
                     size="icon-xs"
                     disabled={result.rows.length === 0}
                     className="rounded-none border-0 border-l border-border"
-                    title="Choose copy format"
-                    aria-label="Choose copy format"
+                    title={t("summary.chooseCopyFormat")}
+                    aria-label={t("summary.chooseCopyFormat")}
                     data-testid="summary-copy-caret"
                   >
                     <ChevronDown className="h-3 w-3" />
@@ -825,10 +828,10 @@ export function SummaryPanel({
                       className="text-xs"
                       data-testid="summary-copy-opt-markdown"
                     >
-                      <Copy className="size-3" /> Markdown
+                      <Copy className="size-3" /> {t("summary.fmtMarkdown")}
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="tsv" className="text-xs" data-testid="summary-copy-opt-tsv">
-                      <Copy className="size-3" /> TSV
+                      <Copy className="size-3" /> {t("summary.fmtTsv")}
                     </DropdownMenuRadioItem>
                     <DropdownMenuRadioItem
                       value="image"
@@ -836,7 +839,7 @@ export function SummaryPanel({
                       className="text-xs"
                       data-testid="summary-copy-opt-image"
                     >
-                      <ImageDown className="size-3" /> Image
+                      <ImageDown className="size-3" /> {t("summary.fmtImage")}
                     </DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
@@ -847,8 +850,8 @@ export function SummaryPanel({
               variant="ghost"
               size="icon-xs"
               onClick={onClose}
-              title="Close (Esc)"
-              aria-label="Close summary panel"
+              title={t("summary.closeTitle")}
+              aria-label={t("summary.closeAria")}
               data-testid="summary-close"
             >
               <X className="h-3 w-3" />
@@ -864,14 +867,13 @@ export function SummaryPanel({
       >
         {result.tooLarge ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
-            Selection too large to summarize. Pick a smaller range.
+            {t("summary.tooLarge")}
           </div>
         ) : result.rows.length === 0 ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
-            No data to aggregate
             {aggFn !== "count" && result.skippedNonNumeric > 0
-              ? ` (${result.skippedNonNumeric} non-numeric value cells skipped).`
-              : "."}
+              ? t("summary.noDataSkipped", { count: result.skippedNonNumeric })
+              : t("summary.noData")}
           </div>
         ) : viewMode === "tree" ? (
           <TreeTable
@@ -894,33 +896,31 @@ export function SummaryPanel({
         <span>
           {result.tooLarge
             ? "—"
-            : `${result.totalGroups} group${result.totalGroups === 1 ? "" : "s"}`}
+            : t("summary.statusGroups", { count: result.totalGroups })}
         </span>
         <span>·</span>
         <span>
-          {result.totalRowsAggregated} row
-          {result.totalRowsAggregated === 1 ? "" : "s"} aggregated
+          {t("summary.statusRowsAggregated", { count: result.totalRowsAggregated })}
         </span>
         {aggFn !== "count" && result.skippedNonNumeric > 0 && (
           <>
             <span>·</span>
-            <span>{result.skippedNonNumeric} non-numeric skipped</span>
+            <span>{t("summary.statusNonNumericSkipped", { count: result.skippedNonNumeric })}</span>
           </>
         )}
         {result.truncated && (
           <>
             <span>·</span>
             <span>
-              showing top {Math.min(result.totalGroups, 200)} of{" "}
-              {result.totalGroups}
+              {t("summary.statusShowingTop", { shown: Math.min(result.totalGroups, 200), total: result.totalGroups })}
             </span>
           </>
         )}
         {result.truncated && includeSubtotals && (
           <>
             <span>·</span>
-            <span title="Subtotal values reflect the visible leaves only">
-              subtotals over visible leaves only
+            <span title={t("summary.subtotalsVisibleOnlyTitle")}>
+              {t("summary.subtotalsVisibleOnly")}
             </span>
           </>
         )}

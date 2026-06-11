@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -36,6 +37,7 @@ export function ResizeDialog({
   onReset,
   onCancel,
 }: ResizeDialogProps) {
+  const { t } = useTranslation();
   const open = state !== null;
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,18 +57,18 @@ export function ResizeDialog({
     if (!state) return;
     const trimmed = value.trim();
     if (trimmed === "") {
-      toast.error("Enter a value in pixels");
+      toast.error(t("resize.enterValue"));
       return;
     }
     const n = Number(trimmed);
     if (!Number.isFinite(n)) {
-      toast.error("Value must be a number");
+      toast.error(t("resize.mustBeNumber"));
       return;
     }
     const rounded = Math.round(n);
     if (rounded < RESIZE_DIALOG_MIN || rounded > RESIZE_DIALOG_MAX) {
       toast.error(
-        `Value must be between ${RESIZE_DIALOG_MIN} and ${RESIZE_DIALOG_MAX} px`,
+        t("resize.outOfRange", { min: RESIZE_DIALOG_MIN, max: RESIZE_DIALOG_MAX }),
       );
       return;
     }
@@ -75,9 +77,9 @@ export function ResizeDialog({
 
   const title =
     state?.kind === "col"
-      ? `Column ${columnLetter(state.index)} width`
+      ? t("resize.colTitle", { letter: columnLetter(state.index) })
       : state
-        ? `Row ${state.index + 1} height`
+        ? t("resize.rowTitle", { row: state.index + 1 })
         : "";
 
   const defaultPx = state?.kind === "col" ? COL_DEFAULT : ROW_DEFAULT;
@@ -88,8 +90,7 @@ export function ResizeDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Enter size in pixels ({RESIZE_DIALOG_MIN}–{RESIZE_DIALOG_MAX}).
-            Default is {defaultPx}px.
+            {t("resize.description", { min: RESIZE_DIALOG_MIN, max: RESIZE_DIALOG_MAX, default: defaultPx })}
           </DialogDescription>
         </DialogHeader>
 
@@ -121,12 +122,12 @@ export function ResizeDialog({
 
         <DialogFooter>
           <Button variant="destructive" onClick={onReset}>
-            Reset to default
+            {t("resize.resetDefault")}
           </Button>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={submit} data-testid="resize-ok-btn">OK</Button>
+          <Button onClick={submit} data-testid="resize-ok-btn">{t("common.ok")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

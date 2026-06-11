@@ -130,10 +130,13 @@ vi.mock("@/lib/workspace-store", async (orig) => ({
 
 // ─── Mock: WorkspacePanel ──────────────────────────────────────────────────────
 vi.mock("@/components/WorkspacePanel", () => ({
-  WorkspacePanel: vi.fn((props: { open: boolean; onClose: () => void }) => {
+  WorkspacePanel: vi.fn((props: { open: boolean; onClose: () => void; disableRunningText?: boolean }) => {
     if (!props.open) return null;
     return (
-      <div data-testid="workspace-panel">
+      <div
+        data-testid="workspace-panel"
+        data-disable-running-text={String(props.disableRunningText ?? false)}
+      >
         <button data-testid="workspace-panel-close" onClick={props.onClose}>
           close
         </button>
@@ -3513,38 +3516,9 @@ describe("App", () => {
     });
   });
 
-  // ── Inline edit (flags.inlineEdit = OFF by default) ──────────────────────────
-  // NOTE: flags.inlineEdit defaults to false in test env (VITE_FF_INLINE_EDIT not set).
-  // So editEnabled = false, Ctrl+S is a no-op, and close-guard returns early.
-  // These tests verify the plumbing works when an edit commit flows through the stub.
+  // ── Inline edit ──────────────────────────────────────────────────────────────
 
-  describe("inline edit — wiring (flag OFF, verifies no regressions)", () => {
-    it("Ctrl+S does nothing when flag is OFF (no saveEdits call)", async () => {
-      const sheet = makeSheet();
-      const wb = makeWorkbook(sheet);
-      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
-      await act(async () => {
-        renderWithProviders(<App />);
-      });
-      await act(async () => {
-        fireEvent.keyDown(window, { key: "s", ctrlKey: true });
-      });
-      expect(mockSaveEdits).not.toHaveBeenCalled();
-    });
-
-    it("Meta+S does nothing when flag is OFF (no saveEdits call)", async () => {
-      const sheet = makeSheet();
-      const wb = makeWorkbook(sheet);
-      resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
-      await act(async () => {
-        renderWithProviders(<App />);
-      });
-      await act(async () => {
-        fireEvent.keyDown(window, { key: "s", metaKey: true });
-      });
-      expect(mockSaveEdits).not.toHaveBeenCalled();
-    });
-
+  describe("inline edit — wiring", () => {
     it("titlebar-dirty indicator is absent when buffer is empty", async () => {
       const sheet = makeSheet();
       const wb = makeWorkbook(sheet);
@@ -3560,17 +3534,8 @@ describe("App", () => {
   // reloads the base rows to the saved value and clears the overlay; an undo that
   // only deleted the overlay would fall back to the new base and do nothing. The fix
   // restores the captured original value as an overlay, so the cell goes dirty again.
-  describe("inline edit — undo after save (flags ON)", () => {
-    afterEach(() => {
-      vi.unstubAllEnvs();
-      vi.resetModules();
-    });
-
+  describe("inline edit — undo after save", () => {
     it("undo restores a cell even after the edit was saved", async () => {
-      vi.stubEnv("VITE_FF_INLINE_EDIT", "true");
-      vi.stubEnv("VITE_FF_UNDO", "true");
-      vi.resetModules();
-
       const sheet = makeSheet();
       const wb = makeWorkbook(sheet);
       // Simulate the real save: reloadActiveSheet replaces the sheet object with a
@@ -3584,9 +3549,8 @@ describe("App", () => {
       });
       resetMockWorkbookState({ workbook: wb, activeSheet: sheet, reloadActiveSheet });
 
-      const { default: AppFresh } = await import("./App");
       await act(async () => {
-        renderWithProviders(<AppFresh />);
+        renderWithProviders(<App />);
       });
 
       // Commit an edit to cell (1,1) (base was Number 100 → "hello").
@@ -3611,9 +3575,6 @@ describe("App", () => {
     });
 
     it("confirming close on unsaved changes destroys the window", async () => {
-      vi.stubEnv("VITE_FF_INLINE_EDIT", "true");
-      vi.resetModules();
-
       // Capture the onCloseRequested handler so we can simulate the OS close event.
       let closeHandler: ((ev: { preventDefault: () => void }) => void) | undefined;
       mockOnCloseRequested.mockImplementation((cb: typeof closeHandler) => {
@@ -3625,9 +3586,8 @@ describe("App", () => {
       const wb = makeWorkbook(sheet);
       resetMockWorkbookState({ workbook: wb, activeSheet: sheet });
 
-      const { default: AppFresh } = await import("./App");
       await act(async () => {
-        renderWithProviders(<AppFresh />);
+        renderWithProviders(<App />);
       });
 
       // Make the buffer dirty so the close guard intercepts.
@@ -3804,6 +3764,26 @@ describe("App", () => {
       });
 
       expect(screen.getByTestId("workspace-panel")).toBeInTheDocument();
+    });
+
+    it("passes disableRunningText=true to WorkspacePanel when setting is enabled", async () => {
+      mockReadStoredSettings.mockResolvedValue({ askBeforeClose: false, disableRunningText: true });
+
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+
+      // Wait for settings to hydrate
+      await waitFor(() => {});
+
+      // Open the workspace panel
+      const toggleBtn = screen.getByTestId("titlebar-workspace-toggle");
+      await act(async () => {
+        fireEvent.click(toggleBtn);
+      });
+
+      const panel = screen.getByTestId("workspace-panel");
+      expect(panel.getAttribute("data-disable-running-text")).toBe("true");
     });
   });
 });

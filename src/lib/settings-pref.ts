@@ -2,11 +2,12 @@ import { readJson, writeJson } from "@/lib/app-storage";
 
 export interface AppSettings {
   askBeforeClose: boolean;
+  disableRunningText: boolean;
 }
 
 export const SETTINGS_FILE = "settings.json";
 
-export const DEFAULT_SETTINGS: AppSettings = { askBeforeClose: false };
+export const DEFAULT_SETTINGS: AppSettings = { askBeforeClose: false, disableRunningText: false };
 
 export function isAppSettings(v: unknown): v is AppSettings {
   return (

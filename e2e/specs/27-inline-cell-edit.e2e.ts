@@ -12,7 +12,7 @@
  *   7. Tab commits the edit and moves selection right.
  *
  * Fixture: simple.csv  — a writable format (.csv); isWritableFormat returns true
- * for .csv paths, so editEnabled is true when VITE_FF_INLINE_EDIT=true.
+ * for .csv paths, so editEnabled is always true (inline edit is always-on).
  *
  * simple.csv layout (zero-based row/col):
  *   row 0: ["Name", "Age", "City"]   — headers
@@ -21,7 +21,7 @@
  *   row 3: ["Grace", "85", "NewYork"]
  *
  * Requirements:
- *   - Build must include VITE_FF_INLINE_EDIT=true (wired in e2e:build-app).
+ *   - Inline cell editing is always-on (no feature flag needed).
  *   - Tauri binary + webdriver must be running (not started in this spec).
  *
  * NOTE: persistence after reopen is NOT asserted here because the save_edits

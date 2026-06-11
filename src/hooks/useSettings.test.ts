@@ -5,7 +5,7 @@ import { readStoredSettings, writeStoredSettings } from "@/lib/settings-pref";
 
 vi.mock("@/lib/settings-pref", async (orig) => ({
   ...(await orig()),
-  readStoredSettings: vi.fn().mockResolvedValue({ askBeforeClose: false }),
+  readStoredSettings: vi.fn().mockResolvedValue({ askBeforeClose: false, disableRunningText: false }),
   writeStoredSettings: vi.fn(),
 }));
 
@@ -14,7 +14,7 @@ const mockedWriteStoredSettings = writeStoredSettings as ReturnType<typeof vi.fn
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedReadStoredSettings.mockResolvedValue({ askBeforeClose: false });
+  mockedReadStoredSettings.mockResolvedValue({ askBeforeClose: false, disableRunningText: false });
 });
 
 describe("useSettings", () => {
@@ -34,7 +34,7 @@ describe("useSettings", () => {
   });
 
   it("setAskBeforeClose updates settings and calls writeStoredSettings", async () => {
-    mockedReadStoredSettings.mockResolvedValue({ askBeforeClose: false });
+    mockedReadStoredSettings.mockResolvedValue({ askBeforeClose: false, disableRunningText: false });
     const { result } = renderHook(() => useSettings());
 
     // Wait for hydration to settle
@@ -47,6 +47,23 @@ describe("useSettings", () => {
     });
 
     expect(result.current.settings.askBeforeClose).toBe(true);
-    expect(mockedWriteStoredSettings).toHaveBeenCalledWith({ askBeforeClose: true });
+    expect(mockedWriteStoredSettings).toHaveBeenCalledWith({ askBeforeClose: true, disableRunningText: false });
+  });
+
+  it("setDisableRunningText updates settings.disableRunningText and calls writeStoredSettings", async () => {
+    mockedReadStoredSettings.mockResolvedValue({ askBeforeClose: false, disableRunningText: false });
+    const { result } = renderHook(() => useSettings());
+
+    // Wait for hydration to settle
+    await waitFor(() => {
+      expect(mockedReadStoredSettings).toHaveBeenCalled();
+    });
+
+    act(() => {
+      result.current.setDisableRunningText(true);
+    });
+
+    expect(result.current.settings.disableRunningText).toBe(true);
+    expect(mockedWriteStoredSettings).toHaveBeenCalledWith({ askBeforeClose: false, disableRunningText: true });
   });
 });

@@ -971,6 +971,39 @@ describe("QueryModal", () => {
     });
   });
 
+  // ── i18n sanity: key-driven labels render en values (guards against raw key leaks) ──
+
+  describe("i18n sanity checks", () => {
+    it("renders title from query.title key (not raw key string)", () => {
+      renderWithProviders(
+        <QueryModal
+          state={makeState({ kind: "insert" })}
+          progress={null}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      );
+      // Should render the English value, NOT the key "query.title"
+      expect(screen.getByText("Copy as INSERT")).toBeInTheDocument();
+      expect(screen.queryByText("query.title")).toBeNull();
+    });
+
+    it("renders description from query.description key (not raw key string)", () => {
+      renderWithProviders(
+        <QueryModal
+          state={makeState()}
+          progress={null}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      );
+      expect(
+        screen.getByText("Configure options for the SQL query.")
+      ).toBeInTheDocument();
+      expect(screen.queryByText("query.description")).toBeNull();
+    });
+  });
+
   // ── armTimerRef cleared when modal re-opens (useEffect cleanup) ────────────
 
   describe("armTimerRef cleared on modal re-open", () => {

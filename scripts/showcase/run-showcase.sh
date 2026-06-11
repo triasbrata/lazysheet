@@ -66,9 +66,7 @@ fi
 # 2. Build the app if the binary is missing
 if [[ ! -x "${SHOWCASE_APP_BIN}" ]]; then
   echo "INFO: App binary not found at '${SHOWCASE_APP_BIN}'. Building now..."
-  echo "INFO: Using feature flags: VITE_FF_MULTI_LANG=true VITE_FF_INLINE_EDIT=true VITE_FF_UNDO=true"
-  VITE_FF_MULTI_LANG=true VITE_FF_INLINE_EDIT=true VITE_FF_UNDO=true \
-    bun run build:web
+  bun run build:web
   cargo build --manifest-path src-tauri/Cargo.toml
   echo "INFO: Build complete."
 fi

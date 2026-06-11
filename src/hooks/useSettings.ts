@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS, readStoredSettings, writeStoredSettings } from "@/lib
 export interface UseSettingsApi {
   settings: AppSettings;
   setAskBeforeClose: (value: boolean) => void;
+  setDisableRunningText: (value: boolean) => void;
 }
 
 export function useSettings(): UseSettingsApi {
@@ -28,5 +29,16 @@ export function useSettings(): UseSettingsApi {
     });
   }, []);
 
-  return useMemo(() => ({ settings, setAskBeforeClose }), [settings, setAskBeforeClose]);
+  const setDisableRunningText = useCallback((value: boolean) => {
+    setSettings(prev => {
+      const next = { ...prev, disableRunningText: value };
+      void writeStoredSettings(next);
+      return next;
+    });
+  }, []);
+
+  return useMemo(
+    () => ({ settings, setAskBeforeClose, setDisableRunningText }),
+    [settings, setAskBeforeClose, setDisableRunningText],
+  );
 }

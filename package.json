@@ -15,7 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "app:deploy": "bun run scripts/deploy.ts",
     "e2e:fixtures": "bun run e2e/fixtures/generate.ts",
-    "e2e:build-app": "VITE_E2E=true VITE_FF_MULTI_LANG=true VITE_FF_INLINE_EDIT=true VITE_FF_UNDO=true bun run build:web && cargo build --manifest-path src-tauri/Cargo.toml --features webdriver",
+    "e2e:build-app": "VITE_E2E=true bun run build:web && cargo build --manifest-path src-tauri/Cargo.toml --features webdriver",
     "e2e:dev:vite": "VITE_E2E=true vite",
     "e2e:dev:build-app": "cargo build --manifest-path src-tauri/Cargo.toml --features webdriver-dev",
     "e2e:run": "cd e2e && bun run test",

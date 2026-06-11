@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,31 +10,26 @@ import type { ColumnFilter, ConditionOp } from "@/lib/grid-filter";
 
 // ─── Condition option list ────────────────────────────────────────────────────
 
-const CONDITION_OPTIONS: { op: ConditionOp; label: string }[] = [
-  { op: "none",        label: "None" },
-  { op: "empty",       label: "Is empty" },
-  { op: "notEmpty",    label: "Is not empty" },
-  { op: "contains",    label: "Text contains" },
-  { op: "notContains", label: "Text does not contain" },
-  { op: "startsWith",  label: "Text starts with" },
-  { op: "endsWith",    label: "Text ends with" },
-  { op: "isExactly",   label: "Text is exactly" },
-  { op: "gt",          label: "Greater than" },
-  { op: "gte",         label: "Greater than or equal to" },
-  { op: "lt",          label: "Less than" },
-  { op: "lte",         label: "Less than or equal to" },
-  { op: "eq",          label: "Is equal to" },
-  { op: "neq",         label: "Is not equal to" },
+/** Maps each condition op to its i18n key in the filter namespace. */
+const CONDITION_KEYS: { op: ConditionOp; key: string }[] = [
+  { op: "none",        key: "filter.condNone" },
+  { op: "empty",       key: "filter.condEmpty" },
+  { op: "notEmpty",    key: "filter.condNotEmpty" },
+  { op: "contains",    key: "filter.condContains" },
+  { op: "notContains", key: "filter.condNotContains" },
+  { op: "startsWith",  key: "filter.condStartsWith" },
+  { op: "endsWith",    key: "filter.condEndsWith" },
+  { op: "isExactly",   key: "filter.condIsExactly" },
+  { op: "gt",          key: "filter.condGt" },
+  { op: "gte",         key: "filter.condGte" },
+  { op: "lt",          key: "filter.condLt" },
+  { op: "lte",         key: "filter.condLte" },
+  { op: "eq",          key: "filter.condEq" },
+  { op: "neq",         key: "filter.condNeq" },
 ];
 
 /** Ops that do NOT need a text operand input. */
 const NO_OPERAND_OPS = new Set<ConditionOp>(["none", "empty", "notEmpty"]);
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function valueLabel(v: string): string {
-  return v === "" ? "(Blanks)" : v;
-}
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -62,6 +58,13 @@ export function ColumnFilterDropdown({
   onApply,
   children,
 }: ColumnFilterDropdownProps): React.JSX.Element {
+  const { t } = useTranslation();
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function valueLabel(v: string): string {
+    return v === "" ? t("filter.blanks") : v;
+  }
+
   // ── Staged state ─────────────────────────────────────────────────────────
   const [op, setOp] = useState<ConditionOp>(value.condition.op);
   const [operand, setOperand] = useState<string>(value.condition.operand);
@@ -130,7 +133,7 @@ export function ColumnFilterDropdown({
           {/* ── Filter by condition ──────────────────────────────────────── */}
           <div className="px-3 pt-3 pb-2 flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Filter by condition
+              {t("filter.filterByCondition")}
             </span>
 
             {/* Condition selector */}
@@ -139,9 +142,9 @@ export function ColumnFilterDropdown({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="item-aligned">
-                {CONDITION_OPTIONS.map(({ op: o, label }) => (
+                {CONDITION_KEYS.map(({ op: o, key }) => (
                   <SelectItem key={o} value={o} data-testid={`filter-condition-${o}`}>
-                    {label}
+                    {t(key)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -154,7 +157,7 @@ export function ColumnFilterDropdown({
                 type="text"
                 value={operand}
                 onChange={(e) => setOperand(e.target.value)}
-                placeholder="Value"
+                placeholder={t("filter.valuePlaceholder")}
                 className={cn(
                   "w-full rounded-md border border-input bg-background px-2 py-1 text-sm",
                   "text-foreground placeholder:text-muted-foreground",
@@ -177,18 +180,18 @@ export function ColumnFilterDropdown({
                   onClick={handleSelectAll}
                   className="text-xs text-primary hover:underline focus:outline-none"
                 >
-                  Select all
+                  {t("filter.selectAll")}
                 </button>
                 <button
                   type="button"
                   onClick={handleClear}
                   className="text-xs text-primary hover:underline focus:outline-none"
                 >
-                  Clear
+                  {t("filter.clear")}
                 </button>
               </div>
               <span className="text-xs text-muted-foreground">
-                Displaying {checkedCount}
+                {t("filter.displaying", { count: checkedCount })}
               </span>
             </div>
 
@@ -199,7 +202,7 @@ export function ColumnFilterDropdown({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search values…"
+                placeholder={t("filter.searchValues")}
                 className={cn(
                   "w-full rounded-md border border-input bg-background pl-7 pr-2 py-1 text-sm",
                   "text-foreground placeholder:text-muted-foreground",
@@ -212,7 +215,7 @@ export function ColumnFilterDropdown({
             <div className="max-h-[220px] overflow-y-auto flex flex-col gap-0.5 pr-0.5">
               {visibleValues.length === 0 ? (
                 <span className="text-xs text-muted-foreground py-1 text-center">
-                  No values
+                  {t("filter.noValues")}
                 </span>
               ) : (
                 visibleValues.map((v) => {
@@ -259,7 +262,7 @@ export function ColumnFilterDropdown({
               size="sm"
               onClick={handleCancel}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               data-testid="filter-ok-btn"
@@ -267,7 +270,7 @@ export function ColumnFilterDropdown({
               size="sm"
               onClick={handleOk}
             >
-              OK
+              {t("common.ok")}
             </Button>
           </div>
 

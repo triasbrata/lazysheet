@@ -33,6 +33,7 @@ export interface WorkspacePanelProps {
   onRemoveFile: (id: string, path: string) => void;
   onOpenFile: (path: string) => void;
   onBrowseAdd: (id: string) => void;
+  disableRunningText?: boolean;
 }
 
 export function WorkspacePanel(props: WorkspacePanelProps) {
@@ -276,7 +277,7 @@ export function WorkspacePanel(props: WorkspacePanelProps) {
                       title={f.path}
                       onClick={() => props.onOpenFile(f.path)}
                     >
-                      <Marquee text={f.fileName} className="block w-full" />
+                      <Marquee text={f.fileName} className="block w-full" disabled={props.disableRunningText} />
                     </button>
                     <Button
                       type="button"

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderWithProviders, screen, userEvent } from "@/test/render";
 import { TitleBar } from "./TitleBar";
 
@@ -34,6 +34,14 @@ describe("TitleBar — fileName display", () => {
     );
     // en locale: "LazySheet"
     expect(screen.getByText("LazySheet")).toBeInTheDocument();
+  });
+
+  it("filename Marquee container has select-none class", () => {
+    renderWithProviders(
+      <TitleBar fileName="my-file.xlsx" onOpenCommand={noop} />
+    );
+    const marquee = screen.getByTestId("titlebar-filename");
+    expect(marquee.className).toContain("select-none");
   });
 });
 
@@ -133,6 +141,17 @@ describe("TitleBar — close button", () => {
     expect(screen.getByTitle("Close file")).toBeInTheDocument();
   });
 
+  it("close button has title 'Close file' (en) when fileName and onClose provided", () => {
+    renderWithProviders(
+      <TitleBar
+        fileName="file.xlsx"
+        onOpenCommand={noop}
+        onClose={vi.fn()}
+      />
+    );
+    expect(screen.getByTitle("Close file")).toBeInTheDocument();
+  });
+
   it("does not render close button when fileName is null", () => {
     renderWithProviders(
       <TitleBar fileName={null} onOpenCommand={noop} onClose={vi.fn()} />
@@ -183,30 +202,12 @@ describe("TitleBar — command search bar", () => {
   });
 });
 
-describe("TitleBar — VITE_FF_MULTI_LANG feature flag", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.resetModules();
-  });
-
-  it("shows lang-toggle-btn when flag is ON (test env sets VITE_FF_MULTI_LANG=true)", () => {
-    // vitest.config.ts sets VITE_FF_MULTI_LANG="true" → flags.multiLang = true
+describe("TitleBar — no lang toggle", () => {
+  it("never renders lang-toggle-btn", () => {
     renderWithProviders(
       <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
     );
-    expect(screen.getByTestId("lang-toggle-btn")).toBeInTheDocument();
-  });
-
-  it("hides lang-toggle-btn when VITE_FF_MULTI_LANG=false", async () => {
-    vi.stubEnv("VITE_FF_MULTI_LANG", "false");
-    vi.resetModules();
-
-    // Re-import TitleBar after module reset so it picks up the new flags value
-    const { TitleBar: TitleBarOff } = await import("./TitleBar");
-    const { renderWithProviders: rwp, screen: s } = await import("@/test/render");
-
-    rwp(<TitleBarOff fileName="file.xlsx" onOpenCommand={vi.fn()} />);
-    expect(s.queryByTestId("lang-toggle-btn")).toBeNull();
+    expect(screen.queryByTestId("lang-toggle-btn")).toBeNull();
   });
 });
 
@@ -233,6 +234,13 @@ describe("TitleBar — dirty indicator", () => {
       <TitleBar fileName="file.xlsx" onOpenCommand={noop} />
     );
     expect(screen.queryByTestId("titlebar-dirty")).toBeNull();
+  });
+
+  it("dirty dot has title 'Unsaved changes' (en) when dirty=true", () => {
+    renderWithProviders(
+      <TitleBar fileName="file.xlsx" onOpenCommand={noop} dirty={true} />
+    );
+    expect(screen.getByTestId("titlebar-dirty")).toHaveAttribute("title", "Unsaved changes");
   });
 });
 

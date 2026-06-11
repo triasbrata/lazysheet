@@ -256,6 +256,29 @@ describe("ResizeDialog", () => {
     });
   });
 
+  // ── i18n: labels render English values, not raw keys ─────────────────────
+
+  describe("i18n label rendering", () => {
+    const colState: SizeDialogState = { kind: "col", index: 0, current: 59 };
+
+    it("renders translated title and Reset button — no raw key leak", async () => {
+      renderWithProviders(<ResizeDialog {...defaultProps} state={colState} />);
+      expect(await screen.findByText("Column A width")).toBeInTheDocument();
+      expect(screen.queryByText(/resize\.colTitle/)).toBeNull();
+      expect(screen.getByRole("button", { name: /reset to default/i })).toBeInTheDocument();
+      expect(screen.queryByText(/resize\.resetDefault/)).toBeNull();
+    });
+
+    it("renders translated Cancel and OK buttons — no raw key leak", async () => {
+      renderWithProviders(<ResizeDialog {...defaultProps} state={colState} />);
+      await screen.findByRole("dialog");
+      expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
+      expect(screen.queryByText(/common\.cancel/)).toBeNull();
+      expect(screen.getByRole("button", { name: /^ok$/i })).toBeInTheDocument();
+      expect(screen.queryByText(/common\.ok/)).toBeNull();
+    });
+  });
+
   describe("cancel / close", () => {
     const colState: SizeDialogState = { kind: "col", index: 0, current: 59 };
 
