@@ -3,12 +3,10 @@ import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -75,7 +73,7 @@ export function SettingsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-testid="settings-modal" className="sm:max-w-lg">
+      <DialogContent data-testid="settings-modal" className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("settings.title")}</DialogTitle>
         </DialogHeader>
@@ -86,7 +84,7 @@ export function SettingsModal({
             title={t("settings.askBeforeClose")}
             description={t("settings.askBeforeCloseDesc")}
             control={
-              <Checkbox
+              <Switch
                 id="ask-before-close"
                 checked={settings.askBeforeClose}
                 onCheckedChange={(c) => onChangeAskBeforeClose(c === true)}
@@ -182,7 +180,7 @@ export function SettingsModal({
             title={t("settings.runningText")}
             description={t("settings.runningTextDesc")}
             control={
-              <Checkbox
+              <Switch
                 id="disable-running-text"
                 checked={settings.disableRunningText}
                 onCheckedChange={(c) => onChangeDisableRunningText(c === true)}
@@ -190,12 +188,6 @@ export function SettingsModal({
             }
           />
         </div>
-
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>
-            {t("settings.done")}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

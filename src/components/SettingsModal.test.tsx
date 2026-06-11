@@ -47,7 +47,7 @@ describe("SettingsModal", () => {
     expect(await screen.findByText("Settings")).toBeInTheDocument();
   });
 
-  it("checkbox is checked when settings.askBeforeClose=true", async () => {
+  it("switch is checked when settings.askBeforeClose=true", async () => {
     renderWithProviders(
       <SettingsModal
         open={true}
@@ -57,12 +57,12 @@ describe("SettingsModal", () => {
         onChangeDisableRunningText={onChangeDisableRunningText}
       />,
     );
-    const checkboxes = await screen.findAllByRole("checkbox");
-    const askCheckbox = checkboxes[0];
-    expect(askCheckbox).toHaveAttribute("data-state", "checked");
+    const switches = await screen.findAllByRole("switch");
+    const askSwitch = switches[0];
+    expect(askSwitch).toHaveAttribute("data-state", "checked");
   });
 
-  it("clicking the checkbox when askBeforeClose=false calls onChangeAskBeforeClose(true)", async () => {
+  it("clicking the switch when askBeforeClose=false calls onChangeAskBeforeClose(true)", async () => {
     renderWithProviders(
       <SettingsModal
         open={true}
@@ -73,25 +73,9 @@ describe("SettingsModal", () => {
       />,
     );
     const user = userEvent.setup();
-    const checkboxes = await screen.findAllByRole("checkbox");
-    await user.click(checkboxes[0]);
+    const switches = await screen.findAllByRole("switch");
+    await user.click(switches[0]);
     expect(onChangeAskBeforeClose).toHaveBeenCalledWith(true);
-  });
-
-  it("clicking Done calls onOpenChange(false)", async () => {
-    renderWithProviders(
-      <SettingsModal
-        open={true}
-        onOpenChange={onOpenChange}
-        settings={defaultSettings}
-        onChangeAskBeforeClose={onChangeAskBeforeClose}
-        onChangeDisableRunningText={onChangeDisableRunningText}
-      />,
-    );
-    const user = userEvent.setup();
-    await screen.findByTestId("settings-modal");
-    await user.click(screen.getByRole("button", { name: /done/i }));
-    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it("renders the theme select trigger when open", async () => {
@@ -177,7 +161,7 @@ describe("SettingsModal", () => {
 
   // --- New tests for Step 6 ---
 
-  it("DialogContent has sm:max-w-lg class", async () => {
+  it("DialogContent has sm:max-w-3xl class", async () => {
     renderWithProviders(
       <SettingsModal
         open={true}
@@ -188,7 +172,7 @@ describe("SettingsModal", () => {
       />,
     );
     const modal = await screen.findByTestId("settings-modal");
-    expect(modal.className).toContain("sm:max-w-lg");
+    expect(modal.className).toContain("sm:max-w-3xl");
   });
 
   it("theme group label renders 'Default'", async () => {
@@ -258,7 +242,7 @@ describe("SettingsModal", () => {
     expect(trigger).toHaveTextContent("Bahasa Indonesia");
   });
 
-  it("running-text checkbox reflects settings.disableRunningText=true", async () => {
+  it("running-text switch reflects settings.disableRunningText=true", async () => {
     renderWithProviders(
       <SettingsModal
         open={true}
@@ -268,13 +252,13 @@ describe("SettingsModal", () => {
         onChangeDisableRunningText={onChangeDisableRunningText}
       />,
     );
-    const disableRunningTextCheckbox = await screen.findByRole("checkbox", {
+    const disableRunningTextSwitch = await screen.findByRole("switch", {
       name: /disable running text/i,
     });
-    expect(disableRunningTextCheckbox).toHaveAttribute("data-state", "checked");
+    expect(disableRunningTextSwitch).toHaveAttribute("data-state", "checked");
   });
 
-  it("running-text checkbox fires onChangeDisableRunningText(true) on click", async () => {
+  it("running-text switch fires onChangeDisableRunningText(true) on click", async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <SettingsModal
@@ -285,10 +269,10 @@ describe("SettingsModal", () => {
         onChangeDisableRunningText={onChangeDisableRunningText}
       />,
     );
-    const disableRunningTextCheckbox = await screen.findByRole("checkbox", {
+    const disableRunningTextSwitch = await screen.findByRole("switch", {
       name: /disable running text/i,
     });
-    await user.click(disableRunningTextCheckbox);
+    await user.click(disableRunningTextSwitch);
     expect(onChangeDisableRunningText).toHaveBeenCalledWith(true);
   });
 });
