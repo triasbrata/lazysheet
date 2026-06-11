@@ -2112,6 +2112,14 @@ describe("App", () => {
       const statusBars = document.querySelectorAll("[data-tauri-drag-region]");
       expect(statusBars.length).toBeGreaterThan(0);
     });
+
+    it("StatusBar is present even when no file is open (persistent footer)", async () => {
+      await act(async () => {
+        renderWithProviders(<App />);
+      });
+      // StatusBar is always mounted as app-level footer regardless of workbook state
+      expect(screen.getByTestId("statusbar")).toBeInTheDocument();
+    });
   });
 
   // ── handleCopyQuery → no-context branch ────────────────────────────────────

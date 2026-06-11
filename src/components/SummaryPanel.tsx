@@ -607,7 +607,7 @@ export function SummaryPanel({
   return (
     <div
       data-testid="summary-panel"
-      className="flex shrink-0 flex-col border-t border-border bg-card/30"
+      className="flex h-full min-h-0 flex-col overflow-hidden border-t border-border bg-card/30"
       onKeyDown={handleKeyDown}
     >
       <div className="flex items-start gap-2 px-3 py-2 border-b border-border/60">
@@ -860,7 +860,7 @@ export function SummaryPanel({
       <div
         ref={tableContainerRef}
         data-testid="summary-table-container"
-        className="max-h-64 overflow-auto"
+        className="flex-1 min-h-0 overflow-auto"
       >
         {result.tooLarge ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">

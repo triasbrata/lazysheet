@@ -1572,6 +1572,45 @@ function App() {
     }
   }, [filePath]);
 
+  const gridEl = wb.activeSheet ? (
+    <Grid
+      sheet={wb.activeSheet}
+      selection={selection}
+      matches={findActive ? matches : undefined}
+      onSelectionChange={handleSelectionChange}
+      headerRow={headerRow}
+      onMarkHeader={handleMarkAsHeader}
+      defaultCopyFormat={defaultCopyFormat}
+      onCopyFormat={handleCopyFormat}
+      onSetDefaultFormat={handleSetDefaultFormat}
+      onCopyDefault={handleCopyDefault}
+      onSummarize={handleOpenSummary}
+      canSummarize={summaryEligible}
+      colOverrides={colOverrides}
+      rowOverrides={rowOverrides}
+      resizeDisabled={resizeDisabled}
+      onColResize={handleColResize}
+      onRowResize={handleRowResize}
+      onColReset={handleColReset}
+      onRowReset={handleRowReset}
+      onResetAllDimensions={handleResetAllDimensions}
+      onOpenColWidthDialog={handleOpenColWidthDialog}
+      onOpenRowHeightDialog={handleOpenRowHeightDialog}
+      filters={activeFilters}
+      onColumnFilterChange={handleColumnFilterChange}
+      canCopyQuery
+      onCopyQuery={handleCopyQuery}
+      zoom={zoom}
+      onZoomChange={handleZoomChange}
+      editEnabled={editEnabled}
+      editingCell={editingCell}
+      getEditedCell={getEditedCell}
+      onEditStart={handleEditStart}
+      onEditCommit={handleEditCommit}
+      onEditCancel={handleEditCancel}
+    />
+  ) : null;
+
   return (
     <div className="flex h-screen flex-col bg-background text-foreground antialiased overflow-hidden">
       <TitleBar
@@ -1602,61 +1641,27 @@ function App() {
             <Welcome onOpen={open} recents={recents} dragOver={dragOver} />
           ) : (
             <>
-              {wb.activeSheet && (
-                <Grid
-                  sheet={wb.activeSheet}
-                  selection={selection}
-                  matches={findActive ? matches : undefined}
-                  onSelectionChange={handleSelectionChange}
-                  headerRow={headerRow}
-                  onMarkHeader={handleMarkAsHeader}
-                  defaultCopyFormat={defaultCopyFormat}
-                  onCopyFormat={handleCopyFormat}
-                  onSetDefaultFormat={handleSetDefaultFormat}
-                  onCopyDefault={handleCopyDefault}
-                  onSummarize={handleOpenSummary}
-                  canSummarize={summaryEligible}
-                  colOverrides={colOverrides}
-                  rowOverrides={rowOverrides}
-                  resizeDisabled={resizeDisabled}
-                  onColResize={handleColResize}
-                  onRowResize={handleRowResize}
-                  onColReset={handleColReset}
-                  onRowReset={handleRowReset}
-                  onResetAllDimensions={handleResetAllDimensions}
-                  onOpenColWidthDialog={handleOpenColWidthDialog}
-                  onOpenRowHeightDialog={handleOpenRowHeightDialog}
-                  filters={activeFilters}
-                  onColumnFilterChange={handleColumnFilterChange}
-                  canCopyQuery
-                  onCopyQuery={handleCopyQuery}
-                  zoom={zoom}
-                  onZoomChange={handleZoomChange}
-                  editEnabled={editEnabled}
-                  editingCell={editingCell}
-                  getEditedCell={getEditedCell}
-                  onEditStart={handleEditStart}
-                  onEditCommit={handleEditCommit}
-                  onEditCancel={handleEditCancel}
-                />
-              )}
-              <StatusBar
-                sheet={wb.activeSheet}
-                selection={selection}
-                canSummarize={summaryEligible}
-                onOpenSummary={handleOpenSummary}
-                zoom={zoom}
-                onZoomIn={handleZoomIn}
-                onZoomOut={handleZoomOut}
-                onZoomReset={handleZoomReset}
-              />
-              {summaryPanelOpen && wb.activeSheet && selection && (
-                <SummaryPanel
-                  sheet={wb.activeSheet}
-                  selection={selection}
-                  headerRow={headerRow}
-                  onClose={handleCloseSummary}
-                />
+              {summaryPanelOpen && wb.activeSheet && selection ? (
+                <ResizablePanelGroup
+                  direction="vertical"
+                  autoSaveId="lazysheet:analyze-layout"
+                  className="min-h-0 flex-1"
+                >
+                  <ResizablePanel id="grid" order={1} defaultSize={62} minSize={20} className="flex min-h-0 flex-col">
+                    {gridEl}
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel id="analyze" order={2} defaultSize={38} minSize={15} className="flex min-h-0 flex-col">
+                    <SummaryPanel
+                      sheet={wb.activeSheet}
+                      selection={selection}
+                      headerRow={headerRow}
+                      onClose={handleCloseSummary}
+                    />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col">{gridEl}</div>
               )}
               <SheetTabs
                 sheets={wb.workbook.sheets}
@@ -1695,6 +1700,17 @@ function App() {
           </>
         )}
       </ResizablePanelGroup>
+
+      <StatusBar
+        sheet={wb.activeSheet}
+        selection={selection}
+        canSummarize={summaryEligible}
+        onOpenSummary={handleOpenSummary}
+        zoom={wb.workbook ? zoom : undefined}
+        onZoomIn={wb.workbook ? handleZoomIn : undefined}
+        onZoomOut={wb.workbook ? handleZoomOut : undefined}
+        onZoomReset={wb.workbook ? handleZoomReset : undefined}
+      />
 
       <FindBar
         open={findActive}
