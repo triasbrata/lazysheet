@@ -114,6 +114,21 @@ describe("conditionMatches", () => {
     expect(conditionMatches("apple", { op: "gt", operand: "banana" })).toBe(false);
   });
 
+  it("gte/lt/lte: string fallback when non-numeric", () => {
+    // gte — equal and greater both pass, lesser fails
+    expect(conditionMatches("apple", { op: "gte", operand: "apple" })).toBe(true);
+    expect(conditionMatches("banana", { op: "gte", operand: "apple" })).toBe(true);
+    expect(conditionMatches("apple", { op: "gte", operand: "banana" })).toBe(false);
+    // lt — strictly earlier in collation
+    expect(conditionMatches("apple", { op: "lt", operand: "banana" })).toBe(true);
+    expect(conditionMatches("banana", { op: "lt", operand: "apple" })).toBe(false);
+    expect(conditionMatches("apple", { op: "lt", operand: "apple" })).toBe(false);
+    // lte — equal and lesser pass, greater fails
+    expect(conditionMatches("apple", { op: "lte", operand: "apple" })).toBe(true);
+    expect(conditionMatches("apple", { op: "lte", operand: "banana" })).toBe(true);
+    expect(conditionMatches("banana", { op: "lte", operand: "apple" })).toBe(false);
+  });
+
   it("gte: numeric and boundary", () => {
     expect(conditionMatches("100", { op: "gte", operand: "100" })).toBe(true);
     expect(conditionMatches("101", { op: "gte", operand: "100" })).toBe(true);

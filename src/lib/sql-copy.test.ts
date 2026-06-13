@@ -6,6 +6,7 @@ import {
   quoteIdent,
   buildSkipComment,
   keyHasDuplicates,
+  ansiUpsertSupported,
   SQL_ROWS_PER_INSERT,
   SQL_SKIP_COMMENT_CAP,
   type BuildSqlOptions,
@@ -673,6 +674,37 @@ describe("generateSqlWithProgress", () => {
     await expect(
       generateSqlWithProgress(opts, () => {}, controller.signal)
     ).rejects.toMatchObject({ name: "AbortError" });
+  });
+
+  it("matches buildSqlQuery for kind=update (one statement per row)", async () => {
+    const updateOpts: BuildSqlOptions = {
+      ...opts,
+      kind: "update",
+      dialect: "postgres",
+      keyCols: [0],
+    };
+    const sync = buildSqlQuery(updateOpts);
+    const asyncRes = await generateSqlWithProgress(updateOpts, () => {});
+    expect(asyncRes.text).toBe(sync.text);
+    expect(asyncRes.text).toContain("UPDATE");
+  });
+
+  it("matches buildSqlQuery for kind=upsert", async () => {
+    const upsertOpts: BuildSqlOptions = {
+      ...opts,
+      kind: "upsert",
+      dialect: "postgres",
+      keyCols: [0],
+    };
+    const sync = buildSqlQuery(upsertOpts);
+    const asyncRes = await generateSqlWithProgress(upsertOpts, () => {});
+    expect(asyncRes.text).toBe(sync.text);
+  });
+});
+
+describe("ansiUpsertSupported", () => {
+  it("always returns false (ANSI has no standard upsert)", () => {
+    expect(ansiUpsertSupported()).toBe(false);
   });
 });
 

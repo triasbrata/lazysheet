@@ -536,4 +536,52 @@ describe("useWorkbook", () => {
       expect(recents[0].openedAt).toBeLessThanOrEqual(after);
     });
   });
+
+  describe("reloadActiveSheet()", () => {
+    it("no-ops when no workbook is open", async () => {
+      const { result } = renderHook(() => useWorkbook());
+      await act(async () => {
+        await result.current.reloadActiveSheet();
+      });
+      expect(result.current.activeSheet).toBeNull();
+      expect(mockLoadSheet).not.toHaveBeenCalled();
+    });
+
+    it("re-reads the active sheet from disk and replaces it", async () => {
+      const wb = makeWorkbook("/tmp/data.xlsx", "data.xlsx", "Sheet1");
+      mockOpenWorkbook.mockResolvedValue(wb);
+      const { result } = renderHook(() => useWorkbook());
+      await act(async () => {
+        await result.current.open("/tmp/data.xlsx");
+      });
+
+      const fresh = makeSheet("Sheet1");
+      fresh.max_col = 3;
+      mockLoadSheet.mockResolvedValue(fresh);
+
+      await act(async () => {
+        await result.current.reloadActiveSheet();
+      });
+
+      expect(mockLoadSheet).toHaveBeenCalledWith("Sheet1");
+      expect(result.current.activeSheet).toEqual(fresh);
+      expect(result.current.error).toBeNull();
+    });
+
+    it("sets error when the reload fails", async () => {
+      const wb = makeWorkbook("/tmp/data.xlsx", "data.xlsx", "Sheet1");
+      mockOpenWorkbook.mockResolvedValue(wb);
+      const { result } = renderHook(() => useWorkbook());
+      await act(async () => {
+        await result.current.open("/tmp/data.xlsx");
+      });
+
+      mockLoadSheet.mockRejectedValue("disk gone");
+      await act(async () => {
+        await result.current.reloadActiveSheet();
+      });
+
+      expect(result.current.error).toBe("disk gone");
+    });
+  });
 });

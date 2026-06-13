@@ -530,6 +530,17 @@ describe("expandBoundsForMerges", () => {
     expect(expanded.r1).toBe(0); // anchor at 0-indexed row 0
   });
 
+  it("merge anchor left of bounds expands c1 leftward", () => {
+    // MergeRange {r1:2,c1:1,r2:2,c2:3} -> 0-indexed row 1, cols 0-2.
+    // Selection covers row 1, cols 1-2 — intersects the merge but misses its
+    // anchor at col 0 -> should expand c1 to 0.
+    const info = buildMergeInfo([{ r1: 2, c1: 1, r2: 2, c2: 3 }]);
+    const b: Bounds = { r1: 1, c1: 1, r2: 1, c2: 2 };
+    const expanded = expandBoundsForMerges(b, info);
+    expect(expanded.c1).toBe(0);
+    expect(expanded.c2).toBe(2);
+  });
+
   it("merge completely outside bounds -> bounds unchanged", () => {
     // MergeRange {r1:11,c1:11,...} -> 0-indexed rows 10-11, far from bounds
     const info = buildMergeInfo([{ r1: 11, c1: 11, r2: 13, c2: 13 }]);

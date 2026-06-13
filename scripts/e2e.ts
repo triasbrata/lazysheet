@@ -77,6 +77,55 @@ function extractWdioReport(out: string): string {
   return lines.slice(-100).join("\n").trimEnd();
 }
 
+/**
+ * Reduce raw vitest / nyc-coverage output to a TLDR: failing test files, the
+ * assertion/error lines, the run summary, and any coverage-threshold error.
+ * Drops the per-test "✓ pass" spam and DOM warnings. Falls back to the tail
+ * when nothing matches (so an unexpected crash is never swallowed).
+ */
+function extractTestReport(out: string): string {
+  const KEEP =
+    /(\bFAIL\b|^\s*[×✗❯]|AssertionError|TypeError|ReferenceError|Error:|\bexpected\b|Test Files\s|^\s*Tests\s|\bdoes not meet\b|Coverage for |^ERROR:|threshold)/;
+  const picked = out
+    .split("\n")
+    .map((l) => l.trimEnd())
+    .filter((l) => l && KEEP.test(l));
+  // Collapse consecutive duplicates (vitest repeats some summary lines).
+  const uniq = picked.filter((l, i) => l !== picked[i - 1]);
+  if (uniq.length === 0) {
+    return out.split("\n").slice(-60).join("\n").trimEnd();
+  }
+  // Cap to keep the TLDR scannable; the full log is written to disk.
+  return uniq.slice(0, 80).join("\n");
+}
+
+/**
+ * Run a gated command with output captured (clean terminal). On failure, write
+ * the full output to `logPath`, print a TLDR extracted from it, and die. On
+ * success, return silently. Keeps deploy output readable while still surfacing
+ * exactly which test/coverage check broke.
+ */
+async function gate(
+  label: string,
+  cmd: () => Promise<{ stdout: Buffer; stderr: Buffer }>,
+  logPath: string,
+  onFailMsg: string,
+): Promise<void> {
+  let out = "";
+  try {
+    const res = await cmd();
+    out = res.stdout.toString() + res.stderr.toString();
+  } catch (err) {
+    const e = err as { stdout?: Buffer; stderr?: Buffer };
+    out = (e.stdout?.toString() ?? "") + (e.stderr?.toString() ?? "");
+    writeFileSync(logPath, out);
+    console.error(`\n── ${label} failed — TLDR ──`);
+    console.error(extractTestReport(out));
+    die(`${onFailMsg} (full log: ${logPath})`);
+  }
+  writeFileSync(logPath, out);
+}
+
 // Backend coverage instrumentation (report-only — never gates the build).
 // Best-effort: if cargo-llvm-cov isn't installed we skip backend coverage and
 // build the app uninstrumented. The frontend 95% gate is unaffected.
@@ -139,7 +188,12 @@ if (wdioFailed) {
 }
 
 log("Collecting unit coverage (vitest)");
-await $`bun run test:coverage`.cwd(ROOT);
+await gate(
+  "Unit tests / coverage (vitest)",
+  () => $`bun run test:coverage`.cwd(ROOT).quiet(),
+  resolve(ROOT, "coverage/unit-test.log"),
+  "Unit tests or the 95% line-coverage gate failed — release aborted (no git writes made)",
+);
 
 const unitSrc = resolve(ROOT, "coverage/unit/coverage-final.json");
 const unitDst = resolve(ROOT, ".nyc_output/unit-final.json");
@@ -150,11 +204,12 @@ if (existsSync(unitSrc)) {
 }
 
 log("Merging coverage + enforcing 95% frontend line gate");
-try {
-  await $`bun run coverage`.cwd(E2E);
-} catch {
-  die("Frontend line coverage below 95% — gate failed (no release).");
-}
+await gate(
+  "Merged frontend coverage gate (nyc)",
+  () => $`bun run coverage`.cwd(E2E).quiet(),
+  resolve(E2E, "coverage-merge.log"),
+  "Merged frontend line coverage below 95% — gate failed (no release)",
+);
 
 if (backendCov) {
   log("Backend coverage report (report-only)");

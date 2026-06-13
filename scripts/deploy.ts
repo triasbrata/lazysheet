@@ -498,13 +498,16 @@ async function main() {
     if (answer !== "y" && answer !== "yes") die("aborted by user");
   }
 
-  // 9. e2e gate
+  // 9. Test gate — runs unit (vitest + 95% coverage) and e2e (wdio). On any
+  //    failure, e2e.ts prints a TLDR of exactly which test/coverage check broke
+  //    (full logs under coverage/ and e2e/); we just abort here, before any git
+  //    writes, so a red gate never produces a release.
   if (!SKIP_E2E && !DRY_RUN) {
-    log("Running e2e gate (native tauri-webdriver)…");
+    log("Running test gate (unit + native tauri-webdriver e2e)…");
     try {
       await $`bun run scripts/e2e.ts`.cwd(ROOT);
     } catch {
-      die("E2E gate failed — release aborted (no git writes made). Fix tests, or re-run with --skip-e2e to override.");
+      die("Test gate failed — see the TLDR above. Release aborted (no git writes made). Fix the tests, or re-run with --skip-e2e to override.");
     }
   }
 
