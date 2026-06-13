@@ -632,6 +632,18 @@ describe("CommandPalette", () => {
       expect(document.documentElement.getAttribute("data-theme")).toBe("palenight");
     });
 
+    it("clicking System applies the system theme and closes the palette", async () => {
+      const user = userEvent.setup();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <CommandPalette {...makeProps({ mode: "theme", onOpenChange })} />
+      );
+      await user.click(screen.getByText("System"));
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      // "system" follows the OS preference — no explicit data-theme palette attr.
+      expect(document.documentElement.getAttribute("data-theme")).toBeNull();
+    });
+
     it("shows theme mode badge button", () => {
       renderWithProviders(
         <CommandPalette {...makeProps({ mode: "theme" })} />
