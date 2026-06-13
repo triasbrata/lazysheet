@@ -10,8 +10,23 @@ export default defineConfig({
       // ─── Unit project (node, happy-dom) ────────────────────────────────
       defineProject({
         resolve: {
+          // node_modules has two react copies — a hoisted top-level react@19.2.6
+          // and react-dom@19.2.7's peer react@19.2.7. Component code resolves the
+          // 19.2.6 copy while the test renderer (react-dom) uses 19.2.7, so their
+          // hook dispatchers don't match → "Invalid hook call". Pin react + the
+          // jsx runtimes to react-dom's 19.2.7 copy so a single react instance is
+          // shared.
           alias: {
             '#': path.resolve(__dirname, './src'),
+            react: path.resolve(__dirname, 'node_modules/.pnpm/react@19.2.7/node_modules/react'),
+            'react/jsx-runtime': path.resolve(
+              __dirname,
+              'node_modules/.pnpm/react@19.2.7/node_modules/react/jsx-runtime.js',
+            ),
+            'react/jsx-dev-runtime': path.resolve(
+              __dirname,
+              'node_modules/.pnpm/react@19.2.7/node_modules/react/jsx-dev-runtime.js',
+            ),
           },
         },
         test: {

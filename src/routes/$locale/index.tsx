@@ -15,6 +15,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '#/components/ui/accordion'
+import { HeroAppMock } from '#/sections/hero/HeroAppMock'
 import { BentoGrid } from '#/sections/bento/BentoGrid'
 import { useBentoTiles } from '#/sections/bento/features'
 import { isLocale, DEFAULT_LOCALE, type Locale } from '#/i18n/config'
@@ -88,13 +89,7 @@ export function Hero({ data }: { data: DownloadData }) {
           </p>
         </div>
 
-        <div className="relative mx-auto max-w-[1100px] overflow-hidden rounded-xl border border-surface-container-highest bg-white shadow-2xl">
-          <img
-            src="/shots/application.png"
-            alt={t('hero.dashboardAlt')}
-            className="h-auto w-full"
-          />
-        </div>
+        <HeroAppMock />
       </div>
     </section>
   )
