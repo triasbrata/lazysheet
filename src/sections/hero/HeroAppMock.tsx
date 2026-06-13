@@ -1,15 +1,15 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { computeInitialScale, deriveSceneState, stepFromProgress } from "./mock-data";
+import { computeInitialScale, deriveSceneState, stepFromProgress, THEMES, themeVars } from "./mock-data";
 import { WindowChrome } from "./WindowChrome";
 import { MockGrid } from "./MockGrid";
-import { MockContextMenu } from "./MockContextMenu";
+import { MockSettings } from "./MockSettings";
 import { MockStatusBar } from "./MockStatusBar";
 import { MockCursor } from "./MockCursor";
 import { MockToast } from "./MockToast";
 
-export function HeroAppMock(): JSX.Element {
+export function HeroAppMock({ version }: { version: string }): JSX.Element {
   const trackRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: trackRef,
@@ -36,6 +36,7 @@ export function HeroAppMock(): JSX.Element {
   }, [scrollYProgress]);
 
   const scene = deriveSceneState(step);
+  const theme = THEMES[scene.appliedThemeId];
 
   return (
     <div ref={trackRef} className="relative h-[140vh]">
@@ -43,17 +44,17 @@ export function HeroAppMock(): JSX.Element {
         <motion.div
           role="img"
           aria-label={t("hero.dashboardAlt")}
-          style={{ scale }}
-          className="relative w-[88vw] max-w-[1340px] origin-center overflow-hidden rounded-xl border border-surface-container-highest bg-white shadow-2xl will-change-transform"
+          style={{ scale, ...themeVars(theme), borderColor: 'var(--m-border)' }}
+          className="relative w-[88vw] max-w-[1340px] origin-center overflow-hidden rounded-xl border bg-[var(--m-bg)] shadow-2xl transition-colors duration-500 will-change-transform"
         >
           <WindowChrome />
-          <div className="relative h-[620px] overflow-hidden bg-white">
-            <MockGrid selected={scene.selected} />
-            <MockContextMenu
-              open={scene.menuOpen}
-              submenuOpen={scene.submenuOpen}
-              highlightQuery={scene.highlightQuery}
-              highlightInsert={scene.highlightInsert}
+          <div className="relative h-[620px] overflow-hidden bg-[var(--m-bg)] transition-colors duration-500">
+            <MockGrid />
+            <MockSettings
+              open={scene.settingsOpen}
+              themeMenuOpen={scene.themeMenuOpen}
+              highlightId={scene.highlightId}
+              appliedThemeId={scene.appliedThemeId}
             />
             <MockCursor
               x={scene.cursor.x}
@@ -62,7 +63,7 @@ export function HeroAppMock(): JSX.Element {
             />
             <MockToast visible={scene.toastVisible} />
           </div>
-          <MockStatusBar selected={scene.selected} />
+          <MockStatusBar version={version} />
         </motion.div>
       </div>
     </div>

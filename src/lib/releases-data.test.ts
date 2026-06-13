@@ -226,7 +226,7 @@ describe('getDownloadData / fetchReleasesCached', () => {
       const result = await handler()
 
       expect(result.releases).toEqual([FALLBACK_RELEASE])
-      expect(result.release?.tag).toBe('v0.5.0')
+      expect(result.release?.tag).toBe('v0.6.0')
     })
 
     it('returns [FALLBACK_RELEASE] when fetch responds !ok and cache has no data', async () => {
@@ -235,7 +235,7 @@ describe('getDownloadData / fetchReleasesCached', () => {
 
       const result = await handler()
       expect(result.releases).toEqual([FALLBACK_RELEASE])
-      expect(result.release?.tag).toBe('v0.5.0')
+      expect(result.release?.tag).toBe('v0.6.0')
     })
   })
 
@@ -248,7 +248,7 @@ describe('getDownloadData / fetchReleasesCached', () => {
       const result = await handler()
 
       expect(result.releases).toEqual([FALLBACK_RELEASE])
-      expect(result.release?.tag).toBe('v0.5.0')
+      expect(result.release?.tag).toBe('v0.6.0')
     })
 
     it('returns [FALLBACK_RELEASE] when caches is undefined and fetch throws', async () => {
@@ -259,7 +259,7 @@ describe('getDownloadData / fetchReleasesCached', () => {
       const result = await handler()
 
       expect(result.releases).toEqual([FALLBACK_RELEASE])
-      expect(result.release?.tag).toBe('v0.5.0')
+      expect(result.release?.tag).toBe('v0.6.0')
     })
   })
 
@@ -350,7 +350,7 @@ describe('getDownloadData / fetchReleasesCached', () => {
 
       // Empty parse -> fallback [FALLBACK_RELEASE]; release = releases[0]
       expect(result.releases).toEqual([FALLBACK_RELEASE])
-      expect(result.release?.tag).toBe('v0.5.0')
+      expect(result.release?.tag).toBe('v0.6.0')
     })
   })
 })

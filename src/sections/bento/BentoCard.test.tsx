@@ -288,6 +288,23 @@ describe('BentoCard — reduce=false', () => {
     const img = screen.getByAltText('Test Image')
     expect(img).toBeTruthy()
     expect(img.getAttribute('src')).toBe('/shots/test.png')
+    // default position anchors top-left
+    expect(img.className).toContain('object-cover')
+    expect(img.className).toContain('object-left-top')
+  })
+
+  it('renders media centered when position is center', () => {
+    const tile: BentoTile = {
+      id: 'test-media-center',
+      span: 'xl:col-span-4',
+      title: 'Centered Tile',
+      media: { src: '/shots/test.gif', alt: 'Centered Image', position: 'center' },
+    }
+    renderWithI18n(<BentoCard tile={tile} index={0} progress={fakeProgress} pinned={false} />)
+    const img = screen.getByAltText('Centered Image')
+    expect(img.className).toContain('object-cover')
+    expect(img.className).toContain('object-center')
+    expect(img.className).not.toContain('object-left-top')
   })
 
   it('does not render media when absent', () => {

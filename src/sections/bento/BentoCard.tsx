@@ -183,7 +183,10 @@ export function BentoCard({ tile, index, progress, pinned }: BentoCardProps): JS
                 <img
                   src={tile.media.src}
                   alt={tile.media.alt}
-                  className="h-full w-full object-cover object-left-top"
+                  className={cn(
+                    'h-full w-full object-cover',
+                    tile.media.position === 'center' ? 'object-center' : 'object-left-top',
+                  )}
                 />
               </motion.div>
             )}

@@ -99,6 +99,31 @@
       "title": "复制为查询",
       "description": "将任意选区复制为可直接运行的 SQL 查询——INSERT、UPDATE 或 UPSERT。",
       "mediaAlt": "将选区复制为 SQL UPSERT 查询"
+    },
+    "theme": {
+      "title": "主题定制",
+      "description": "使用内置的 Material Theme 配色方案重新美化应用。主题选择器现已移至 Settings。",
+      "mediaAlt": "使用 Material Theme 配色方案切换应用主题"
+    },
+    "settings": {
+      "title": "全新设计的 Settings",
+      "description": "更宽的 Settings 弹窗，采用 Zed 风格的行布局、开关切换，以及内联的语言和主题选择器。"
+    },
+    "sidePanel": {
+      "title": "工作区侧边栏",
+      "description": "专为工作区设置设计的侧边栏，关闭前会弹出确认提示，让您的未保存工作不会意外丢失。"
+    },
+    "fastOpen": {
+      "title": "大型表格打开更快",
+      "description": "含 7.1 万个单元格的 .xlsx 文件原本需要约 3 秒，现在不到一秒即可打开。仅预先解析可见的工作表。"
+    },
+    "smallerApp": {
+      "title": "应用体积更小",
+      "description": "已安装应用的大小从约 25 MB 缩减至约 10 MB——下载和更新更快。"
+    },
+    "resizeFix": {
+      "title": "流畅的 macOS 调整窗口大小",
+      "description": "修复了在 macOS 上实时调整窗口大小时窗口后方出现白色缝隙的问题。"
     }
   },
   "faq": {

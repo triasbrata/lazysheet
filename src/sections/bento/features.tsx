@@ -18,6 +18,11 @@ import {
   FormulaIcon,
   DatabaseIcon,
   AutoUpdateIcon,
+  GearIcon,
+  SidePanelIcon,
+  GaugeIcon,
+  WeightIcon,
+  WrenchIcon,
 } from '#/components/site/icons'
 import { resolveVersion } from '#/lib/version'
 
@@ -31,7 +36,7 @@ export type BentoTile = {
   title: string
   description?: string
   render?: () => React.ReactNode
-  media?: { src: string; alt: string }
+  media?: { src: string; alt: string; position?: 'left-top' | 'center' }
   layout?: 'stack' | 'band'
 }
 
@@ -263,6 +268,98 @@ function buildFeatureVersions(t: (key: string) => string): Record<string, BentoT
         icon: CopyIcon,
         title: t('bento.copy.title'),
         description: t('bento.copy.description'),
+      },
+    ],
+    'v0.6.0': [
+      {
+        id: 'theme',
+        span: 'xl:col-start-5 xl:col-span-4 xl:row-start-1 xl:row-span-3',
+        tone: 'accent',
+        icon: PaletteIcon,
+        title: t('bento.theme.title'),
+        description: t('bento.theme.description'),
+        media: { src: '/shots/theme-customization.gif', alt: t('bento.theme.mediaAlt'), position: 'center' },
+      },
+      {
+        id: 'fastOpen',
+        span: 'xl:col-start-1 xl:col-span-4 xl:row-start-1',
+        icon: GaugeIcon,
+        title: t('bento.fastOpen.title'),
+        description: t('bento.fastOpen.description'),
+      },
+      {
+        id: 'formats',
+        span: 'xl:col-start-9 xl:col-span-4 xl:row-start-1',
+        icon: ExcelIcon,
+        title: t('bento.formats.title'),
+        description: t('bento.formats.description'),
+        render: () => (
+          <div className="flex flex-wrap gap-2">
+            {FILE_FORMATS.map((ext) => (
+              <span
+                key={ext}
+                className="rounded-lg border border-surface-container-high bg-white px-2.5 py-1 text-xs font-medium text-on-surface-variant"
+              >
+                {ext}
+              </span>
+            ))}
+          </div>
+        ),
+      },
+      {
+        id: 'settings',
+        span: 'xl:col-start-9 xl:col-span-4 xl:row-start-2',
+        icon: GearIcon,
+        title: t('bento.settings.title'),
+        description: t('bento.settings.description'),
+      },
+      {
+        id: 'sidePanel',
+        span: 'xl:col-start-1 xl:col-span-4 xl:row-start-2',
+        icon: SidePanelIcon,
+        title: t('bento.sidePanel.title'),
+        description: t('bento.sidePanel.description'),
+      },
+      {
+        id: 'smallerApp',
+        span: 'xl:col-start-1 xl:col-span-4 xl:row-start-3',
+        icon: WeightIcon,
+        title: t('bento.smallerApp.title'),
+        description: t('bento.smallerApp.description'),
+      },
+      {
+        id: 'resizeFix',
+        span: 'xl:col-start-9 xl:col-span-4 xl:row-start-3',
+        icon: WrenchIcon,
+        title: t('bento.resizeFix.title'),
+        description: t('bento.resizeFix.description'),
+      },
+      {
+        id: 'copyAsQuery',
+        span: 'xl:col-start-1 xl:col-span-6 xl:row-start-4',
+        icon: DatabaseIcon,
+        title: t('bento.copyAsQuery.title'),
+        description: t('bento.copyAsQuery.description'),
+        render: () => (
+          <div className="flex flex-wrap gap-2">
+            {QUERY_KINDS.map((k) => (
+              <span
+                key={k}
+                className="rounded-lg border border-surface-container-high bg-white px-2.5 py-1 text-xs font-medium text-on-surface-variant"
+              >
+                {k}
+              </span>
+            ))}
+          </div>
+        ),
+      },
+      {
+        id: 'native',
+        span: 'xl:col-start-7 xl:col-span-6 xl:row-start-4',
+        tone: 'plain',
+        icon: AppleMark,
+        title: t('bento.native.title'),
+        description: t('bento.native.description'),
       },
     ],
   }

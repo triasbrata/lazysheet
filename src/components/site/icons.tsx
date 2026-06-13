@@ -29,6 +29,11 @@ import {
   faSuperscript,
   faDatabase,
   faArrowsRotate,
+  faGear,
+  faTableColumns,
+  faGaugeHigh,
+  faWeightHanging,
+  faWrench,
 } from '@fortawesome/free-solid-svg-icons'
 
 type IconProps = { className?: string; style?: CSSProperties }
@@ -65,6 +70,11 @@ export const ZoomIcon = make(faMagnifyingGlassPlus)
 export const FormulaIcon = make(faSuperscript)
 export const DatabaseIcon = make(faDatabase)
 export const AutoUpdateIcon = make(faArrowsRotate)
+export const GearIcon = make(faGear)
+export const SidePanelIcon = make(faTableColumns)
+export const GaugeIcon = make(faGaugeHigh)
+export const WeightIcon = make(faWeightHanging)
+export const WrenchIcon = make(faWrench)
 
 // File-format marks
 export const ExcelIcon = make(faFileExcel)

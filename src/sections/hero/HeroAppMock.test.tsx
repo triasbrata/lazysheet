@@ -26,23 +26,28 @@ afterEach(() => cleanup())
 
 describe('HeroAppMock', () => {
   it('renders chrome, grid, and status bar', () => {
-    renderWithI18n(<HeroAppMock />)
+    renderWithI18n(<HeroAppMock version="v0.6.0" />)
     expect(screen.getByText(FILE_NAME)).toBeTruthy()
     // Grid always shows row 1 data (10, 18 appear once; 28 also in status bar)
     expect(screen.getByText('10')).toBeTruthy()
     expect(screen.getByText('18')).toBeTruthy()
     expect(screen.getAllByText('28').length).toBeGreaterThan(0)
-    // Status bar present
-    expect(screen.getByText('C1')).toBeTruthy()
+    // Status bar present (renders 'A1:C1' as a single text node)
+    expect(screen.getByText('A1:C1')).toBeTruthy()
+  })
+
+  it('binds the version into the status bar', () => {
+    renderWithI18n(<HeroAppMock version="v0.6.0" />)
+    expect(screen.getByText('LazySheet v0.6.0')).toBeTruthy()
   })
 
   it('has accessible img role with dashboard label', () => {
-    renderWithI18n(<HeroAppMock />)
+    renderWithI18n(<HeroAppMock version="v0.6.0" />)
     expect(screen.getByRole('img', { name: /dashboard/i })).toBeTruthy()
   })
 
   it('resize handler runs without error and component still renders', () => {
-    renderWithI18n(<HeroAppMock />)
+    renderWithI18n(<HeroAppMock version="v0.6.0" />)
     act(() => {
       window.dispatchEvent(new Event('resize'))
     })

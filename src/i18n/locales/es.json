@@ -99,6 +99,31 @@
       "title": "Copiar como consulta",
       "description": "Copia cualquier selección como una consulta SQL lista para usar: INSERT, UPDATE o UPSERT.",
       "mediaAlt": "Copiar una selección como una consulta SQL UPSERT"
+    },
+    "theme": {
+      "title": "Personalización de Tema",
+      "description": "Rediseña la app con paletas de color Material Theme integradas. El selector de tema ahora se encuentra en Settings.",
+      "mediaAlt": "Cambiando el tema de la app con una paleta Material Theme"
+    },
+    "settings": {
+      "title": "Settings Rediseñado",
+      "description": "Un modal de Settings más amplio con filas estilo Zed, interruptores de palanca y selectores de idioma y tema en línea."
+    },
+    "sidePanel": {
+      "title": "Panel Lateral del Espacio de Trabajo",
+      "description": "Un panel lateral dedicado para la configuración del espacio de trabajo, con confirmación antes de cerrar para que nunca pierdas trabajo sin guardar."
+    },
+    "fastOpen": {
+      "title": "Apertura Más Rápida de Hojas Grandes",
+      "description": "Un archivo .xlsx de 71 mil celdas que tardaba ~3 s ahora se abre en bien menos de un segundo. Solo se analiza de antemano la hoja visible."
+    },
+    "smallerApp": {
+      "title": "Tamaño de App Reducido",
+      "description": "La app instalada se reduce de ~25 MB a ~10 MB — descargas y actualizaciones más rápidas."
+    },
+    "resizeFix": {
+      "title": "Redimensionado Fluido en macOS",
+      "description": "Corregido el espacio blanco que aparecía detrás de la ventana al redimensionarla en vivo en macOS."
     }
   },
   "faq": {

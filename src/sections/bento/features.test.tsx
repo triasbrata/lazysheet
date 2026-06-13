@@ -132,7 +132,7 @@ describe('useBentoTiles', () => {
     expect(hasMdColStart).toBe(false)
   })
 
-  it('returns 12 tiles for a future tag (v9.9.9) — highest defined <= active resolves to v0.5.0', () => {
+  it('returns 9 tiles for a future tag (v9.9.9) — highest defined <= active resolves to v0.6.0', () => {
     let tiles: ReturnType<typeof useBentoTiles> = []
 
     function Capture() {
@@ -141,7 +141,7 @@ describe('useBentoTiles', () => {
     }
     renderWithI18n(<Capture />)
 
-    expect(tiles.length).toBe(12)
+    expect(tiles.length).toBe(9)
   })
 
   it('returns 11 tiles for a tag below all defined (v0.0.1) — falls back to min = v0.4.0', () => {
@@ -223,5 +223,90 @@ describe('useBentoTiles', () => {
   it('v0.5.0 has tile-resize (resize introduced in v0.5.0)', () => {
     renderWithI18n(<TileHarness activeTag="v0.5.0" />)
     expect(screen.getByTestId('tile-resize')).toBeTruthy()
+  })
+
+  it('returns 9 tiles for v0.6.0', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    const el = screen.getByTestId('count')
+    expect(Number(el.getAttribute('data-count'))).toBe(9)
+  })
+
+  it('v0.6.0 has tile-theme', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-theme')).toBeTruthy()
+  })
+
+  it('v0.6.0 has tile-settings', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-settings')).toBeTruthy()
+  })
+
+  it('v0.6.0 has tile-sidePanel', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-sidePanel')).toBeTruthy()
+  })
+
+  it('v0.6.0 has tile-fastOpen', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-fastOpen')).toBeTruthy()
+  })
+
+  it('v0.6.0 has tile-smallerApp', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-smallerApp')).toBeTruthy()
+  })
+
+  it('v0.6.0 has tile-resizeFix', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-resizeFix')).toBeTruthy()
+  })
+
+  it('theme tile in v0.6.0 has media.src = /shots/theme-customization.gif', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.6.0')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    const theme = tiles.find((t) => t.id === 'theme')
+    expect(theme).toBeDefined()
+    expect(theme!.media?.src).toBe('/shots/theme-customization.gif')
+  })
+
+  it('copyAsQuery tile in v0.6.0 has no media (media is undefined)', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.6.0')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    const cq = tiles.find((t) => t.id === 'copyAsQuery')
+    expect(cq).toBeDefined()
+    expect(cq!.media).toBeUndefined()
+  })
+
+  it('v0.6.0 carries formats and native tiles', () => {
+    renderWithI18n(<TileHarness activeTag="v0.6.0" />)
+    expect(screen.getByTestId('tile-formats')).toBeTruthy()
+    expect(screen.getByTestId('tile-native')).toBeTruthy()
+  })
+
+  it('v0.6.0 tile spans use xl: prefix (not md:) for col/row tokens', () => {
+    let tiles: ReturnType<typeof useBentoTiles> = []
+
+    function Capture() {
+      tiles = useBentoTiles('v0.6.0')
+      return null
+    }
+    renderWithI18n(<Capture />)
+
+    const hasXlColStart = tiles.some((t) => t.span.includes('xl:col-start-'))
+    expect(hasXlColStart).toBe(true)
+    const hasMdColStart = tiles.some((t) => t.span.includes('md:col-start-'))
+    expect(hasMdColStart).toBe(false)
   })
 })

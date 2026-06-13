@@ -99,6 +99,31 @@
       "title": "Copy as Query",
       "description": "Copy any selection as a ready-to-run SQL query — INSERT, UPDATE, or UPSERT.",
       "mediaAlt": "Copying a selection as an SQL UPSERT query"
+    },
+    "theme": {
+      "title": "Theme Customization",
+      "description": "Restyle the app with built-in Material Theme color palettes. The theme picker now lives in Settings.",
+      "mediaAlt": "Switching the app theme with a Material Theme palette"
+    },
+    "settings": {
+      "title": "Redesigned Settings",
+      "description": "A wider Settings modal with Zed-style rows, toggle switches, and inline language and theme pickers."
+    },
+    "sidePanel": {
+      "title": "Workspace Side Panel",
+      "description": "A dedicated side panel for workspace settings, with an ask-before-close prompt so you never lose unsaved work."
+    },
+    "fastOpen": {
+      "title": "Faster Large-Sheet Open",
+      "description": "A 71k-cell .xlsx that took ~3s now opens in well under a second. Only the visible sheet is parsed up front."
+    },
+    "smallerApp": {
+      "title": "Smaller App Size",
+      "description": "The installed app shrinks from ~25 MB to ~10 MB — faster downloads and updates."
+    },
+    "resizeFix": {
+      "title": "Smooth macOS Resize",
+      "description": "Fixed the white gap that trailed the window during live resize on macOS."
     }
   },
   "faq": {

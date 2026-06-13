@@ -99,6 +99,31 @@
       "title": "Salin sebagai Query",
       "description": "Salin pilihan apa pun sebagai query SQL siap pakai — INSERT, UPDATE, atau UPSERT.",
       "mediaAlt": "Menyalin pilihan sebagai query SQL UPSERT"
+    },
+    "theme": {
+      "title": "Kustomisasi Tema",
+      "description": "Ubah tampilan aplikasi dengan palet warna Material Theme bawaan. Pemilih tema kini tersedia di Settings.",
+      "mediaAlt": "Mengganti tema aplikasi dengan palet Material Theme"
+    },
+    "settings": {
+      "title": "Settings yang Dirancang Ulang",
+      "description": "Modal Settings yang lebih lebar dengan baris bergaya Zed, toggle switch, serta pemilih bahasa dan tema secara inline."
+    },
+    "sidePanel": {
+      "title": "Panel Samping Workspace",
+      "description": "Panel samping khusus untuk pengaturan workspace, dilengkapi konfirmasi sebelum menutup agar pekerjaan yang belum disimpan tidak hilang."
+    },
+    "fastOpen": {
+      "title": "Buka Sheet Besar Lebih Cepat",
+      "description": "File .xlsx berisi 71 ribu sel yang dulu membutuhkan ~3 detik kini terbuka dalam waktu jauh di bawah satu detik. Hanya sheet yang terlihat yang diproses terlebih dahulu."
+    },
+    "smallerApp": {
+      "title": "Ukuran Aplikasi Lebih Kecil",
+      "description": "Ukuran aplikasi yang terpasang menyusut dari ~25 MB menjadi ~10 MB — unduhan dan pembaruan lebih cepat."
+    },
+    "resizeFix": {
+      "title": "Resize macOS yang Mulus",
+      "description": "Memperbaiki celah putih yang muncul di belakang jendela saat resize langsung di macOS."
     }
   },
   "faq": {

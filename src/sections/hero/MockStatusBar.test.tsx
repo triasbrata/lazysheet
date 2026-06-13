@@ -6,32 +6,23 @@ import { MockStatusBar } from './MockStatusBar'
 afterEach(() => cleanup())
 
 describe('MockStatusBar', () => {
-  describe('selected=true', () => {
-    it('shows range cell ref A1:C1', () => {
-      render(<MockStatusBar selected={true} />)
-      expect(screen.getByText('A1:C1')).toBeTruthy()
-    })
-
-    it('shows selection size with 3 cells', () => {
-      render(<MockStatusBar selected={true} />)
-      expect(screen.getByText(/3 cells/)).toBeTruthy()
-    })
-
-    it('shows zoom 100%', () => {
-      render(<MockStatusBar selected={true} />)
-      expect(screen.getByText('100%')).toBeTruthy()
-    })
+  it('shows A1:C1', () => {
+    render(<MockStatusBar version="v0.6.0" />)
+    expect(screen.getByText('A1:C1')).toBeTruthy()
   })
 
-  describe('selected=false', () => {
-    it('shows single cell ref C1', () => {
-      render(<MockStatusBar selected={false} />)
-      expect(screen.getByText('C1')).toBeTruthy()
-    })
+  it('shows text matching /3 cells/', () => {
+    render(<MockStatusBar version="v0.6.0" />)
+    expect(screen.getByText(/3 cells/)).toBeTruthy()
+  })
 
-    it('shows value 28', () => {
-      render(<MockStatusBar selected={false} />)
-      expect(screen.getByText('28')).toBeTruthy()
-    })
+  it('shows 100%', () => {
+    render(<MockStatusBar version="v0.6.0" />)
+    expect(screen.getByText('100%')).toBeTruthy()
+  })
+
+  it('shows LazySheet v0.6.0', () => {
+    render(<MockStatusBar version="v0.6.0" />)
+    expect(screen.getByText('LazySheet v0.6.0')).toBeTruthy()
   })
 })

@@ -13,14 +13,14 @@ import {
 // UPDATE THIS on every new release: bump FALLBACK_TAG and list the published
 // asset filenames. Classification is reused from classifyAsset() so the labels
 // and badges stay consistent with live data — no duplicated logic here.
-const FALLBACK_TAG = 'v0.5.0'
+const FALLBACK_TAG = 'v0.6.0'
 
 const FALLBACK_ASSET_NAMES = [
-  'LazySheet_0.5.0_aarch64.dmg',
-  'LazySheet_0.5.0_amd64.AppImage',
-  'LazySheet_0.5.0_amd64.deb',
-  'LazySheet_0.5.0_x64-setup.exe',
-  'LazySheet_0.5.0_x64_en-US.msi',
+  'LazySheet_0.6.0_aarch64.dmg',
+  'LazySheet_0.6.0_amd64.AppImage',
+  'LazySheet_0.6.0_amd64.deb',
+  'LazySheet_0.6.0_x64-setup.exe',
+  'LazySheet_0.6.0_x64_en-US.msi',
 ]
 
 function buildAsset(name: string): ReleaseAsset | null {

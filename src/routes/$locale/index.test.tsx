@@ -252,8 +252,8 @@ describe("Features section (bento grid) — what the user sees", () => {
     const opts = (Route as any).options
     const Home = opts.component as React.ComponentType
     renderWithI18n(React.createElement(Home));
-    // "Group-by Summary" is always the first bento tile (may appear in heading + dialog title)
-    const tiles = screen.getAllByText(/Group-by Summary/i);
+    // "Theme Customization" is the first bento tile in the default (latest) version (may appear in heading + dialog title)
+    const tiles = screen.getAllByText(/Theme Customization/i);
     expect(tiles.length).toBeGreaterThan(0);
   });
 });

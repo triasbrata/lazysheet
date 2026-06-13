@@ -123,3 +123,14 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
+@keyframes mock-marching-ants {
+  to { stroke-dashoffset: -16; }
+}
+.mock-selection-ants {
+  fill: none;
+  stroke: var(--m-accent);
+  stroke-width: 2;
+  stroke-dasharray: 10 6;
+  animation: mock-marching-ants 1.2s linear infinite;
+}

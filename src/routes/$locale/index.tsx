@@ -44,6 +44,7 @@ export function Hero({ data }: { data: DownloadData }) {
   const { t } = useTranslation()
   const params = useParams({ strict: false }) as { locale?: string }
   const locale: Locale = isLocale(params.locale ?? '') ? (params.locale as Locale) : DEFAULT_LOCALE
+  const version = activeVersionFromRelease(data.release)
 
   return (
     <section className="hero-gradient px-4 pt-24 pb-20 sm:pb-28 md:pb-32 md:px-16">
@@ -89,7 +90,7 @@ export function Hero({ data }: { data: DownloadData }) {
           </p>
         </div>
 
-        <HeroAppMock />
+        <HeroAppMock version={version} />
       </div>
     </section>
   )
