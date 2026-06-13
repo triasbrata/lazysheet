@@ -1,3 +1,28 @@
+## v0.6.0 (2026-06-13)
+
+### Features
+
+- **Theme customization with Material Theme palettes.** Restyle the app with built-in Material Theme color palettes. The theme picker now lives in Settings.
+- **Redesigned Settings.** A wider Settings modal with Zed-style setting rows, toggle switches in place of checkboxes, and the language and theme pickers moved inline. The footer has been removed.
+- **Workspace side panel.** A new side panel for workspace settings, with an ask-before-close prompt so you don't lose unsaved work.
+- **Window polish.** Long filenames now scroll as running text, the footer is persistent and resizable, and the titlebar is centered.
+
+### Performance
+
+- **Large spreadsheets open much faster.** A ~71k-cell `.xlsx` that previously took around 3 seconds to open now loads in well under a second. Only the visible sheet is parsed up front (via lazy reading), so switching sheets no longer re-parses the entire workbook.
+- **The app is much smaller.** The installed app shrinks from ~25 MB to ~10 MB, making downloads and updates faster.
+
+### Fixes
+
+- **macOS resize lag.** Fixed a white gap that trailed the window during live resize on macOS (WKWebView).
+- **Titlebar dragging.** Fixed titlebar drag behavior.
+
+### Experimental (off by default)
+
+- Inline cell editing with write-back to the source file, and session-scoped undo/redo, are landing behind feature flags and are not yet enabled.
+
+---
+
 ## v0.5.0 (2026-06-08)
 
 - **Zoom the grid from 50% to 200%** using Ctrl/⌘ + scroll wheel, keyboard shortcuts, or the status bar control — filter icons and padding scale to match.
