@@ -395,8 +395,15 @@ async function resolveLastStableTag(): Promise<string | null> {
 async function main() {
   loadEnv(resolve(ROOT, ".env"));
 
-  // 1. clean working tree
-  const status = (await $`git status --porcelain`.cwd(ROOT).quiet().text()).trim();
+  // 1. clean working tree — but ignore the website/landing scaffold, which
+  //    lives under the repo dir yet is not part of the app release. Porcelain
+  //    lines are "XY <path>" (path may be quoted), so match either form.
+  const DEPLOY_IGNORE = /^..\s+"?website\/landing/;
+  const status = (await $`git status --porcelain`.cwd(ROOT).quiet().text())
+    .split("\n")
+    .filter((l) => l.trim() && !DEPLOY_IGNORE.test(l))
+    .join("\n")
+    .trim();
   if (status && !DRY_RUN) {
     die("working tree not clean — commit or stash changes before deploying");
   }
