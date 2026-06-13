@@ -1,19 +1,44 @@
-## v0.5.0 (2026-06-06)
+## v0.6.0 (2026-06-13)
 
-- **Automatic updates** — The app now checks for and installs updates over-the-air via the Tauri updater, so you stay current without manual downloads.
-- **Spreadsheet zoom** — Zoom from 50% to 200% using Ctrl+scroll, keyboard shortcuts, or the status bar control, with the funnel icon and padding scaling cleanly at every level.
-- **SQL export** — Export data as SQL through a new modal supporting INSERT, UPDATE, and UPSERT statements.
-- **Cell formulas** — Cells now support formulas, including copying formulas between cells.
-- **Multi-language support** — Added English, Indonesian, Chinese, and Spanish translations across the app, filters, context menus, and summary panel.
-- **New keyboard shortcuts** — ⌘O / Ctrl+O opens the file picker (now promoted to the top of the command palette), and ⌘W / Ctrl+W closes the current sheet.
+### Features
 
-- **Opening files from the OS** — Files opened from your operating system (double-click or "Open with") now load correctly on all platforms.
-- **Linux startup crash** — Removed bundled libwayland/libEGL from the AppImage to fix an EGL crash on Fedora.
-- **Filtered grid rendering** — Corrected row rendering and the selection frame when a filter is active.
-- **Funnel header height** — Funnel header row height is now preserved when reopening the same file.
-- **Group-by aggregation** — Numeric text is now coerced so group-by results aggregate correctly in xlsx exports.
+- **Theme customization with Material Theme palettes.** Restyle the app with built-in Material Theme color palettes. The theme picker now lives in Settings.
+- **Redesigned Settings.** A wider Settings modal with Zed-style setting rows, toggle switches in place of checkboxes, and the language and theme pickers moved inline. The footer has been removed.
+- **Workspace side panel.** A new side panel for workspace settings, with an ask-before-close prompt so you don't lose unsaved work.
+- **Window polish.** Long filenames now scroll as running text, the footer is persistent and resizable, and the titlebar is centered.
 
-- **Multi-language is now disabled by default.** Enable it at build time via the `VITE_FF_MULTI_LANG` flag.
+### Performance
+
+- **Large spreadsheets open much faster.** A ~71k-cell `.xlsx` that previously took around 3 seconds to open now loads in well under a second. Only the visible sheet is parsed up front (via lazy reading), so switching sheets no longer re-parses the entire workbook.
+- **The app is much smaller.** The installed app shrinks from ~25 MB to ~10 MB, making downloads and updates faster.
+
+### Fixes
+
+- **macOS resize lag.** Fixed a white gap that trailed the window during live resize on macOS (WKWebView).
+- **Titlebar dragging.** Fixed titlebar drag behavior.
+
+### Experimental (off by default)
+
+- Inline cell editing with write-back to the source file, and session-scoped undo/redo, are landing behind feature flags and are not yet enabled.
+
+---
+
+## v0.5.0 (2026-06-08)
+
+- **Zoom the grid from 50% to 200%** using Ctrl/⌘ + scroll wheel, keyboard shortcuts, or the status bar control — filter icons and padding scale to match.
+- **Cell formulas are now supported**, and formulas can be copied between cells.
+- **Export to SQL** through a new modal that generates INSERT, UPDATE, or UPSERT statements.
+- **Automatic over-the-air updates** keep the app current via the Tauri updater.
+- Open files faster with the new **⌘O** shortcut — Open File is now the top entry in the command list.
+- Close the current sheet with **⌘W**.
+
+- Files opened from the OS (double-click or "Open with") now load correctly on all platforms.
+- Fixed an EGL crash on Fedora by stripping bundled libwayland/libEGL from the Linux AppImage.
+- Group-by aggregations now coerce numeric text, so xlsx exports total correctly.
+- Corrected row rendering and the selection frame while a filter is active.
+- The filter header row now keeps its height when reopening the same file.
+
+- Multi-language support (English, Indonesian, Chinese, Spanish) is in progress behind a feature flag and disabled by default in this release.
 
 ---
 
@@ -28,12 +53,96 @@
 
 ## v0.3.3 (2026-05-31)
 
-chore: release v0.3.3
+- Delete workflow artifacts after release to avoid storage bloat
+- Update release workflow to handle existing releases and nested artifacts
 
 ---
 
 ## v0.3.2 (2026-05-31)
 
-chore: release v0.3.2
+- publish tag and release to lazysheet, not lazysheet-app
+- base changelog commit on target branch tip
+
+- document macOS unsigned-build quarantine workaround
+
+- Bump landing submodule
 
 ---
+
+## v0.3.1 (2026-05-31)
+
+- gate RunEvent::Opened to macOS and skip macOS codesigning
+
+- bump landing submodule (feature-list sync)
+- add missing .gitmodules for website/landing
+
+---
+
+## v0.3.0 (2026-05-31)
+
+- inline header filter funnel + roomier cell padding
+
+- prevent sticky header band overlapping row-0 header
+- use embedded PAT for changelog and tag mirror pushes
+
+- add build:web script and use it for tauri build
+
+---
+
+## v0.2.3 (2026-05-31)
+
+- drop pnpm/npm lockfiles, standardize on deno
+- update changelog for v0.2.2
+
+- Remove changelog-app.log
+- Push changelog via separate remote with app token
+
+---
+
+## v0.2.2 (2026-05-31)
+
+- force-add gitignored changelog-app.log in release (#2)
+
+- clean tag message — drop hashes and merge/release noise
+
+---
+
+## v0.2.1 (2026-05-31)
+
+- commit Cargo.lock on version bump (b22c5e3)
+
+- cancel in-progress run on new trigger (e8cdb12)
+
+---
+
+## v0.2.0 (2026-05-31)
+
+- replace native select with shadcn Select in column filter (93bb440)
+- animate active filter icon, strengthen ruler blur (193972c)
+- marching-ants range selection (acd36a1)
+- per-column filter with merge-aware behavior (6af8281)
+
+- load .env via dotenv instead of .envrc (37edbdd)
+
+- run deploy script and release CI via deno (604c3c7)
+- run frontend dev/build via deno (431d7d0)
+
+- bump website/landing submodule (c8f1b0f)
+- add motion for grid icon animation (035885f)
+- fix build script and add run:dev alias (46a846e)
+
+- Merge pull request #1 from triasbrata/feat/shadcn-select-condition-filter (c0b7670)
+- Create .claudeignore (cc1a16a)
+- Add CSV/TSV/plain copy formats and restructure copy context menu (a7eb15d)
+- remove website example (9b889ab)
+- Add Dataflare-style README with app screenshots (3e973ca)
+- Add copy-format dropdown to summary panel + regenerate app icons (f8854ad)
+- Enable window dragging from status bar and sheet tabs (67eabb0)
+- Add "Copy as Image" action to group-by summary panel (4d18fb4)
+- Fix transparency bleed-through on sticky row/column headers (2ae4a67)
+- Extend group-by summary with sub-categories, tree view, and subtotals (00bf7ca)
+- Add column/row resize with persistence + autofit + manual sizing dialog (086ea75)
+- Initial commit: LazySheet desktop viewer (d9c7797)
+
+---
+
