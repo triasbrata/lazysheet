@@ -67,8 +67,8 @@ export const T = {
   commandPalette: "command-palette",
   commandPaletteInput: "command-palette-input",
   commandPaletteItem: "command-palette-item",
-  themeToggleBtn: "theme-toggle-btn",
   settingsModal: "settings-modal",
+  settingsThemeSelect: "settings-theme-select",
   settingsLanguageSelect: "settings-language-select",
   contextMenu: "context-menu",
   statusbar: "statusbar",
@@ -431,31 +431,15 @@ export async function openSelectItem(
   const item = tid(itemTestid);
   const content = $('[data-slot="select-content"]');
 
-  const probe = (label: string) =>
-    browser.execute(
-      (trigSel: string, lab: string) => {
-        const trig = document.querySelector(trigSel);
-        const c = document.querySelector('[data-slot="select-content"]');
-        const panel = document.querySelector('[data-testid="filter-panel"]');
-        return (
-          lab +
-          " trig=" + !!trig +
-          " trigState=" + (trig?.getAttribute("data-state") ?? "?") +
-          " panel=" + !!panel +
-          " content=" + !!c
-        );
-      },
-      trigger,
-      label,
-    );
-  const before = await probe("BEFORE");
-  await tid(toggleTestid).click();
-  await browser.pause(500);
-  const after = await probe("AFTER");
-  throw new Error("DIAG | " + before + " || " + after);
+  // Ensure the trigger is visible before dispatching events.
+  await tid(toggleTestid).waitForDisplayed({ timeout: 5000 });
+
+  // Open with pointerdown only (no pointerup — that would commit+close on WebKit).
+  await synthPointerDown(trigger);
   try {
     await content.waitForDisplayed({ timeout: 3000 });
   } catch {
+    // Single retry if the listbox did not mount.
     await synthPointerDown(trigger);
     await content.waitForDisplayed({ timeout: 3000 });
   }
@@ -469,6 +453,24 @@ export async function openSelectItem(
 
   await item.waitForDisplayed({ timeout: 3000 });
   await item.click();
+}
+
+/**
+ * Opens the Settings modal via the Cmd/Ctrl+, keyboard shortcut. Language-
+ * independent — unlike the command palette, it does not depend on a localized
+ * command label matching an English query.
+ */
+export async function openSettings(): Promise<void> {
+  const modal = tid(T.settingsModal);
+  await browser.keys(["Control", ","]);
+  try {
+    await modal.waitForDisplayed({ timeout: 4000 });
+  } catch {
+    // Right after a reload the webview may not have routed the first keydown
+    // (no focused element yet); fire the shortcut once more.
+    await browser.keys(["Control", ","]);
+    await modal.waitForDisplayed({ timeout: 6000 });
+  }
 }
 
 /**

@@ -3,8 +3,10 @@
  *
  * Flow:
  *   1. prepareApp() forces English. Assert welcome Open File button visible.
- *   2. Open Settings via command palette ("Open settings" → Enter), wait for
- *      settings-modal. Open the language Radix Select with synthPointerDown-only
+ *   2. Open Settings via the Cmd/Ctrl+, shortcut (language-independent — a
+ *      command-palette text query would not match the localized label once the
+ *      UI is in Indonesian), wait for settings-modal. Open the language Radix
+ *      Select via the shared openSelectItem helper (synthPointerDown-only open
  *      (pointerdown-only open avoids WebKit commit-on-pointerup flake), wait for
  *      [data-slot="select-content"], scrollIntoView + click lang-opt-id. Close
  *      modal (Escape). Assert localStorage "lazysheet:language" === "id" and
@@ -30,69 +32,16 @@ import {
   T,
   tid,
   prepareApp,
-  synthPointerDown,
+  openSettings,
+  openSelectItem,
 } from "../helpers/app.js";
 
 /**
- * Opens the Settings modal via the command palette:
- *   Ctrl+K → type "settings" → wait for "Open settings" item → Enter → wait for modal.
- */
-async function openSettingsViaCommandPalette(): Promise<void> {
-  await browser.keys(["Control", "k"]);
-  const palette = tid(T.commandPalette);
-  await palette.waitForDisplayed({ timeout: 8000 });
-
-  const paletteInput = tid(T.commandPaletteInput);
-  await paletteInput.waitForDisplayed({ timeout: 5000 });
-  await paletteInput.setValue("settings");
-
-  // Wait for at least one matching item
-  await browser.waitUntil(
-    () =>
-      ($$(`[data-testid="${T.commandPaletteItem}"]`).length as unknown as Promise<number>).then(
-        (n) => n >= 1,
-      ),
-    { timeout: 5000, timeoutMsg: "No command-palette-item for 'settings'" },
-  );
-
-  // Press Enter to execute the first match ("Open settings")
-  await browser.keys(["Enter"]);
-
-  // Wait for the settings modal to appear
-  await tid(T.settingsModal).waitForDisplayed({ timeout: 8000 });
-}
-
-/**
  * Selects a language option inside the Settings modal Radix Select.
- * Uses pointerdown-only open to avoid WebKit commit-on-pointerup flake.
  * @param langOptTestid - data-testid of the SelectItem, e.g. "lang-opt-id".
  */
 async function selectLanguageOption(langOptTestid: string): Promise<void> {
-  const triggerSel = `[data-testid="${T.settingsLanguageSelect}"]`;
-  const content = $('[data-slot="select-content"]');
-
-  // Ensure trigger is visible before dispatching events
-  await tid(T.settingsLanguageSelect).waitForDisplayed({ timeout: 5000 });
-
-  // Open with pointerdown only (no pointerup — that would commit+close on WebKit)
-  await synthPointerDown(triggerSel);
-
-  try {
-    await content.waitForDisplayed({ timeout: 3000 });
-  } catch {
-    // Single retry if the listbox did not mount
-    await synthPointerDown(triggerSel);
-    await content.waitForDisplayed({ timeout: 3000 });
-  }
-
-  // scrollIntoView before asserting visibility — listbox may be clipped in viewport
-  await browser.execute((sel: string) => {
-    document.querySelector(sel)?.scrollIntoView({ block: "center" });
-  }, `[data-testid="${langOptTestid}"]`);
-
-  const item = tid(langOptTestid);
-  await item.waitForDisplayed({ timeout: 3000 });
-  await item.click();
+  await openSelectItem(T.settingsLanguageSelect, langOptTestid);
 }
 
 describe("i18n (language switching)", () => {
@@ -110,8 +59,8 @@ describe("i18n (language switching)", () => {
   });
 
   it("switching to Bahasa Indonesia changes UI strings and saves to localStorage", async () => {
-    // Open Settings modal via command palette
-    await openSettingsViaCommandPalette();
+    // Open Settings modal via Cmd/Ctrl+, (language-independent)
+    await openSettings();
 
     // Select Indonesian inside the Settings modal
     await selectLanguageOption("lang-opt-id");
@@ -152,8 +101,9 @@ describe("i18n (language switching)", () => {
   });
 
   it("switching back to English restores the original UI strings", async () => {
-    // Open Settings modal via command palette (language is still "id" from previous test)
-    await openSettingsViaCommandPalette();
+    // Open Settings modal via Cmd/Ctrl+, (language is still "id" from previous
+    // test; the shortcut is language-independent, unlike a palette text query)
+    await openSettings();
 
     // Select English inside the Settings modal
     await selectLanguageOption("lang-opt-en");
