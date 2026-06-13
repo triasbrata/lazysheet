@@ -27,6 +27,7 @@ import {
   selectionRowRange,
   changedRowIndices,
   parseA1,
+  computeCellHighlight,
   DEFAULT_COL_WIDTH,
   DEFAULT_ROW_HEIGHT,
   MIN_RESIZE_PX,
@@ -747,5 +748,95 @@ describe("parseA1", () => {
     expect(parseA1("A0")).toBeNull(); // row 0 is invalid (must be >=1)
     expect(parseA1("ABC")).toBeNull();
     expect(parseA1("123")).toBeNull();
+  });
+});
+
+// ── computeCellHighlight ──────────────────────────────────────────────────────
+
+describe("computeCellHighlight", () => {
+  const noMatch = new Set<string>();
+
+  it("anchor in multi-cell range -> 'selected' (blends with range tint)", () => {
+    // expandedBounds covers rows 0-1, cols 0-1 (multi-cell)
+    const bounds: Bounds = { r1: 0, c1: 0, r2: 1, c2: 1 };
+    expect(
+      computeCellHighlight(0, 0, {
+        anchor: { row: 0, col: 0 },
+        bounds,
+        multi: true,
+        matchSet: noMatch,
+      }),
+    ).toBe("selected");
+  });
+
+  it("anchor in single-cell selection -> 'anchor'", () => {
+    const bounds: Bounds = { r1: 2, c1: 3, r2: 2, c2: 3 };
+    expect(
+      computeCellHighlight(2, 3, {
+        anchor: { row: 2, col: 3 },
+        bounds,
+        multi: false,
+        matchSet: noMatch,
+      }),
+    ).toBe("anchor");
+  });
+
+  it("non-anchor cell inside range -> 'selected'", () => {
+    const bounds: Bounds = { r1: 0, c1: 0, r2: 2, c2: 2 };
+    expect(
+      computeCellHighlight(1, 1, {
+        anchor: { row: 0, col: 0 },
+        bounds,
+        multi: true,
+        matchSet: noMatch,
+      }),
+    ).toBe("selected");
+  });
+
+  it("cell in matchSet but not selected -> 'match'", () => {
+    expect(
+      computeCellHighlight(3, 5, {
+        anchor: null,
+        bounds: null,
+        multi: false,
+        matchSet: new Set(["3:5"]),
+      }),
+    ).toBe("match");
+  });
+
+  it("cell outside any range and not in matchSet -> null", () => {
+    expect(
+      computeCellHighlight(9, 9, {
+        anchor: { row: 0, col: 0 },
+        bounds: { r1: 0, c1: 0, r2: 2, c2: 2 },
+        multi: true,
+        matchSet: noMatch,
+      }),
+    ).toBeNull();
+  });
+
+  it("precedence: anchor wins over match (anchor+match on same cell -> anchor path)", () => {
+    // anchor is single-cell, and matchSet also contains the anchor cell
+    const bounds: Bounds = { r1: 1, c1: 1, r2: 1, c2: 1 };
+    expect(
+      computeCellHighlight(1, 1, {
+        anchor: { row: 1, col: 1 },
+        bounds,
+        multi: false,
+        matchSet: new Set(["1:1"]),
+      }),
+    ).toBe("anchor");
+  });
+
+  it("precedence: selected wins over match (non-anchor selected cell also in matchSet -> 'selected')", () => {
+    const bounds: Bounds = { r1: 0, c1: 0, r2: 3, c2: 3 };
+    expect(
+      computeCellHighlight(2, 2, {
+        anchor: { row: 0, col: 0 },
+        bounds,
+        multi: true,
+        matchSet: new Set(["2:2"]),
+      }),
+    ).toBe("selected");
   });
 });

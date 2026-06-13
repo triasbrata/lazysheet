@@ -408,3 +408,36 @@ export function parseA1(ref: string): { row: number; col: number } | null {
   }
   return { row: rowNum - 1, col: col - 1 };
 }
+
+// Which trigger source opened a column filter dropdown.
+export type FilterSource = "band" | "ruler" | "row";
+
+// The highlight state a cell can carry.
+export type CellHighlight = "anchor" | "selected" | "match" | null;
+
+// Pure function extracted from the render-scope closures in Grid.tsx.
+// Computes highlight for a cell at (r, c) given pre-derived selection state.
+// Branch order / precedence matches the original closures exactly.
+export function computeCellHighlight(
+  r: number,
+  c: number,
+  opts: {
+    anchor: { row: number; col: number } | null;
+    bounds: Bounds | null;
+    multi: boolean;
+    matchSet: Set<string>;
+  },
+): CellHighlight {
+  const { anchor, bounds, multi, matchSet } = opts;
+  // isAnchor
+  if (anchor !== null && anchor.row === r && anchor.col === c) {
+    // Multi-cell range — anchor blends with surrounding selected cells
+    // (uniform tint); range frame draws the border. Single-cell anchor
+    // gets its own outline for visibility.
+    return multi ? "selected" : "anchor";
+  }
+  // isSelected
+  if (bounds !== null && boundsInclude(bounds, r, c)) return "selected";
+  if (matchSet.has(`${r}:${c}`)) return "match";
+  return null;
+}
