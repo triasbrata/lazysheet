@@ -88,19 +88,22 @@ Key pieces, and how they fit together:
   only in the git tag.
 
 - **`changelog-app.log`** — committed changelog history, newest on top. Format
-  per entry: `## vX.Y.Z (YYYY-MM-DD)` + tag-annotation body + `---`. It is
-  **gitignored** (`*.log`), so it must be `git add -f`'d. deploy.ts prepends to
-  it locally and bakes it into the release commit; CI's `update-changelog` job
-  then finds the entry already present (guard: `grep "^## <tag> "`) and skips
-  its own write — so there's never a duplicate entry.
+  per entry: `## vX.Y.Z (YYYY-MM-DD)` + tag-annotation body + `---`. It is a
+  **tracked** file (negated from the `*.log` ignore via `!changelog-app.log`),
+  so a plain `git add` works. **deploy.ts is the only thing that generates it**:
+  it prepends the entry locally and bakes it into the release commit at the tag.
+  CI never regenerates — its `update-changelog` job just mirrors this committed
+  file to the public repo.
 
 - **`.github/workflows/release.yml`** — triggers on `v*` tags. Builds all
   platforms, promotes RC→final, mirrors the tag + release to the public
   `triasbrata/lazysheet` repo, generates `latest.json` for the Tauri updater,
-  and (if deploy.ts didn't already) appends to `changelog-app.log`.
+  and mirrors the deploy-generated `changelog-app.log` verbatim (no regeneration;
+  no-ops if the mirror already matches).
 
 When adding a user-facing change: drop a bullet in `RELEASE_NOTES_NEXT.md`. When
 cutting a release: just run `app:deploy` — everything else is automatic.
 
-The idempotency guard (`^## v<version> `) on the changelog keeps deploy and CI
-from double-writing; preserve it if you touch either side.
+Generation of the changelog lives in one place (deploy.ts); the CI mirror is a
+pure copy. Keep it that way if you touch either side — don't reintroduce
+regeneration from the tag body in CI.

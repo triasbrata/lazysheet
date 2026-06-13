@@ -24,54 +24,39 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Extract tag annotation
-        id: tagbody
-        shell: bash
-        run: |
-          # actions/checkout overwrites the annotated tag with a lightweight one
-          # pointing at the commit, so %(contents) would return the commit
-          # message. Re-fetch the real annotated tag object first.
-          git fetch --force origin \
-            "refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
-          body=$(git tag -l --format='%(contents)' "${{ github.ref_name }}")
-          {
-            echo 'body<<TAGEOF'
-            echo "$body"
-            echo 'TAGEOF'
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Commit and push changelog
+      - name: Sync deploy-generated changelog to lazysheet
         shell: bash
         env:
           TAG: ${{ github.ref_name }}
-          BODY: ${{ steps.tagbody.outputs.body }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           LAZYSHEET_APP_TOKEN: ${{ secrets.LAZYSHEET_APP_TOKEN }}
         run: |
-          # Derive the final (non-rc) tag name; for bare tags FINAL_TAG == TAG
+          # changelog-app.log is generated once by `bun run app:deploy` and
+          # committed at the release tag. CI does NOT regenerate it from the tag
+          # body — it only mirrors the already-generated file to the public
+          # lazysheet repo. Single source of truth = the deploy-committed file.
           FINAL_TAG="${TAG%-rc.*}"
+          if [ ! -f changelog-app.log ]; then
+            echo "::error::changelog-app.log is missing at ${TAG}. app:deploy must generate and commit it before tagging."
+            exit 1
+          fi
+          # Stash the deploy-generated changelog before switching branches.
+          cp changelog-app.log /tmp/changelog-app.log
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote add lazysheet \
             "https://x-access-token:${LAZYSHEET_APP_TOKEN}@github.com/triasbrata/lazysheet.git"
-          # Base the changelog commit on the live tip of the target branch so the
-          # push fast-forwards (the tag commit is behind that tip).
+          # Base the commit on the live tip of the mirror's default branch so the
+          # push fast-forwards.
           git fetch lazysheet "$DEFAULT_BRANCH"
           git checkout -B changelog-sync "lazysheet/${DEFAULT_BRANCH}"
-          if grep -q "^## ${FINAL_TAG} " changelog-app.log 2>/dev/null; then
-            echo "changelog-app.log already contains ${FINAL_TAG}; nothing to do."
+          cp /tmp/changelog-app.log changelog-app.log
+          if git diff --quiet -- changelog-app.log; then
+            echo "lazysheet changelog already matches ${FINAL_TAG}; nothing to do."
             exit 0
           fi
-          DATE=$(date -u +%Y-%m-%d)
-          ENTRY="## ${FINAL_TAG} (${DATE})\n\n${BODY}\n\n---\n\n"
-          if [ -f changelog-app.log ]; then
-            OLD=$(cat changelog-app.log)
-            printf "%b%s" "$ENTRY" "$OLD" > changelog-app.log
-          else
-            printf "%b" "$ENTRY" > changelog-app.log
-          fi
-          git add -f changelog-app.log
-          git commit -m "chore: update changelog for ${FINAL_TAG}"
+          git add changelog-app.log
+          git commit -m "chore: sync changelog for ${FINAL_TAG}"
           # checkout's persist-credentials writes GITHUB_TOKEN into
           # http.<github>.extraheader, which overrides the token embedded in the
           # remote URL and 403s on the foreign repo. Clear it for this push.

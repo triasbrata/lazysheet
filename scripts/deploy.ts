@@ -34,7 +34,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname!, "..");
-/** Project changelog — gitignored (*.log), so it must be force-added. */
+/** Project changelog — tracked (negated from the *.log ignore); committed by app:deploy. */
 const CHANGELOG_FILE = "changelog-app.log";
 /** Holding area for hand-written notes destined for the next release tag. */
 const PENDING_NOTES_FILE = "RELEASE_NOTES_NEXT.md";
@@ -331,13 +331,12 @@ function bumpVersionFiles(newVersion: string) {
 }
 
 /**
- * Prepend a release entry to changelog-app.log, mirroring the format the
- * release CI writes — "## <tag> (<date>)\n\n<body>\n\n---\n\n", newest on top.
+ * Prepend a release entry to changelog-app.log — "## <tag> (<date>)\n\n<body>
+ * \n\n---\n\n", newest on top. This is the single source of generation: the
+ * changelog is produced here, at app:deploy time, and committed. CI never
+ * regenerates it — it only mirrors this committed file to the public repo.
  * Idempotent: if an entry for this version already heads the file it's left
- * untouched, so RC re-runs don't duplicate it (same guard as release.yml's
- * `grep "^## ${FINAL_TAG} "`). Because the entry is committed here, the CI
- * job finds it present and skips its own prepend — no double entry.
- * The file is gitignored (*.log); callers must `git add -f` it.
+ * untouched, so RC re-runs don't duplicate it.
  */
 function prependChangelogEntry(version: string, body: string, date: string) {
   const path = resolve(ROOT, CHANGELOG_FILE);
@@ -512,14 +511,14 @@ async function main() {
   // 10. Fresh cycle only: bump version files, prepend changelog, commit.
   //     The commit message uses the final version (no rc suffix) because
   //     version files always hold the bare base version. The changelog entry
-  //     is prepended here (mirroring the CI format) and force-added since the
-  //     file is gitignored; CI then finds it present and skips its own write.
+  //     is generated and committed here — this is the only place it is written;
+  //     CI later mirrors this committed file to the public repo verbatim.
   if (freshCycle) {
     bumpVersionFiles(baseVersion);
     prependChangelogEntry(baseVersion, tagMessage, releaseDate);
     await $`git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock`
       .cwd(ROOT);
-    await $`git add -f ${CHANGELOG_FILE}`.cwd(ROOT);
+    await $`git add ${CHANGELOG_FILE}`.cwd(ROOT);
     // Pending notes are now baked into the tag message / changelog — reset the
     // holding file so they don't leak into the next release target.
     if (pendingNotes) {
