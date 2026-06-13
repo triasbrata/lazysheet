@@ -6,7 +6,7 @@ export function Footer() {
 
   return (
     <footer className="w-full border-t border-surface-container-high bg-white">
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-8 text-sm text-on-surface-variant md:px-16">
+      <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-3 px-4 py-8 text-center text-sm text-on-surface-variant sm:flex-row sm:justify-between sm:text-left md:px-16">
         <span>{t('footer.tagline')}</span>
         <div className="flex items-center gap-4">
           <FeedbackDialog

@@ -8,7 +8,8 @@
     "githubStarsAria": "{{count}} 个 GitHub Star",
     "version": "版本",
     "versionAria": "选择版本",
-    "versionLatest": "最新"
+    "versionLatest": "最新",
+    "menuAria": "打开菜单"
   },
   "hero": {
     "iconAlt": "LazySheet 图标",

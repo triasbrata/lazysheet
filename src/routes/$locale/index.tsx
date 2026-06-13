@@ -15,6 +15,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '#/components/ui/accordion'
+import { HeroAppMock } from '#/sections/hero/HeroAppMock'
 import { BentoGrid } from '#/sections/bento/BentoGrid'
 import { useBentoTiles } from '#/sections/bento/features'
 import { isLocale, DEFAULT_LOCALE, type Locale } from '#/i18n/config'
@@ -45,7 +46,7 @@ export function Hero({ data }: { data: DownloadData }) {
   const locale: Locale = isLocale(params.locale ?? '') ? (params.locale as Locale) : DEFAULT_LOCALE
 
   return (
-    <section className="hero-gradient px-4 pt-24 pb-32 md:px-16">
+    <section className="hero-gradient px-4 pt-24 pb-20 sm:pb-28 md:pb-32 md:px-16">
       <div className="mx-auto max-w-[1200px] text-center">
         <div className="mb-8 flex justify-center">
           <img
@@ -88,13 +89,7 @@ export function Hero({ data }: { data: DownloadData }) {
           </p>
         </div>
 
-        <div className="relative mx-auto max-w-[1100px] overflow-hidden rounded-xl border border-surface-container-highest bg-white shadow-2xl">
-          <img
-            src="/shots/application.png"
-            alt={t('hero.dashboardAlt')}
-            className="h-auto w-full"
-          />
-        </div>
+        <HeroAppMock />
       </div>
     </section>
   )
@@ -138,7 +133,7 @@ function Features({ activeTag }: { activeTag: string }) {
       tiles={tiles}
       header={
         <div className="mb-8 text-center motion-safe:md:mb-6">
-          <h2 className="font-display mb-4 text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[48px] sm:leading-[56px]">
+          <h2 className="font-display mb-4 text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[48px] sm:leading-[56px] md:text-[56px] md:leading-[64px]">
             {t('features.heading')}
           </h2>
           <p className="text-on-surface-variant">
@@ -161,7 +156,7 @@ export function Faq({ activeTag }: { activeTag: string }) {
     >
       <div className="mx-auto max-w-[1000px] px-4 md:px-8">
         <div className="mb-12 text-center">
-          <h2 className="font-display mb-4 text-[32px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[40px]">
+          <h2 className="font-display mb-4 text-[32px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[40px] md:text-[48px]">
             {t('faq.heading')}
           </h2>
           <p className="text-on-surface-variant">

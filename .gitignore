@@ -17,3 +17,7 @@ todos.json
 .rpi/
 
 coverage
+
+e2e-screenshots/
+e2e-media/
+.vitest-attachments/

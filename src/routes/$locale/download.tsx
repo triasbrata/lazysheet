@@ -63,12 +63,12 @@ export function DownloadView({ data }: { data: DownloadData }) {
       <Nav />
       <main className="pt-20">
         <section className="px-4 pt-20 pb-16 md:px-16">
-          <h1 className="font-display mb-16 text-center text-5xl font-bold tracking-[-0.03em] text-on-surface sm:text-6xl">
+          <h1 className="font-display mb-10 text-center text-5xl font-bold tracking-[-0.03em] text-on-surface sm:mb-16 sm:text-6xl">
             {t('download.heading')}
           </h1>
 
           {groups && hasAnyAssets ? (
-            <div className="mx-auto grid max-w-[1100px] grid-cols-1 items-stretch gap-6 md:grid-cols-3">
+            <div className="mx-auto grid max-w-[1100px] grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {OS_CONFIG.filter(({ key }) => groups[key].length > 0).map(({ key, label, Icon }) => (
                 <div
                   key={key}
@@ -79,7 +79,7 @@ export function DownloadView({ data }: { data: DownloadData }) {
                   }`}
                 >
                   <div className="flex flex-col items-center">
-                    <Icon className="text-[52px] text-on-surface" />
+                    <Icon className="text-[40px] text-on-surface sm:text-[52px]" />
                     <h2 className="font-display mt-4 mb-6 text-2xl font-bold text-on-surface">
                       {label}
                     </h2>

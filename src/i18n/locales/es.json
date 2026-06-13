@@ -8,7 +8,8 @@
     "githubStarsAria": "{{count}} estrellas en GitHub",
     "version": "Versión",
     "versionAria": "Seleccionar versión",
-    "versionLatest": "más reciente"
+    "versionLatest": "más reciente",
+    "menuAria": "Abrir menú"
   },
   "hero": {
     "iconAlt": "Icono de LazySheet",

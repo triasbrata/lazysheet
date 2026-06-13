@@ -4,10 +4,10 @@
 
 - **Framework**: TanStack Start (React 19, file-based routing via `src/routes/`)
 - **Styling**: Tailwind CSS v4
-- **UI library**: shadcn/ui + Radix UI (installed via `pnpm dlx shadcn@latest add <component>`)
+- **UI library**: shadcn/ui + Radix UI (installed via `bun dlx shadcn@latest add <component>`)
 - **Icons**: Lucide React, FontAwesome
 - **Deploy**: Cloudflare Workers via Wrangler
-- **Package manager**: pnpm
+- **Package manager**: bun
 
 ## Project Structure
 
@@ -41,7 +41,7 @@ Never add custom components to `src/components/` or any subfolder of it.
 Install new shadcn components with:
 
 ```bash
-pnpm dlx shadcn@latest add <component>
+bun dlx shadcn@latest add <component>
 ```
 
 ## Imports
@@ -57,7 +57,7 @@ import { Nav } from '#/layouts/nav'
 
 **Every feature change MUST ship with unit tests.** No feature PR is complete without accompanying tests covering the new/changed behavior.
 
-- Coverage gate: **95%** — `pnpm test` must keep coverage at or above 95%.
+- Coverage gate: **95%** — `bun test` must keep coverage at or above 95%.
 - New feature → add UT in the same change.
 - Changed feature → update/extend UT to cover the change.
 - Do not merge if coverage drops below 95%.
@@ -65,8 +65,8 @@ import { Nav } from '#/layouts/nav'
 ## Commands
 
 ```bash
-pnpm dev        # dev server on :3000
-pnpm build      # production build
-pnpm deploy     # build + deploy to Cloudflare
-pnpm test       # vitest
+bun dev        # dev server on :3000
+bun build      # production build
+bun deploy     # build + deploy to Cloudflare
+bun test       # vitest
 ```

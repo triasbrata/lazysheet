@@ -3,7 +3,7 @@ import type { MotionValue } from 'motion/react'
 import { cn } from '#/lib/utils'
 import type { BentoTile } from './features'
 
-type BentoCardProps = { tile: BentoTile; index: number; progress: MotionValue<number> }
+type BentoCardProps = { tile: BentoTile; index: number; progress: MotionValue<number>; pinned: boolean }
 
 // Scroll-linked timeline over the pinned section's scrollYProgress (0→1):
 // staggered entrance → a HOLD where every card (and the whole container) is
@@ -15,11 +15,12 @@ const HOLD_END = 0.56 // exit begins here — gives a clear all-visible hold (0.
 const OUT_STAGGER = 0.02 // per-index exit offset → one-by-one fade-out
 const OUT_DUR = 0.16 // per-card exit window width
 
-export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Element {
+export function BentoCard({ tile, index, progress, pinned }: BentoCardProps): JSX.Element {
   const reduce = useReducedMotion()
 
   // Entrance: staggered fade-in. Exit: staggered fade-out (one card at a time),
   // only after the hold — fade + lift + slight recede.
+  // Always computed unconditionally to respect hooks rules.
   const inStart = Math.min(index * IN_STAGGER, IN_STAGGER_MAX)
   const inEnd = inStart + IN_DUR
   const outStart = HOLD_END + index * OUT_STAGGER
@@ -42,7 +43,28 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
         ? 'bg-gradient-to-br from-primary-fixed/40 to-white'
         : 'bg-white'
 
-  const wrapperStyle = reduce ? undefined : { opacity, y, scale }
+  // Animation selection:
+  // - reduce:  static, fully visible (no style, no motion props)
+  // - pinned:  scroll-progress driven (opacity/y/scale from useTransform)
+  // - stacked: whileInView fade-in once
+  let wrapperStyle: { opacity: typeof opacity; y: typeof y; scale: typeof scale } | undefined
+  let motionProps: Record<string, unknown> = {}
+
+  if (reduce) {
+    wrapperStyle = undefined
+    motionProps = {}
+  } else if (pinned) {
+    wrapperStyle = { opacity, y, scale }
+    motionProps = {}
+  } else {
+    wrapperStyle = undefined
+    motionProps = {
+      initial: { opacity: 0, y: 16 },
+      whileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, margin: '-10% 0px' },
+      transition: { duration: 0.5, ease: 'easeOut', delay: Math.min(index * 0.04, 0.3) },
+    }
+  }
 
   const isBand = tile.layout === 'band'
 
@@ -76,8 +98,9 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
   return (
     <motion.div
       style={wrapperStyle}
+      {...motionProps}
       className={cn(
-        'group relative overflow-hidden rounded-3xl border border-surface-container-high p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),inset_0_-12px_24px_-20px_rgba(0,0,0,0.18),0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-16px_rgba(0,0,0,0.14)] transition-shadow hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),inset_0_-12px_24px_-20px_rgba(0,0,0,0.18),0_2px_4px_rgba(0,0,0,0.05),0_18px_44px_-18px_rgba(0,0,0,0.20)] motion-safe:md:p-6',
+        'group relative overflow-hidden rounded-3xl border border-surface-container-high p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),inset_0_-12px_24px_-20px_rgba(0,0,0,0.18),0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-16px_rgba(0,0,0,0.14)] transition-shadow hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),inset_0_-12px_24px_-20px_rgba(0,0,0,0.18),0_2px_4px_rgba(0,0,0,0.05),0_18px_44px_-18px_rgba(0,0,0,0.20)] motion-safe:xl:p-6',
         toneClass,
         tile.span,
       )}
@@ -150,7 +173,7 @@ export function BentoCard({ tile, index, progress }: BentoCardProps): JSX.Elemen
             {tile.render && <div className="mt-3">{tile.render()}</div>}
             {tile.media && (
               <motion.div
-                className="mt-6 overflow-hidden rounded-xl border border-surface-container-high motion-safe:md:mt-4 motion-safe:md:min-h-[220px] motion-safe:md:flex-1"
+                className="mt-6 min-h-[160px] overflow-hidden rounded-xl border border-surface-container-high motion-safe:xl:mt-4 motion-safe:xl:min-h-0 motion-safe:xl:flex-1"
                 style={
                   reduce
                     ? undefined

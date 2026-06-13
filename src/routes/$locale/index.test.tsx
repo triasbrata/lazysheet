@@ -83,7 +83,7 @@ vi.mock('motion/react', () => {
 
   return {
     motion,
-    useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
+    useScroll: () => ({ scrollYProgress: { get: () => 0, on: () => () => {} } }),
     useTransform: (_mv: unknown, _in: unknown, out: unknown[]) => ({
       get: () => (Array.isArray(out) ? out[0] : 0),
     }),
@@ -164,6 +164,11 @@ describe("Hero section — what the user sees", () => {
     );
     expect(screen.getByText("Download for macOS")).toBeTruthy();
     expect(container.querySelector('svg[data-icon="apple"]')).toBeTruthy();
+  });
+
+  it("renders the inline app mock", () => {
+    renderWithI18n(<Hero data={mockData} />);
+    expect(screen.getByText("Untitled spreadsheet (7).xlsx")).toBeTruthy();
   });
 
   it("reflects a Windows serverOS with label and Windows icon", () => {
