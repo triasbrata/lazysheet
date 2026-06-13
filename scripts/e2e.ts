@@ -25,7 +25,7 @@
  */
 import { $ } from "bun";
 import { resolve } from "node:path";
-import { copyFileSync, existsSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 
 const ROOT = resolve(import.meta.dirname!, "..");
 const E2E = resolve(ROOT, "e2e");
@@ -187,28 +187,19 @@ if (wdioFailed) {
   die(`E2E specs failed — see report above; full wdio output: ${wdioLogPath}`);
 }
 
-log("Collecting unit coverage (vitest)");
+// The 95% frontend line gate. vitest's own `thresholds.lines: 95` (see
+// vitest.config.ts) makes `test:coverage` exit non-zero when below 95%, so this
+// step IS the gate — no separate merge needed.
+//
+// NOTE: e2e runs with E2E_COVERAGE=true and drops istanbul chunks under
+// .nyc_output, but the nyc merge tool was removed in the Vite/Vitest revert, so
+// there is no merged gate anymore. e2e coverage is collected, not gated.
+log("Running unit tests + enforcing 95% frontend line gate (vitest)");
 await gate(
-  "Unit tests / coverage (vitest)",
+  "Unit tests / 95% line-coverage gate (vitest)",
   () => $`bun run test:coverage`.cwd(ROOT).quiet(),
   resolve(ROOT, "coverage/unit-test.log"),
   "Unit tests or the 95% line-coverage gate failed — release aborted (no git writes made)",
-);
-
-const unitSrc = resolve(ROOT, "coverage/unit/coverage-final.json");
-const unitDst = resolve(ROOT, ".nyc_output/unit-final.json");
-if (existsSync(unitSrc)) {
-  copyFileSync(unitSrc, unitDst);
-} else {
-  log("⚠ unit coverage file missing — gate will use e2e coverage only.");
-}
-
-log("Merging coverage + enforcing 95% frontend line gate");
-await gate(
-  "Merged frontend coverage gate (nyc)",
-  () => $`bun run coverage`.cwd(E2E).quiet(),
-  resolve(E2E, "coverage-merge.log"),
-  "Merged frontend line coverage below 95% — gate failed (no release)",
 );
 
 if (backendCov) {
